@@ -1,3 +1,9 @@
+# AI tool configs (không liên quan đến dự án)
+.agent/
+.agents/
+.claude/
+skills-lock.json
+
 # Dependencies
 dha-cms/node_modules/
 dha-cms/.cache/
