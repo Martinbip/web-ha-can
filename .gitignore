@@ -1,0 +1,14 @@
+# Dependencies
+dha-cms/node_modules/
+dha-cms/.cache/
+dha-cms/build/
+dha-cms/.tmp/
+
+# Environment
+dha-cms/.env
+deploy/.env
+
+# OS
+.DS_Store
+Thumbs.db
+*.log

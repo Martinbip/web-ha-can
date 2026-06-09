@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "name": "Phân tích huỳnh quang tia X (XRF)",
+    "tech": "Đo nhanh các nguyên tố từ Na đến U",
+    "unit": "Mẫu",
+    "price": 1500000,
+    "duration": "24 Giờ làm việc",
+    "category": "chemical"
+  },
+  {
+    "id": 2,
+    "name": "Phân tích quang phổ ICP-MS",
+    "tech": "Định lượng nguyên tố lượng vết đến mức ppb (đất hiếm, vàng, bạch kim)",
+    "unit": "Mẫu",
+    "price": 3500000,
+    "duration": "3 - 5 Ngày làm việc",
+    "category": "chemical"
+  },
+  {
+    "id": 3,
+    "name": "Phân tích độ ẩm & độ mất khi nung (LOI)",
+    "tech": "Xác định lượng nước liên kết và chất hữu cơ bay hơi",
+    "unit": "Mẫu",
+    "price": 300000,
+    "duration": "24 Giờ làm việc",
+    "category": "chemical"
+  },
+  {
+    "id": 4,
+    "name": "Đo độ cứng khoáng vật (Mohs Scale)",
+    "tech": "Xác định độ cứng bằng dụng cụ tiêu chuẩn Mohs",
+    "unit": "Mẫu",
+    "price": 400000,
+    "duration": "24 Giờ làm việc",
+    "category": "physical"
+  },
+  {
+    "id": 5,
+    "name": "Thử nghiệm tuyển nổi / tuyển từ quy mô phòng thí nghiệm",
+    "tech": "Đánh giá khả năng làm giàu quặng bằng hóa chất tuyển hoặc từ tính",
+    "unit": "Mẫu (tối đa 5kg)",
+    "price": 5000000,
+    "duration": "7 - 10 Ngày làm việc",
+    "category": "physical"
+  }
+]

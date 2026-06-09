@@ -1,0 +1,9 @@
+'use strict';
+
+/**
+ * project router
+ */
+
+const { factories } = require('@strapi/strapi');
+
+module.exports = factories.createCoreRouter('api::project.project');

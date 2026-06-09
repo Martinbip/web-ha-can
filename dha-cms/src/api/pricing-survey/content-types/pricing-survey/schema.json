@@ -1,0 +1,27 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pricing_surveys",
+  "info": {
+    "singularName": "pricing-survey",
+    "pluralName": "pricing-surveys",
+    "displayName": "Biểu Phí Khảo Sát",
+    "description": "Các dịch vụ khảo sát địa chất mỏ và thực địa"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "price": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    }
+  }
+}

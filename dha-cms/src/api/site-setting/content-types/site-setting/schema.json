@@ -1,0 +1,50 @@
+{
+  "kind": "singleType",
+  "collectionName": "site_settings",
+  "info": {
+    "singularName": "site-setting",
+    "pluralName": "site-settings",
+    "displayName": "Cài Đặt Website",
+    "description": "Thông tin liên hệ, mạng xã hội và cấu hình hiển thị trên website"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "hotline": {
+      "type": "string",
+      "required": true
+    },
+    "hotline2": {
+      "type": "string"
+    },
+    "email": {
+      "type": "email",
+      "required": true
+    },
+    "address": {
+      "type": "text",
+      "required": true
+    },
+    "office_name": {
+      "type": "string",
+      "default": "Văn Phòng Hà Nội"
+    },
+    "tax_code": {
+      "type": "string"
+    },
+    "facebook_url": {
+      "type": "string"
+    },
+    "youtube_url": {
+      "type": "string"
+    },
+    "zalo_url": {
+      "type": "string"
+    },
+    "twitter_url": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dự Tính Chi Phí Mẫu Quặng - Kim Loại Màu DHA</title>
+    <meta name="description" content="Công cụ tính toán dự toán chi phí mẫu quặng khoáng sản và biểu phí phân tích kiểm nghiệm hóa học.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" href="assets/phong_thi_nghiem_dha.png">
+
+    <!-- Open Graph / Facebook / Zalo -->
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="vi_VN">
+    <meta property="og:site_name" content="Kim Loại Màu DHA">
+    <meta property="og:url" content="https://kimloaimaudha.com.vn/estimator.html">
+    <meta property="og:title" content="Dự Tính Chi Phí Mẫu Quặng Trực Tuyến - Kim Loại Màu DHA">
+    <meta property="og:description" content="Công cụ tự động tính giá mẫu quặng: Đồng, Sắt, Bauxit, Đất Hiếm. Tính phí phân tích XRF/ICP-MS và đóng gói bảo quản chỉ trong vài giây.">
+    <meta property="og:image" content="https://kimloaimaudha.com.vn/assets/phong_thi_nghiem_dha.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Phòng thí nghiệm phân tích mẫu quặng của Kim Loại Màu DHA">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Dự Tính Chi Phí Mẫu Quặng Trực Tuyến - Kim Loại Màu DHA">
+    <meta name="twitter:description" content="Công cụ tự động tính giá mẫu quặng: Đồng, Sắt, Bauxit, Đất Hiếm. Tính phí phân tích XRF/ICP-MS và đóng gói bảo quản.">
+    <meta name="twitter:image" content="https://kimloaimaudha.com.vn/assets/phong_thi_nghiem_dha.png">
+
+    <!-- Google Fonts: Barlow Condensed for Headings, Be Vietnam Pro for Body -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Floating Navigation Bar -->
+    <header class="navbar-wrapper">
+        <nav class="navbar container" id="navbar">
+            <a href="index.html" class="logo">
+                <span class="logo-accent">DHA</span><span class="logo-text">MINERALS</span>
+            </a>
+            
+            <div class="nav-links-wrapper">
+                <ul class="nav-links">
+                    <li><a href="index.html" class="nav-link" id="nav-home">Trang Chủ</a></li>
+                    <li><a href="index.html#services" class="nav-link" id="nav-services">Dịch Vụ</a></li>
+                    <li><a href="products.html" class="nav-link" id="nav-products">Sản Phẩm</a></li>
+                    <li><a href="estimator.html" class="nav-link active" id="nav-estimator">Dự Tính Chi Phí</a></li>
+                    <li><a href="pricing.html" class="nav-link" id="nav-pricing">Báo Giá</a></li>
+                    <li><a href="index.html#workflow" class="nav-link" id="nav-workflow">Quy Trình</a></li>
+                    <li><a href="projects.html" class="nav-link" id="nav-projects">Dự Án</a></li>
+                    <li><a href="contact.html" class="nav-link" id="nav-contact">Liên Hệ</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-actions">
+                <!-- CTA Button -->
+                <a href="contact.html" class="btn-nav-cta">Yêu Cầu Mẫu</a>
+            </div>
+
+            <!-- Hamburger Button for Mobile -->
+            <button class="menu-toggle" id="menu-toggle" aria-label="Mở Menu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+        </nav>
+    </header>
+
+    <main style="padding-top: 100px;">
+        <!-- Construction Estimator Section -->
+        <section id="estimator" class="estimator-section section-padding">
+            <div class="container">
+                <div class="section-header text-center">
+                    <span class="section-tag font-accent">HỆ THỐNG ĐỊNH GIÁ</span>
+                    <h2 class="section-title">DỰ TÍNH CHI PHÍ MẪU</h2>
+                    <p class="section-desc">Nhập các thông số bên dưới để ước lượng tổng chi phí mẫu quặng và phí dịch vụ phân tích.</p>
+                </div>
+
+                <div class="estimator-grid">
+                    <!-- Calculator Inputs -->
+                    <div class="estimator-form-card">
+                        <form id="calculator-form" class="estimator-form">
+                            <div class="form-group-row">
+                                <div class="form-group">
+                                    <label for="est-group" class="form-label">Nhóm Khoáng Sản</label>
+                                    <select id="est-group" class="input form-select cursor-pointer">
+                                        <option value="color-metal" selected>Kim Loại Màu (Đồng, Nhôm...)</option>
+                                        <option value="black-metal">Kim Loại Đen (Sắt, Mangan...)</option>
+                                        <option value="rare-earth">Đất Hiếm & Khoáng Sản Quý</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="est-ore" class="form-label">Loại Quặng Cụ Thể</label>
+                                    <select id="est-ore" class="input form-select cursor-pointer">
+                                        <option value="copper-ore" selected>Quặng Đồng Chalcopyrite</option>
+                                        <option value="bauxite-ore">Quặng Bauxit Nhôm</option>
+                                        <option value="lead-zinc-ore">Quặng Chì - Kẽm Galena</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group-row">
+                                <div class="form-group">
+                                    <label for="est-weight" class="form-label">Khối Lượng Mẫu (kg)</label>
+                                    <input type="number" id="est-weight" class="input" min="1" max="10000" value="10" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="est-method" class="form-label">Yêu Cầu Kiểm Định</label>
+                                    <select id="est-method" class="input form-select cursor-pointer">
+                                        <option value="raw" selected>Chỉ Cung Cấp Mẫu Thô (Không phân tích)</option>
+                                        <option value="xrf">Phân Tích Thành Phần XRF Nhanh</option>
+                                        <option value="icp">Phân Tích Quang Phổ ICP-MS Cực Nhạy</option>
+                                        <option value="flotation">Thử Nghiệm Tuyển Khoáng Mẫu Thử</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group-row">
+                                <div class="form-group">
+                                    <label for="est-pack" class="form-label">Quy Cách Đóng Gói</label>
+                                    <select id="est-pack" class="input form-select cursor-pointer">
+                                        <option value="box" selected>Hộp Nhựa Kín Khí Tiêu Chuẩn</option>
+                                        <option value="bag">Bao Chống Ẩm Chuyên Dụng</option>
+                                        <option value="barrel">Thùng Phuy Bảo Quản Đặc Biệt</option>
+                                    </select>
+                                </div>
+                                <div class="form-group check-group">
+                                    <label class="checkbox-container cursor-pointer" style="margin-top: 25px;">
+                                        <input type="checkbox" id="est-permit" checked>
+                                        <span class="checkmark"></span>
+                                        Yêu cầu giấy chứng nhận nguồn gốc (CO)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary w-full cursor-pointer btn-submit-calculator">Tính Toán Báo Giá</button>
+                        </form>
+                    </div>
+
+                    <!-- Calculator Results -->
+                    <div class="estimator-result-card" id="estimator-result">
+                        <div class="result-placeholder" id="result-placeholder">
+                            <svg class="result-icon-big" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 11h.01M12 7h.01M15 11h.01M4 19V5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <p class="result-placeholder-text">Chọn "Tính Toán Báo Giá" để xem chi tiết dự toán.</p>
+                        </div>
+                        
+                        <div class="result-content hidden" id="result-content">
+                            <h3 class="result-title font-accent">KẾT QUẢ DỰ TOÁN MẪU</h3>
+                            
+                            <div class="result-summary">
+                                <span class="summary-label">Tổng Chi Phí Ước Tính:</span>
+                                <span class="summary-value" id="result-total">0đ</span>
+                            </div>
+                            
+                            <hr class="result-divider">
+                            
+                            <div class="result-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Tổng khối lượng mẫu đặt hàng:</span>
+                                    <span class="detail-value text-bold" id="result-total-weight">0 kg</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Đơn giá quặng trung bình:</span>
+                                    <span class="detail-value text-bold" id="result-avg-price">0 đ/kg</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Chi phí quặng mẫu thô tạm tính:</span>
+                                    <span class="detail-value" id="result-ore-cost">0đ</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Phí phân tích hóa học kiểm định:</span>
+                                    <span class="detail-value" id="result-analysis-cost">0đ</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Chi phí đóng gói & chứng nhận:</span>
+                                    <span class="detail-value" id="result-pack-cost">0đ</span>
+                                </div>
+                                <div class="detail-item text-green hidden">
+                                    <span class="detail-label text-bold">Chiết khấu số lượng lớn:</span>
+                                    <span class="detail-value text-bold" id="result-discount">0đ</span>
+                                </div>
+                            </div>
+                            
+                            <div class="result-note">
+                                <p><strong>Lưu ý:</strong> Báo giá dựa trên biểu phí cơ sở tại phòng phân tích của DHA. Chi phí thực tế có thể thay đổi tùy thuộc vào chỉ số giá kim loại thế giới (LME) và các chỉ tiêu phân tích bổ sung.</p>
+                            </div>
+                            
+                            <a href="contact.html" class="btn-primary w-full text-center display-block cursor-pointer">Yêu Cầu Lấy Mẫu Thử Nghiệm</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <a href="index.html" class="logo">
+                    <span class="logo-accent">DHA</span><span class="logo-text text-white">MINERALS</span>
+                </a>
+                <p class="brand-bio">
+                    Công ty Cổ phần Kim Loại Màu DHA cung cấp mẫu quặng tiêu chuẩn phục vụ phân tích hóa học và khảo nghiệm luyện kim công nghiệp tại Việt Nam.
+                </p>
+                <div class="footer-socials">
+                    <a href="#" class="social-link" aria-label="Facebook">
+                        <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z"/></svg>
+                    </a>
+                    <a href="#" class="social-link" aria-label="YouTube">
+                        <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23.498 6.163a3.003 3.003 0 00-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.507a3.003 3.003 0 00-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 002.11 2.11c1.87.507 9.388.507 9.388.507s7.518 0 9.388-.507a3.003 3.003 0 002.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    </a>
+                    <a href="#" class="social-link" aria-label="Twitter/X">
+                        <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="footer-links">
+                <h4 class="footer-title font-accent">DANH MỤC SẢN PHẨM</h4>
+                <ul class="footer-list">
+                    <li><a href="products.html?filter=color-metal">Quặng Mẫu Đồng</a></li>
+                    <li><a href="products.html?filter=black-metal">Quặng Mẫu Sắt</a></li>
+                    <li><a href="products.html?filter=color-metal">Mẫu Bauxit Nhôm</a></li>
+                    <li><a href="products.html?filter=rare-earth">Mẫu Khoáng Sản Quý</a></li>
+                    <li><a href="products.html?filter=rare-earth">Đất Hiếm Tiêu Chuẩn</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4 class="footer-title font-accent">HỖ TRỢ KHÁCH HÀNG</h4>
+                <ul class="footer-list">
+                    <li><a href="estimator.html">Dự Tính Giá Đơn Hàng</a></li>
+                    <li><a href="pricing.html">Đơn Giá Phân Tích</a></li>
+                    <li><a href="index.html#workflow">Quy Trình Giao Nhận</a></li>
+                    <li><a href="contact.html">Đăng Ký Khảo Sát Mỏ</a></li>
+                    <li><a href="#">Quy Chuẩn Bảo Quản</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-info">
+                <h4 class="footer-title font-accent">VĂN PHÒNG HÀ NỘI</h4>
+                <p class="footer-info-text site-address">Tòa nhà Landmark 72, Đường Phạm Hùng, Nam Từ Liêm, Hà Nội</p>
+                <p class="footer-info-text">Hotline: <span class="site-hotline">098.123.4567</span></p>
+                <p class="footer-info-text site-tax-code">MST: 0108789999 do Sở KH&ĐT TP. Hà Nội cấp.</p>
+            </div>
+        </div>
+        
+        <div class="footer-bottom text-center">
+            <div class="container">
+                <p class="copyright">&copy; 2026 Kim Loại Màu DHA. Bản quyền được bảo lưu.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scroll To Top Button -->
+    <button class="scroll-top-btn hidden" id="scroll-top-btn" aria-label="Lên đầu trang">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+    </button>
+
+    <script src="app.js"></script>
+</body>
+</html>

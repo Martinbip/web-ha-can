@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "name": "Kiểm Định Hàm Lượng Đồng Trong Chalcopyrite",
+    "location": "Mỏ Đồng Sin Quyền, Lào Cai",
+    "scale": "250 mẫu quặng thô",
+    "method": "Quang phổ ICP-MS",
+    "value": "Hàm lượng trung bình: 28.6% Cu",
+    "image": "assets/quang_mau_dong.png"
+  },
+  {
+    "id": 2,
+    "name": "Đánh Giá & Phân Tích Chất Lượng Quặng Bauxit Nhôm",
+    "location": "Nhà Máy Alumin Lâm Đồng",
+    "scale": "1,500 tấn quặng mẫu",
+    "method": "Huỳnh quang XRF nhanh",
+    "value": "Al2O3 > 48.2%",
+    "image": "assets/phong_thi_nghiem_dha.png"
+  },
+  {
+    "id": 3,
+    "name": "Khảo Sát Địa Chất & Dựng Mô Hình Trữ Lượng Magnetite 3D",
+    "location": "Mỏ Sắt Thạch Khê, Hà Tĩnh",
+    "scale": "18 lỗ khoan thăm dò lấy mẫu lõi địa chất địa hình sâu 150m",
+    "method": "Lập bản đồ phân bố vỉa quặng",
+    "value": "",
+    "image": "assets/mo_quang_ha_nam.png"
+  }
+]

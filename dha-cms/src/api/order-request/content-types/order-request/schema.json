@@ -1,0 +1,51 @@
+{
+  "kind": "collectionType",
+  "collectionName": "order_requests",
+  "info": {
+    "singularName": "order-request",
+    "pluralName": "order-requests",
+    "displayName": "Đơn Đặt Mẫu",
+    "description": "Đơn đặt mua quặng mẫu từ khách hàng qua website"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "product_name": {
+      "type": "string",
+      "required": true
+    },
+    "product_uid": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string",
+      "required": true
+    },
+    "phone": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "email"
+    },
+    "quantity": {
+      "type": "decimal",
+      "required": true
+    },
+    "unit": {
+      "type": "enumeration",
+      "enum": ["kg", "tan"],
+      "default": "kg"
+    },
+    "note": {
+      "type": "text"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["new", "processing", "done"],
+      "default": "new"
+    }
+  }
+}

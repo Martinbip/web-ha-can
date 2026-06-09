@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pricing_analyses",
+  "info": {
+    "singularName": "pricing-analysis",
+    "pluralName": "pricing-analyses",
+    "displayName": "Biểu Phí Phân Tích",
+    "description": "Các hạng mục phân tích hóa học và kiểm định vật lý"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "tech": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string",
+      "default": "Mẫu"
+    },
+    "price": {
+      "type": "integer",
+      "required": true
+    },
+    "duration": {
+      "type": "string"
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": [
+        "chemical",
+        "physical"
+      ],
+      "required": true
+    }
+  }
+}

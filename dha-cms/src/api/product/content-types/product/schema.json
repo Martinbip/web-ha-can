@@ -1,0 +1,60 @@
+{
+  "kind": "collectionType",
+  "collectionName": "products",
+  "info": {
+    "singularName": "product",
+    "pluralName": "products",
+    "displayName": "Sản Phẩm Quặng Mẫu",
+    "description": "Danh mục quặng mẫu tiêu chuẩn bán cho phòng thí nghiệm và luyện kim"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "uid": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "group": {
+      "type": "enumeration",
+      "enum": ["color-metal", "black-metal", "rare-earth"],
+      "required": true
+    },
+    "grade": {
+      "type": "string"
+    },
+    "origin": {
+      "type": "string"
+    },
+    "price": {
+      "type": "integer"
+    },
+    "description": {
+      "type": "text"
+    },
+    "specs": {
+      "type": "json"
+    },
+    "image": {
+      "type": "string"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "in_stock": {
+      "type": "boolean",
+      "default": true
+    },
+    "sort_order": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

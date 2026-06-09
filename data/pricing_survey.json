@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Ngày công Kỹ sư địa chất khảo sát mỏ",
+    "price": "2.500.000đ / ngày",
+    "description": "Đến thực địa mỏ để đo đạc sơ bộ, đánh giá cấu trúc địa tầng và chỉ định vị trí lấy mẫu lõi."
+  },
+  {
+    "id": 2,
+    "name": "Khoan thăm dò lấy mẫu lõi địa chất mỏ",
+    "price": "1.800.000đ / mét khoan",
+    "description": "Sử dụng giàn khoan lấy mẫu lõi chuyên dụng, thu hồi mẫu lõi địa chất phục vụ xác định chiều dày vỉa quặng."
+  },
+  {
+    "id": 3,
+    "name": "Đo vẽ bản đồ địa chất & mô hình hóa 3D mỏ quặng",
+    "price": "15.000.000đ / báo cáo",
+    "description": "Đo vẽ bằng thiết bị GPS/Flycam chuyên dụng, lập bản đồ phân bố khoáng vật và dựng mô hình trữ lượng 3D."
+  }
+]

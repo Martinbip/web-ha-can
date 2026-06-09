@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#0F172A"/>
+  <!-- Gold accent top bar -->
+  <rect x="4" y="3" width="24" height="3" rx="1.5" fill="#C5A059"/>
+  <!-- "D" lettermark — bold, readable at 16px -->
+  <text x="16" y="25"
+        text-anchor="middle"
+        fill="#C5A059"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="19"
+        font-weight="700">D</text>
+</svg>
