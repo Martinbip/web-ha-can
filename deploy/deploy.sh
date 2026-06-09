@@ -22,7 +22,7 @@ git commit -m "deploy: $(date '+%Y-%m-%d %H:%M')" || echo "(Không có thay đ�
 git push origin main
 
 echo "==> [2/3] VPS kéo code từ GitHub..."
-$SSH bash << REMOTE
+$SSH bash << 'REMOTE'
 set -e
 
 echo "▸ Pull code mới..."
