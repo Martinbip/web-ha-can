@@ -36,10 +36,18 @@ rsync -a --delete \
     --exclude="design-system/" \
     --exclude=".git/" \
     /var/www/web-ha-can/ \
-    $FRONTEND_DIR/
+    /var/www/smadesign.vn/
+
+echo "▸ Sync dha-cms (giữ .env và .tmp)..."
+rsync -a \
+    --exclude=".env" \
+    --exclude=".tmp/" \
+    --exclude="node_modules/" \
+    /var/www/web-ha-can/dha-cms/ \
+    /var/www/dha-cms/
 
 echo "▸ Cài npm dependencies Strapi..."
-cd $CMS_DIR
+cd /var/www/dha-cms
 npm ci --omit=dev
 
 echo "▸ Build Strapi admin..."
