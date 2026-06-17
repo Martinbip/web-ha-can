@@ -6,7 +6,7 @@
 set -e
 
 # ── Cấu hình ──────────────────────────────────────────────
-VPS_USER="deploy"
+VPS_USER="root"
 VPS_HOST="183.81.39.14"
 VPS_PORT="22"
 FRONTEND_DIR="/var/www/smadesign.vn"
