@@ -1,48 +1,47 @@
 [
   {
-    "id": 1,
-    "title": "Quặng Sắt Magnetite",
-    "price": 80000,
-    "unit": "/ kg",
-    "description": "Mẫu quặng sắt từ tính cao, hàm lượng Fe2O3 > 65% phù hợp cho nhà máy thép và thí nghiệm luyện kim.",
-    "specs": [
-      "Độ tinh khiết: > 65% Fe2O3",
-      "Cấu trúc vật lý: Nguyên khối / Hạt mịn",
-      "Nguồn gốc: Mỏ Thạch Khê, Hà Tĩnh",
-      "Bao bì: Bao PE chống ẩm 5kg/10kg",
-      "Độ ẩm: < 2%",
-      "Chứng chỉ: Kiểm định XRF đi kèm"
-    ],
-    "popular": false
+    "metal": "Đồng (Cu)",
+    "lme_price": "$9,850",
+    "domestic_price": "215.000đ",
+    "unit": "/kg",
+    "change": "+3.5%",
+    "trend": "up",
+    "updated": "2026-06-12"
   },
   {
-    "id": 2,
-    "title": "Quặng Đồng Chalcopyrite",
-    "price": 180000,
-    "unit": "/ kg",
-    "description": "Mẫu chalcopyrite ánh kim vàng cực đẹp, hàm lượng Cu > 28%. Lý tưởng cho các thí nghiệm đo quang phổ và tuyển quặng mẫu.",
-    "specs": [
-      "Độ tinh khiết: > 28% Cu",
-      "Cấu trúc vật lý: Tinh thể khối lập phương",
-      "Nguồn gốc: Mỏ đồng Sin Quyền, Lào Cai",
-      "Bao bì: Hộp nhựa kín khí chống oxy hóa",
-      "Chứng chỉ: Đầy đủ chứng chỉ phân tích ICP"
-    ],
-    "popular": true
+    "metal": "Nhôm (Al)",
+    "lme_price": "$2,580",
+    "domestic_price": "58.500đ",
+    "unit": "/kg",
+    "change": "-1.2%",
+    "trend": "down",
+    "updated": "2026-06-12"
   },
   {
-    "id": 3,
-    "title": "Mẫu Đất Hiếm Bastnasite",
-    "price": 650000,
-    "unit": "/ kg",
-    "description": "Khoáng vật fluorocarbonate chứa các nguyên tố đất hiếm nhóm lantan (Ce, La, Y). Độ hiếm cao.",
-    "specs": [
-      "Độ tinh khiết: Tổng oxit đất hiếm (TREO) > 12%",
-      "Dạng vật lý: Bột siêu mịn",
-      "Nguồn gốc: Mỏ Đông Pao, Lai Châu",
-      "Bao bì: Hộp thủy tinh bảo ôn chuyên dụng",
-      "Chứng chỉ: Chứng chỉ đo quang phổ ICP-MS"
-    ],
-    "popular": false
+    "metal": "Chì (Pb)",
+    "lme_price": "$2,210",
+    "domestic_price": "52.000đ",
+    "unit": "/kg",
+    "change": "+0.8%",
+    "trend": "up",
+    "updated": "2026-06-12"
+  },
+  {
+    "metal": "Thiếc (Sn)",
+    "lme_price": "$33,100",
+    "domestic_price": "720.000đ",
+    "unit": "/kg",
+    "change": "+5.2%",
+    "trend": "up",
+    "updated": "2026-06-12"
+  },
+  {
+    "metal": "Kẽm (Zn)",
+    "lme_price": "$2,850",
+    "domestic_price": "68.000đ",
+    "unit": "/kg",
+    "change": "+1.1%",
+    "trend": "up",
+    "updated": "2026-06-12"
   }
 ]

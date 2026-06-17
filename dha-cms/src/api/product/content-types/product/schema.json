@@ -23,7 +23,7 @@
     },
     "group": {
       "type": "enumeration",
-      "enum": ["color-metal", "black-metal", "rare-earth"],
+      "enum": ["dong", "nhom", "chi", "thiec", "quang"],
       "required": true
     },
     "grade": {

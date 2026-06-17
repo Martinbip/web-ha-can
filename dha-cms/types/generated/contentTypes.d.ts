@@ -594,31 +594,32 @@ export interface ApiPricingPackagePricingPackage
   extends Struct.CollectionTypeSchema {
   collectionName: 'pricing_packages';
   info: {
-    description: 'C\u00E1c g\u00F3i qu\u1EB7ng m\u1EABu th\u00F4 v\u00E0 tinh k\u00E8m gi\u00E1 b\u00E1n tr\u00EAn trang B\u00E1o Gi\u00E1';
-    displayName: 'G\u00F3i Qu\u1EB7ng M\u1EABu';
+    description: 'B\u1EA3ng gi\u00E1 kim lo\u1EA1i th\u1ECB tr\u01B0\u1EDDng c\u1EADp nh\u1EADt theo LME v\u00E0 n\u1ED9i \u0111\u1ECBa';
+    displayName: 'Gi\u00E1 Kim Lo\u1EA1i Th\u1ECB Tr\u01B0\u1EDDng';
     pluralName: 'pricing-packages';
     singularName: 'pricing-package';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
+    change: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
+    domestic_price: Schema.Attribute.String;
+    lme_price: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'api::pricing-package.pricing-package'
     > &
       Schema.Attribute.Private;
-    popular: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    price: Schema.Attribute.Integer & Schema.Attribute.Required;
+    metal: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
-    specs: Schema.Attribute.JSON;
-    title: Schema.Attribute.String & Schema.Attribute.Required;
-    unit: Schema.Attribute.String & Schema.Attribute.DefaultTo<'/ kg'>;
+    trend: Schema.Attribute.Enumeration<['up', 'down']>;
+    unit: Schema.Attribute.String & Schema.Attribute.DefaultTo<'/kg'>;
+    updated: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -676,7 +677,7 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
     featured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     grade: Schema.Attribute.String;
     group: Schema.Attribute.Enumeration<
-      ['color-metal', 'black-metal', 'rare-earth']
+      ['dong', 'nhom', 'chi', 'thiec', 'quang']
     > &
       Schema.Attribute.Required;
     image: Schema.Attribute.String;

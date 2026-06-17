@@ -28,21 +28,58 @@
     <meta name="twitter:description" content="Liên hệ DHA để đặt mua mẫu quặng tiêu chuẩn, đăng ký tư vấn địa chất mỏ và báo giá phân tích hóa học.">
     <meta name="twitter:image" content="https://kimloaimaudha.com.vn/assets/phong_thi_nghiem_dha.png">
 
-    <!-- Google Fonts: Barlow Condensed for Headings, Be Vietnam Pro for Body -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <!-- Floating Navigation Bar -->
-    <header class="navbar-wrapper">
-        <nav class="navbar container" id="navbar">
-            <a href="index.html" class="logo">
-                <span class="logo-accent">DHA</span><span class="logo-text">MINERALS</span>
-            </a>
-            
+    <!-- Top Header Bar -->
+    <div class="top-header">
+        <div class="container">
+            <div class="top-header-left">
+                <span><i>📞</i> Hotline: <a href="tel:0981234567" class="site-hotline" id="btn-hotline">098.123.4567</a></span>
+            </div>
+            <div class="top-header-right">
+                <a href="#" aria-label="Facebook">Facebook</a>
+                <a href="#" aria-label="Zalo">Zalo</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Site Header -->
+    <header class="site-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-area">
+                    <a href="index.html" class="logo">
+                        <span class="logo-accent">DHA</span><span class="logo-text">MINERALS</span>
+                    </a>
+                
+                    <button class="menu-toggle" id="menu-toggle" aria-label="Mở Menu">
+                        <span class="bar"></span>
+                        <span class="bar"></span>
+                        <span class="bar"></span>
+                    </button>
+                </div>
+                <div class="header-search">
+                    <form action="products.html" method="get" class="search-form">
+                        <input type="text" name="q" placeholder="Tìm kiếm sản phẩm...">
+                        <button type="submit">Tìm</button>
+                    </form>
+                </div>
+                <div class="header-contact">
+                    <a href="contact.html" class="btn-contact">Liên Hệ Báo Giá</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation -->
+    <nav class="main-navigation navbar-wrapper" id="navbar">
+        <div class="container">
             <div class="nav-links-wrapper">
                 <ul class="nav-links">
                     <li><a href="index.html" class="nav-link" id="nav-home">Trang Chủ</a></li>
@@ -55,82 +92,62 @@
                     <li><a href="contact.html" class="nav-link active" id="nav-contact">Liên Hệ</a></li>
                 </ul>
             </div>
+        </div>
+    </nav>
 
-            <div class="nav-actions">
-                <!-- CTA Button -->
-                <a href="contact.html" class="btn-nav-cta">Yêu Cầu Mẫu</a>
-            </div>
-
-            <!-- Hamburger Button for Mobile -->
-            <button class="menu-toggle" id="menu-toggle" aria-label="Mở Menu">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </button>
-        </nav>
-    </header>
-
-    <main style="padding-top: 100px;">
-        <!-- Contact Section -->
-        <section id="contact" class="contact-section section-padding">
+    <main>
+        <section class="section-padding">
             <div class="container">
-                <div class="section-header text-center">
-                    <span class="section-tag font-accent">YÊU CẦU DỊCH VỤ</span>
-                    <h2 class="section-title">LIÊN HỆ KHẢO SÁT & ĐẶT MẪU QUẶNG</h2>
-                    <p class="section-desc">Nhập thông tin yêu cầu. Kỹ sư địa chất sẽ liên hệ lại trong vòng 30 phút.</p>
-                </div>
+                <h1 class="heading text-center">Liên Hệ Báo Giá</h1>
+                <p class="section-desc text-center">Gọi hotline để nhận báo giá nhanh nhất. Hoặc gửi yêu cầu qua form.</p>
 
                 <div class="contact-grid">
                     <!-- Contact Information -->
                     <div class="contact-info-card">
-                        <h3 class="info-title font-accent">THÔNG TIN LIÊN HỆ</h3>
-                        <p class="info-desc">Công ty Cổ phần Kim Loại Màu DHA (DHAMinerals) cung cấp mẫu quặng và khảo sát địa chất thực địa.</p>
+                        <h3 class="info-title font-accent">GỌI NGAY ĐỂ NHẬN BÁO GIÁ</h3>
+
+                        <!-- Big Hotline -->
+                        <a href="tel:0981234567" class="contact-big-hotline">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                            <span class="site-hotline">098.123.4567</span>
+                        </a>
                         
                         <div class="info-details">
                             <div class="info-item">
                                 <div class="info-icon">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                 </div>
                                 <div class="info-content">
-                                    <h4 class="info-label">Trụ sở văn phòng:</h4>
-                                    <p class="info-text site-address">Tòa nhà Keangnam Landmark 72, Đường Phạm Hùng, Nam Từ Liêm, Hà Nội</p>
+                                    <h4 class="info-label">Văn phòng:</h4>
+                                    <p class="info-text site-address">Tòa nhà Landmark 72, Đường Phạm Hùng, Nam Từ Liêm, Hà Nội</p>
                                 </div>
                             </div>
 
                             <div class="info-item">
                                 <div class="info-icon">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 </div>
                                 <div class="info-content">
-                                    <h4 class="info-label">Hotline tư vấn 24/7:</h4>
-                                    <p class="info-text"><a href="tel:0981234567" class="hover-underline site-hotline">098.123.4567</a> / <a href="tel:0243123456" class="hover-underline site-hotline2">024.3123.456</a></p>
-                                </div>
-                            </div>
-
-                            <div class="info-item">
-                                <div class="info-icon">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                </div>
-                                <div class="info-content">
-                                    <h4 class="info-label">Email tiếp nhận:</h4>
+                                    <h4 class="info-label">Email:</h4>
                                     <p class="info-text"><a href="mailto:lienhe@kimloaimaudha.com.vn" class="hover-underline site-email">lienhe@kimloaimaudha.com.vn</a></p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Brand Promises -->
                         <div class="promises-box">
-                            <h4 class="promises-title">TIÊU CHUẨN DỊCH VỤ:</h4>
+                            <h4 class="promises-title">CAM KẾT:</h4>
                             <ul class="promises-list">
-                                <li>✨ Độ tinh khiết mẫu xác định theo kết quả đo phổ nghiệm.</li>
-                                <li>✨ Đền bù hai lần giá trị nếu phát hiện mẫu quặng sai nguồn gốc công bố.</li>
-                                <li>✨ Đóng gói hút chân không, chai kín khí bảo quản nguyên vẹn cấu trúc.</li>
-                                <li>✨ Bàn giao kết quả phân tích XRF/ICP đúng thời gian quy định.</li>
+                                <li>✨ Phản hồi báo giá trong 30 phút.</li>
+                                <li>✨ Giá cạnh tranh, minh bạch theo thị trường.</li>
+                                <li>✨ Giao hàng nhanh, đúng chất lượng cam kết.</li>
+                                <li>✨ Hỗ trợ kiểm tra hàm lượng trước giao hàng.</li>
                             </ul>
                         </div>
                     </div>
 
-                    <!-- Contact Form -->
+                    <!-- Contact Form (simplified) -->
                     <div class="contact-form-card">
                         <form id="contact-form" class="contact-form">
                             <div class="form-group">
@@ -138,38 +155,17 @@
                                 <input type="text" id="contact-name" class="input" placeholder="Ví dụ: Nguyễn Văn A" required>
                             </div>
                             
-                            <div class="form-group-row">
-                                <div class="form-group">
-                                    <label for="contact-phone" class="form-label">Số Điện Thoại <span class="required">*</span></label>
-                                    <input type="tel" id="contact-phone" class="input" placeholder="Ví dụ: 0981234567" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="contact-email" class="form-label">Email (Không bắt buộc)</label>
-                                    <input type="email" id="contact-email" class="input" placeholder="Vi dụ: mail@cua-ban.com">
-                                </div>
+                            <div class="form-group">
+                                <label for="contact-phone" class="form-label">Số Điện Thoại <span class="required">*</span></label>
+                                <input type="tel" id="contact-phone" class="input" placeholder="Ví dụ: 0981234567" required>
                             </div>
 
                             <div class="form-group">
-                                <label for="contact-address" class="form-label">Đơn Vị Công Tác / Địa Chỉ Nhận Mẫu <span class="required">*</span></label>
-                                <input type="text" id="contact-address" class="input" placeholder="Ví dụ: Viện địa chất mỏ / Số 10 Đường Cầu Giấy, Hà Nội" required>
+                                <label for="contact-message" class="form-label">Nội Dung Yêu Cầu</label>
+                                <textarea id="contact-message" class="input" rows="4" placeholder="Mô tả sản phẩm cần mua, số lượng, địa điểm giao hàng..."></textarea>
                             </div>
 
-                            <div class="form-group">
-                                <label for="contact-service" class="form-label">Dịch Vụ Cần Tư Vấn</label>
-                                <select id="contact-service" class="input form-select cursor-pointer">
-                                    <option value="cung-cap-mau">Cung Cấp Mẫu Quặng Tiêu Chuẩn</option>
-                                    <option value="phan-tich-lab">Phân Tích & Kiểm Định Thành Phần</option>
-                                    <option value="khao-sat-mo">Khảo Sát Địa Chất & Thăm Dò Mỏ</option>
-                                    <option value="tuyen-khoang">Thử Nghiệm Tuyển Khoáng Mẫu Thử</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="contact-message" class="form-label">Yêu Cầu Chi Tiết</label>
-                                <textarea id="contact-message" class="input" rows="4" placeholder="Ghi rõ loại mẫu quặng, khối lượng, chỉ tiêu phân tích cần thực hiện..."></textarea>
-                            </div>
-
-                            <button type="submit" class="btn-primary w-full cursor-pointer btn-submit-contact">Gửi Yêu Cầu Tư Vấn</button>
+                            <button type="submit" class="btn-primary w-full cursor-pointer btn-submit-contact">Gửi Yêu Cầu Báo Giá</button>
                         </form>
                     </div>
                 </div>
@@ -177,85 +173,81 @@
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
-        <div class="container footer-grid">
-            <div class="footer-brand">
-                <a href="index.html" class="logo">
-                    <span class="logo-accent">DHA</span><span class="logo-text text-white">MINERALS</span>
-                </a>
-                <p class="brand-bio">
-                    Công ty Cổ phần Kim Loại Màu DHA cung cấp mẫu quặng tiêu chuẩn phục vụ phân tích hóa học và khảo nghiệm luyện kim công nghiệp tại Việt Nam.
-                </p>
-                <div class="footer-socials">
-                    <a href="#" class="social-link" aria-label="Facebook">
-                        <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z"/></svg>
-                    </a>
-                    <a href="#" class="social-link" aria-label="YouTube">
-                        <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23.498 6.163a3.003 3.003 0 00-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.507a3.003 3.003 0 00-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 002.11 2.11c1.87.507 9.388.507 9.388.507s7.518 0 9.388-.507a3.003 3.003 0 002.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                    </a>
-                    <a href="#" class="social-link" aria-label="Twitter/X">
-                        <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    </a>
+        <div class="footer-widgets">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-brand">
+                        <a href="index.html" class="logo">
+                            <span class="logo-accent">DHA</span><span class="logo-text text-white">MINERALS</span>
+                        </a>
+                        <p class="brand-bio">
+                            DHA Minerals chuyên cung cấp kim loại màu: Đồng, Nhôm, Chì, Thiếc và Quặng khoáng sản. Giá cả cạnh tranh, minh bạch, uy tín hàng đầu Việt Nam.
+                        </p>
+                        <div class="footer-socials">
+                            <a href="#" class="social-link" aria-label="Facebook">
+                                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z"/></svg>
+                            </a>
+                            <a href="#" class="social-link" aria-label="Zalo">
+                                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="footer-links">
+                        <h4 class="footer-title">SẢN PHẨM</h4>
+                        <ul class="footer-list">
+                            <li><a href="products.html?filter=dong">Đồng (Copper)</a></li>
+                            <li><a href="products.html?filter=nhom">Nhôm (Aluminum)</a></li>
+                            <li><a href="products.html?filter=chi">Chì (Lead)</a></li>
+                            <li><a href="products.html?filter=thiec">Thiếc (Tin)</a></li>
+                            <li><a href="products.html?filter=quang">Quặng (Ore)</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-links">
+                        <h4 class="footer-title">LIÊN KẾT</h4>
+                        <ul class="footer-list">
+                            <li><a href="index.html#about">Giới Thiệu</a></li>
+                            <li><a href="pricing.html">Bảng Giá Thị Trường</a></li>
+                            <li><a href="news.html">Tin Tức Thị Trường</a></li>
+                            <li><a href="contact.html">Liên Hệ Báo Giá</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-info">
+                        <h4 class="footer-title">LIÊN HỆ</h4>
+                        <p class="footer-info-text site-address">Tòa nhà Landmark 72, Đường Phạm Hùng, Nam Từ Liêm, Hà Nội</p>
+                        <p class="footer-info-text">Hotline: <a href="tel:0981234567" class="site-hotline hover-underline">098.123.4567</a></p>
+                        <p class="footer-info-text">Email: <a href="mailto:lienhe@kimloaimaudha.com.vn" class="site-email hover-underline">lienhe@kimloaimaudha.com.vn</a></p>
+                        <p class="footer-info-text site-tax-code">MST: 0108789999 do Sở KH&ĐT TP. Hà Nội cấp.</p>
+                    </div>
                 </div>
             </div>
-            
-            <div class="footer-links">
-                <h4 class="footer-title font-accent">DANH MỤC SẢN PHẨM</h4>
-                <ul class="footer-list">
-                    <li><a href="products.html?filter=color-metal">Quặng Mẫu Đồng</a></li>
-                    <li><a href="products.html?filter=black-metal">Quặng Mẫu Sắt</a></li>
-                    <li><a href="products.html?filter=color-metal">Mẫu Bauxit Nhôm</a></li>
-                    <li><a href="products.html?filter=rare-earth">Mẫu Khoáng Sản Quý</a></li>
-                    <li><a href="products.html?filter=rare-earth">Đất Hiếm Tiêu Chuẩn</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-links">
-                <h4 class="footer-title font-accent">HỖ TRỢ KHÁCH HÀNG</h4>
-                <ul class="footer-list">
-                    <li><a href="estimator.html">Dự Tính Giá Đơn Hàng</a></li>
-                    <li><a href="pricing.html">Đơn Giá Phân Tích</a></li>
-                    <li><a href="index.html#workflow">Quy Trình Giao Nhận</a></li>
-                    <li><a href="contact.html">Đăng Ký Khảo Sát Mỏ</a></li>
-                    <li><a href="#">Quy Chuẩn Bảo Quản</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-info">
-                <h4 class="footer-title font-accent">VĂN PHÒNG HÀ NỘI</h4>
-                <p class="footer-info-text site-address">Tòa nhà Landmark 72, Đường Phạm Hùng, Nam Từ Liêm, Hà Nội</p>
-                <p class="footer-info-text">Hotline: <span class="site-hotline">098.123.4567</span></p>
-                <p class="footer-info-text site-tax-code">MST: 0108789999 do Sở KH&ĐT TP. Hà Nội cấp.</p>
-            </div>
         </div>
-        
-        <div class="footer-bottom text-center">
+
+        <div class="site-info">
             <div class="container">
-                <p class="copyright">&copy; 2026 Kim Loại Màu DHA. Bản quyền được bảo lưu.</p>
+                <p>&copy; 2026 DHA Minerals. Bản quyền được bảo lưu.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Form Submission Success Modal -->
+    <!-- Form Success Modal -->
     <div class="modal-overlay hidden" id="success-modal">
         <div class="modal text-center">
             <div class="success-icon-box">
-                <svg class="success-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+                <svg class="success-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
-            <h3 class="modal-title font-accent">GỬI YÊU CẦU THÀNH CÔNG!</h3>
-            <p class="modal-desc">
-                Yêu cầu đã được chuyển tới bộ phận kỹ sư địa chất. Bộ phận kỹ thuật sẽ gọi lại trực tiếp qua số điện thoại cung cấp trong vòng 30 phút.
-            </p>
-            <button class="btn-primary cursor-pointer w-full modal-close-btn" id="modal-close">Đóng Cửa Sổ</button>
+            <h3 class="modal-title font-accent">ĐÃ GỬI THÀNH CÔNG!</h3>
+            <p class="modal-desc">Chúng tôi sẽ liên hệ lại qua số điện thoại bạn cung cấp trong vòng 30 phút.</p>
+            <button class="btn-primary cursor-pointer w-full modal-close-btn" id="modal-close">Đóng</button>
         </div>
     </div>
 
     <!-- Scroll To Top Button -->
     <button class="scroll-top-btn hidden" id="scroll-top-btn" aria-label="Lên đầu trang">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
         </svg>
     </button>

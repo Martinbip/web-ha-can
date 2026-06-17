@@ -50,20 +50,15 @@ module.exports = {
     };
 
     // --- Seed Collection Types ---
-    await seedCollection('api::ore.ore', 'ores.json', (item) => ({
-      uid: item.uid,
-      name: item.name,
-      group: item.group,
-      price: item.price,
-    }));
 
     await seedCollection('api::pricing-package.pricing-package', 'pricing_packages.json', (item) => ({
-      title: item.title,
-      price: item.price,
+      metal: item.metal,
+      lme_price: item.lme_price,
+      domestic_price: item.domestic_price,
       unit: item.unit,
-      description: item.description,
-      specs: item.specs,
-      popular: item.popular,
+      change: item.change,
+      trend: item.trend,
+      updated: item.updated,
     }));
 
     await seedCollection('api::pricing-analysis.pricing-analysis', 'pricing_analysis.json', (item) => ({
@@ -120,8 +115,6 @@ module.exports = {
           // Read access for display content types
           'api::project.project.find',
           'api::project.project.findOne',
-          'api::ore.ore.find',
-          'api::ore.ore.findOne',
           'api::pricing-package.pricing-package.find',
           'api::pricing-package.pricing-package.findOne',
           'api::pricing-analysis.pricing-analysis.find',

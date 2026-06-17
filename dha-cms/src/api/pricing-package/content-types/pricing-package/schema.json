@@ -4,35 +4,40 @@
   "info": {
     "singularName": "pricing-package",
     "pluralName": "pricing-packages",
-    "displayName": "Gói Quặng Mẫu",
-    "description": "Các gói quặng mẫu thô và tinh kèm giá bán trên trang Báo Giá"
+    "displayName": "Giá Kim Loại Thị Trường",
+    "description": "Bảng giá kim loại thị trường cập nhật theo LME và nội địa"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
-    "title": {
+    "metal": {
       "type": "string",
       "required": true
     },
-    "price": {
-      "type": "integer",
-      "required": true
+    "lme_price": {
+      "type": "string"
+    },
+    "domestic_price": {
+      "type": "string"
     },
     "unit": {
       "type": "string",
-      "default": "/ kg"
+      "default": "/kg"
     },
-    "description": {
-      "type": "text"
+    "change": {
+      "type": "string"
     },
-    "specs": {
-      "type": "json"
+    "trend": {
+      "type": "enumeration",
+      "enum": [
+        "up",
+        "down"
+      ]
     },
-    "popular": {
-      "type": "boolean",
-      "default": false
+    "updated": {
+      "type": "string"
     }
   }
 }
