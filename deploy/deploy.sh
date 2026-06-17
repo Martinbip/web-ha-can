@@ -25,9 +25,12 @@ echo "==> [2/3] VPS kéo code từ GitHub..."
 $SSH bash << 'REMOTE'
 set -e
 
-echo "▸ Pull code mới..."
 cd /var/www/web-ha-can
+
+echo "▸ Pull code mới..."
+BEFORE=$(git rev-parse HEAD)
 git pull origin main
+AFTER=$(git rev-parse HEAD)
 
 echo "▸ Sync frontend..."
 rsync -a --delete \
@@ -38,28 +41,29 @@ rsync -a --delete \
     /var/www/web-ha-can/ \
     /var/www/smadesign.vn/
 
-echo "▸ Sync dha-cms (giữ .env và .tmp)..."
-rsync -a \
-    --exclude=".env" \
-    --exclude=".tmp/" \
-    --exclude="node_modules/" \
-    /var/www/web-ha-can/dha-cms/ \
-    /var/www/dha-cms/
+# Chỉ đụng tới Strapi khi thư mục dha-cms/ thật sự có thay đổi
+if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^dha-cms/'; then
+    echo "▸ Phát hiện thay đổi CMS → sync + build Strapi..."
+    rsync -a \
+        --exclude=".env" \
+        --exclude=".tmp/" \
+        --exclude="node_modules/" \
+        /var/www/web-ha-can/dha-cms/ \
+        /var/www/dha-cms/
 
-echo "▸ Cài npm dependencies Strapi..."
-cd /var/www/dha-cms
-npm ci --omit=dev
+    cd /var/www/dha-cms
+    npm ci --omit=dev
+    NODE_ENV=production npm run build
 
-echo "▸ Build Strapi admin..."
-NODE_ENV=production npm run build
-
-echo "▸ Restart Strapi..."
-if pm2 describe dha-cms > /dev/null 2>&1; then
-    pm2 restart dha-cms
+    if pm2 describe dha-cms > /dev/null 2>&1; then
+        pm2 restart dha-cms
+    else
+        pm2 start /var/www/web-ha-can/deploy/ecosystem.config.js
+    fi
+    pm2 save
 else
-    pm2 start /var/www/web-ha-can/deploy/ecosystem.config.js
+    echo "▸ CMS không đổi → bỏ qua build Strapi (deploy nhanh)."
 fi
-pm2 save
 REMOTE
 
 echo ""
