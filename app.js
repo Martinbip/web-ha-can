@@ -111,7 +111,7 @@ function injectSiteComponents() {
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                 Gọi Ngay
             </a>
-            <a href="contact.html" class="mobile-cta-quote">Yêu Cầu Báo Giá</a>
+            <a href="/contact" class="mobile-cta-quote">Yêu Cầu Báo Giá</a>
         `;
         document.body.appendChild(bar);
     }
@@ -474,7 +474,7 @@ function buildProductCard(product) {
     const imgAlt      = escapeHtml(product.name || 'Sản phẩm');
 
     return `
-        <a href="product-detail.html?id=${encodeURIComponent(product.uid)}" class="product-card card"
+        <a href="/product-detail?id=${encodeURIComponent(product.uid)}" class="product-card card"
              data-group="${escapeHtml(product.group)}"
              data-featured="${product.featured ? 'true' : 'false'}"
              data-stock="${inStock ? 'in' : 'out'}"
@@ -614,7 +614,7 @@ async function initProductDetailPage() {
     const productId = urlParams.get('id');
 
     if (!productId) {
-        contentEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;"><p>Không tìm thấy sản phẩm. <a href="products.html">Quay lại danh mục</a>.</p></div>';
+        contentEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;"><p>Không tìm thấy sản phẩm. <a href="/products">Quay lại danh mục</a>.</p></div>';
         return;
     }
 
@@ -623,7 +623,7 @@ async function initProductDetailPage() {
         const product = products.find(p => p.uid === productId);
 
         if (!product) {
-            contentEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;"><p>Không tìm thấy sản phẩm. <a href="products.html">Quay lại danh mục</a>.</p></div>';
+            contentEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;"><p>Không tìm thấy sản phẩm. <a href="/products">Quay lại danh mục</a>.</p></div>';
             return;
         }
 
@@ -669,7 +669,7 @@ async function initProductDetailPage() {
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;margin-right:6px;" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                         Liên Hệ Nhận Báo Giá
                     </a>
-                    <a href="products.html?filter=${encodeURIComponent(product.group)}" class="btn-secondary" style="flex:1;text-align:center;">← Quay Lại Danh Mục</a>
+                    <a href="/products?filter=${encodeURIComponent(product.group)}" class="btn-secondary" style="flex:1;text-align:center;">← Quay Lại Danh Mục</a>
                 </div>
             </div>
         `;
