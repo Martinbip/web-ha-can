@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kimloaimaudha.com.vn/sitemap.xml
