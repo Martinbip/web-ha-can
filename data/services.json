@@ -1,0 +1,41 @@
+[
+  {
+    "title": "Mẫu Quặng Tiêu Chuẩn",
+    "description": "Phân phối mẫu quặng thô và quặng tinh: Đồng, Sắt, Chì-Kẽm, Bauxit nhôm và các khoáng vật đất hiếm đạt chuẩn phân tích phòng thí nghiệm.",
+    "features": [
+      "Mẫu tự nhiên kèm chứng chỉ phân tích XRF/ICP-MS",
+      "Đóng gói bảo quản bảo ôn khí trơ chống oxy hóa",
+      "Cấp chứng nhận xuất xứ (C/O) và hóa đơn thương mại"
+    ],
+    "icon_svg": "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+    "link_url": "/estimator",
+    "link_text": "Tính giá quặng mẫu →",
+    "sort_order": 0
+  },
+  {
+    "title": "Phân Tích & Kiểm Định Hóa Học",
+    "description": "Xác định hàm lượng nguyên tố và thành phần hóa học bằng công nghệ huỳnh quang tia X (XRF) và quang phổ ICP-MS.",
+    "features": [
+      "Giới hạn phát hiện nguyên tố đạt mức phần triệu (ppm)",
+      "Thử nghiệm tuyển tách khoáng sản quy mô thí nghiệm",
+      "Xuất báo cáo nhiễu xạ tia X và hàm lượng oxit"
+    ],
+    "icon_svg": "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z",
+    "link_url": "/pricing",
+    "link_text": "Xem biểu phí đo đạc →",
+    "sort_order": 1
+  },
+  {
+    "title": "Thăm Dò Địa Chất Mỏ",
+    "description": "Thực hiện khoan lấy mẫu lõi địa chất, vẽ bản đồ cấu trúc, ước lượng trữ lượng mỏ và hoàn thiện hồ sơ cấp phép khai thác.",
+    "features": [
+      "Đội ngũ kỹ sư địa chất mỏ trên 15 năm kinh nghiệm",
+      "Khoan khảo sát thực địa bằng thiết bị tự động",
+      "Lập báo cáo trữ lượng đạt chuẩn quy chuẩn quốc gia"
+    ],
+    "icon_svg": "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
+    "link_url": "/contact",
+    "link_text": "Liên hệ tư vấn mỏ →",
+    "sort_order": 2
+  }
+]

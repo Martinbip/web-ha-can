@@ -1,0 +1,23 @@
+[
+  {
+    "subtitle": "Địa Điểm Khai Thác",
+    "title": "Mỏ Lộ Thiên — Hà Nam",
+    "image_url": "assets/mo_quang_ha_nam.png",
+    "image_alt": "Mỏ quặng lộ thiên Hà Nam — khảo sát địa chất thực địa",
+    "sort_order": 0
+  },
+  {
+    "subtitle": "Cơ Sở Phân Tích",
+    "title": "Phòng Thí Nghiệm DHA",
+    "image_url": "assets/phong_thi_nghiem_dha.png",
+    "image_alt": "Phòng thí nghiệm phân tích XRF/ICP-MS của DHA",
+    "sort_order": 1
+  },
+  {
+    "subtitle": "Mẫu Tiêu Chuẩn",
+    "title": "Chalcopyrite — Cu >28%",
+    "image_url": "assets/quang_mau_dong.png",
+    "image_alt": "Quặng đồng chalcopyrite mẫu tiêu chuẩn Cu >28%",
+    "sort_order": 2
+  }
+]

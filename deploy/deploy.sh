@@ -65,11 +65,10 @@ else
     echo "▸ CMS không đổi → bỏ qua build Strapi (deploy nhanh)."
 fi
 
-# Cập nhật nginx config nếu có thay đổi
+# Cảnh báo nếu nginx config thay đổi (không tự ghi đè vì Certbot quản lý SSL)
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^deploy/nginx.conf'; then
-    echo "▸ Phát hiện thay đổi nginx.conf → cập nhật & reload..."
-    cp /var/www/web-ha-can/deploy/nginx.conf /etc/nginx/sites-available/smadesign.vn
-    nginx -t && systemctl reload nginx
+    echo "⚠️  deploy/nginx.conf đã thay đổi — cần cập nhật thủ công trên server:"
+    echo "   Xem diff: diff /var/www/web-ha-can/deploy/nginx.conf /etc/nginx/sites-available/smadesign.vn"
 fi
 REMOTE
 

@@ -38,32 +38,6 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-// ── Estimator pricing data ──
-const ESTIMATOR_PRICES = {
-    ore: {
-        'copper-ore': { name: 'Quặng Đồng Chalcopyrite', price: 85000 },
-        'bauxite-ore': { name: 'Quặng Bauxit Nhôm', price: 35000 },
-        'lead-zinc-ore': { name: 'Quặng Chì - Kẽm Galena', price: 65000 },
-        'iron-ore': { name: 'Quặng Sắt Magnetite', price: 25000 },
-        'manganese-ore': { name: 'Quặng Mangan', price: 45000 },
-        'rare-earth-ore': { name: 'Quặng Đất Hiếm', price: 320000 },
-    },
-    analysis: {
-        'raw': { name: 'Không phân tích', price: 0 },
-        'xrf': { name: 'Phân tích XRF', price: 1500000 },
-        'icp': { name: 'Phân tích ICP-MS', price: 3500000 },
-        'flotation': { name: 'Thử nghiệm tuyển khoáng', price: 8000000 },
-    },
-    packaging: {
-        'box': { name: 'Hộp nhựa kín khí', price: 150000 },
-        'bag': { name: 'Bao chống ẩm', price: 250000 },
-        'barrel': { name: 'Thùng phuy bảo quản', price: 800000 },
-    },
-    permit: 500000,
-    bulkDiscountThreshold: 500,
-    bulkDiscountRate: 0.05,
-};
-
 // ======================================================
 // CMS DATA FETCHING
 // ======================================================
@@ -86,13 +60,33 @@ async function fetchFromCMS(endpoint, fallbackFile) {
     }
 }
 
+async function fetchSingleFromCMS(endpoint, fallbackFile) {
+    try {
+        const res = await fetch(`${CMS_API}/${endpoint}`, { signal: AbortSignal.timeout(5000) });
+        if (!res.ok) throw new Error(`CMS responded ${res.status}`);
+        const json = await res.json();
+        const d = json.data;
+        return d?.attributes || d || null;
+    } catch {
+        console.warn(`[CMS] Fallback to ${fallbackFile}`);
+        try {
+            const res = await fetch(fallbackFile);
+            if (!res.ok) throw new Error(`Fallback ${res.status}`);
+            return await res.json();
+        } catch (e) {
+            console.error(`[CMS] Both sources failed:`, e);
+            return null;
+        }
+    }
+}
+
 // ======================================================
 // DOMContentLoaded — MAIN ENTRY
 // ======================================================
 document.addEventListener('DOMContentLoaded', () => {
     initNavbar();
     initScrollTopButton();
-    initHeroCarousel();
+    initSiteSettings();
     initDynamicContent();
     initContactForm();
     initEstimator();
@@ -100,14 +94,207 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ======================================================
-// INJECT SITE COMPONENTS (mobile CTA bar, robots/sitemap notice)
+// SITE SETTINGS — Dynamic header, footer, contact info
+// ======================================================
+async function initSiteSettings() {
+    const settings = await fetchSingleFromCMS('site-setting', 'data/site_setting.json');
+    if (!settings) return;
+
+    window.__siteSettings = settings;
+
+    const hotlineClean = (settings.hotline || '').replace(/[.\s\-()]/g, '');
+
+    document.querySelectorAll('.site-hotline').forEach(el => {
+        el.textContent = settings.hotline || '';
+        if (el.tagName === 'A') el.href = `tel:${hotlineClean}`;
+    });
+
+    document.querySelectorAll('a[href^="tel:"]').forEach(el => {
+        if (hotlineClean) el.href = `tel:${hotlineClean}`;
+    });
+
+    document.querySelectorAll('.site-email').forEach(el => {
+        el.textContent = settings.email || '';
+        if (el.tagName === 'A') el.href = `mailto:${settings.email}`;
+    });
+
+    document.querySelectorAll('.site-address').forEach(el => {
+        el.textContent = settings.address || '';
+    });
+
+    document.querySelectorAll('.site-office-name').forEach(el => {
+        el.textContent = settings.office_name || '';
+    });
+
+    document.querySelectorAll('.site-tax-code').forEach(el => {
+        if (settings.tax_code) {
+            el.textContent = `MST: ${settings.tax_code} do Sở KH&ĐT TP. Hà Nội cấp.`;
+        }
+    });
+
+    document.querySelectorAll('.site-brand-bio').forEach(el => {
+        el.textContent = settings.brand_bio || '';
+    });
+
+    if (settings.facebook_url) {
+        document.querySelectorAll('a[aria-label="Facebook"]').forEach(el => {
+            el.href = settings.facebook_url;
+        });
+    }
+    if (settings.zalo_url) {
+        document.querySelectorAll('a[aria-label="Zalo"]').forEach(el => {
+            el.href = settings.zalo_url;
+        });
+    }
+
+    initHeroContent(settings);
+    initHeroSlides();
+}
+
+// ======================================================
+// HERO — Dynamic content from site settings
+// ======================================================
+function initHeroContent(settings) {
+    const tagline = document.querySelector('.hero-tagline');
+    if (tagline && settings.hero_tagline) tagline.textContent = settings.hero_tagline;
+
+    const title = document.querySelector('.hero-title');
+    if (title && settings.hero_title) title.innerHTML = escapeHtml(settings.hero_title).replace(/\n/g, '<br>');
+
+    const desc = document.querySelector('.hero-description');
+    if (desc && settings.hero_description) desc.textContent = settings.hero_description;
+
+    const certLabel = document.querySelector('.spec-badge-label');
+    if (certLabel && settings.hero_cert_label) certLabel.textContent = settings.hero_cert_label;
+
+    const certValue = document.querySelector('.spec-badge-value');
+    if (certValue && settings.hero_cert_value) certValue.textContent = settings.hero_cert_value;
+
+    const stats = document.querySelectorAll('.stat-item');
+    if (stats.length >= 3) {
+        if (settings.stat1_number) {
+            stats[0].querySelector('.stat-number').textContent = settings.stat1_number;
+            stats[0].querySelector('.stat-label').textContent = settings.stat1_label || '';
+        }
+        if (settings.stat2_number) {
+            stats[1].querySelector('.stat-number').textContent = settings.stat2_number;
+            stats[1].querySelector('.stat-label').textContent = settings.stat2_label || '';
+        }
+        if (settings.stat3_number) {
+            stats[2].querySelector('.stat-number').textContent = settings.stat3_number;
+            stats[2].querySelector('.stat-label').textContent = settings.stat3_label || '';
+        }
+    }
+}
+
+// ======================================================
+// HERO SLIDES — Dynamic carousel from CMS
+// ======================================================
+async function initHeroSlides() {
+    const carousel = document.getElementById('hero-carousel');
+    if (!carousel) return;
+
+    const slides = await fetchFromCMS('hero-slides?sort=sort_order:asc', 'data/hero_slides.json');
+    if (!slides || slides.length === 0) {
+        initHeroCarousel();
+        return;
+    }
+
+    const slidesContainer = carousel.querySelectorAll('.carousel-slide');
+    const dotsContainer = carousel.querySelector('.carousel-dots');
+
+    let slidesHtml = '';
+    let dotsHtml = '';
+    slides.forEach((slide, i) => {
+        slidesHtml += `
+            <div class="carousel-slide ${i === 0 ? 'active' : ''}" data-slide="${i}">
+                <img src="${escapeHtml(slide.image_url)}"
+                     alt="${escapeHtml(slide.image_alt || slide.title)}"
+                     ${i > 0 ? 'loading="lazy"' : ''}>
+                <div class="hero-image-overlay">
+                    <span class="overlay-subtitle">${escapeHtml(slide.subtitle)}</span>
+                    <span class="overlay-title">${escapeHtml(slide.title)}</span>
+                </div>
+            </div>
+        `;
+        dotsHtml += `<button class="carousel-dot ${i === 0 ? 'active' : ''}" data-dot="${i}" aria-label="Ảnh ${i + 1}" aria-selected="${i === 0 ? 'true' : 'false'}"></button>`;
+    });
+
+    slidesContainer.forEach(s => s.remove());
+    if (dotsContainer) dotsContainer.remove();
+
+    const badge = carousel.querySelector('.hero-spec-badge');
+    if (badge) {
+        badge.insertAdjacentHTML('beforebegin', slidesHtml);
+    } else {
+        carousel.insertAdjacentHTML('afterbegin', slidesHtml);
+    }
+
+    carousel.insertAdjacentHTML('beforeend', `<div class="carousel-dots" role="tablist" aria-label="Chọn ảnh">${dotsHtml}</div>`);
+
+    initHeroCarousel();
+}
+
+// ======================================================
+// HERO CAROUSEL (unchanged logic)
+// ======================================================
+function initHeroCarousel() {
+    const carousel = document.getElementById('hero-carousel');
+    if (!carousel) return;
+
+    const slides = carousel.querySelectorAll('.carousel-slide');
+    const dots   = carousel.querySelectorAll('.carousel-dot');
+    if (slides.length < 2) return;
+
+    let current = 0;
+    let timer;
+    let paused = false;
+
+    function goTo(idx) {
+        slides[current].classList.remove('active');
+        dots[current]?.classList.remove('active');
+        dots[current]?.setAttribute('aria-selected', 'false');
+
+        current = (idx + slides.length) % slides.length;
+
+        slides[current].classList.add('active');
+        dots[current]?.classList.add('active');
+        dots[current]?.setAttribute('aria-selected', 'true');
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        if (!paused) {
+            timer = setInterval(() => goTo(current + 1), 5000);
+        }
+    }
+
+    dots.forEach(dot => {
+        dot.addEventListener('click', () => {
+            goTo(parseInt(dot.dataset.dot, 10));
+            startTimer();
+        });
+    });
+
+    carousel.addEventListener('mouseenter', () => { paused = true; clearInterval(timer); });
+    carousel.addEventListener('mouseleave', () => { paused = false; startTimer(); });
+    carousel.addEventListener('focusin', () => { paused = true; clearInterval(timer); });
+    carousel.addEventListener('focusout', () => { paused = false; startTimer(); });
+
+    startTimer();
+}
+
+// ======================================================
+// INJECT SITE COMPONENTS (mobile CTA bar)
 // ======================================================
 function injectSiteComponents() {
     if (window.innerWidth <= 768 && !document.querySelector('.mobile-cta-bar')) {
+        const settings = window.__siteSettings;
+        const hotline = settings?.hotline ? settings.hotline.replace(/[.\s\-()]/g, '') : '0981234567';
         const bar = document.createElement('div');
         bar.className = 'mobile-cta-bar';
         bar.innerHTML = `
-            <a href="tel:0981234567" class="mobile-cta-call">
+            <a href="tel:${escapeHtml(hotline)}" class="mobile-cta-call">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                 Gọi Ngay
             </a>
@@ -204,65 +391,70 @@ function initScrollTopButton() {
 }
 
 // ======================================================
-// HERO CAROUSEL
-// ======================================================
-function initHeroCarousel() {
-    const carousel = document.getElementById('hero-carousel');
-    if (!carousel) return;
-
-    const slides = carousel.querySelectorAll('.carousel-slide');
-    const dots   = carousel.querySelectorAll('.carousel-dot');
-    if (slides.length < 2) return;
-
-    let current = 0;
-    let timer;
-    let paused = false;
-
-    function goTo(idx) {
-        slides[current].classList.remove('active');
-        dots[current]?.classList.remove('active');
-        dots[current]?.setAttribute('aria-selected', 'false');
-
-        current = (idx + slides.length) % slides.length;
-
-        slides[current].classList.add('active');
-        dots[current]?.classList.add('active');
-        dots[current]?.setAttribute('aria-selected', 'true');
-    }
-
-    function startTimer() {
-        clearInterval(timer);
-        if (!paused) {
-            timer = setInterval(() => goTo(current + 1), 5000);
-        }
-    }
-
-    dots.forEach(dot => {
-        dot.addEventListener('click', () => {
-            goTo(parseInt(dot.dataset.dot, 10));
-            startTimer();
-        });
-    });
-
-    carousel.addEventListener('mouseenter', () => { paused = true; clearInterval(timer); });
-    carousel.addEventListener('mouseleave', () => { paused = false; startTimer(); });
-    carousel.addEventListener('focusin', () => { paused = true; clearInterval(timer); });
-    carousel.addEventListener('focusout', () => { paused = false; startTimer(); });
-
-    startTimer();
-}
-
-// ======================================================
 // DYNAMIC CONTENT ROUTING
 // ======================================================
 function initDynamicContent() {
     initMarketPrices();
     initHomeNewsPreview();
     initHomeProducts();
+    initServicesSection();
+    initWorkflowSection();
     initProductsPage();
     initProductDetailPage();
     initNewsPage();
     initProjectsPage();
+}
+
+// ======================================================
+// SERVICES SECTION — Dynamic from CMS
+// ======================================================
+async function initServicesSection() {
+    const grid = document.querySelector('.services-grid');
+    if (!grid) return;
+
+    const services = await fetchFromCMS('services?sort=sort_order:asc', 'data/services.json');
+    if (!services || services.length === 0) return;
+
+    grid.innerHTML = services.map(svc => {
+        const features = (Array.isArray(svc.features) ? svc.features : [])
+            .map(f => `<li><span class="bullet">✓</span> ${escapeHtml(f)}</li>`)
+            .join('');
+
+        return `
+            <div class="service-card card cursor-pointer" onclick="location.href='${escapeHtml(svc.link_url || '#')}'">
+                <div class="service-icon-box">
+                    <svg class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="${escapeHtml(svc.icon_svg || '')}"></path>
+                    </svg>
+                </div>
+                <h3 class="service-title">${escapeHtml(svc.title)}</h3>
+                <p class="service-description">${escapeHtml(svc.description)}</p>
+                ${features ? `<ul class="service-features">${features}</ul>` : ''}
+                ${svc.link_text ? `<span class="service-link font-accent">${escapeHtml(svc.link_text)}</span>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// ======================================================
+// WORKFLOW SECTION — Dynamic from CMS
+// ======================================================
+async function initWorkflowSection() {
+    const timeline = document.querySelector('.workflow-timeline');
+    if (!timeline) return;
+
+    const steps = await fetchFromCMS('workflow-steps?sort=sort_order:asc', 'data/workflow_steps.json');
+    if (!steps || steps.length === 0) return;
+
+    timeline.innerHTML = steps.map(step => `
+        <div class="timeline-item">
+            <div class="timeline-badge font-accent">${String(step.step_number).padStart(2, '0')}</div>
+            <div class="timeline-panel card">
+                <h3 class="step-title">${escapeHtml(step.title)}</h3>
+                <p class="step-desc">${escapeHtml(step.description)}</p>
+            </div>
+        </div>
+    `).join('');
 }
 
 // ======================================================
@@ -635,6 +827,8 @@ async function initProductDetailPage() {
         const groupCss   = GROUP_CSS[product.group] || '';
         const imgSrc = escapeHtml(product.image || 'assets/phong_thi_nghiem_dha.png');
         const inStock = product.in_stock !== false;
+        const settings = window.__siteSettings;
+        const hotline = settings?.hotline ? settings.hotline.replace(/[.\s\-()]/g, '') : '0981234567';
 
         let specsHtml = '';
         if (Array.isArray(product.specs)) {
@@ -665,7 +859,7 @@ async function initProductDetailPage() {
                     <ul class="detail-specs-list">${specsHtml}</ul>
                 </div>` : ''}
                 <div class="detail-cta-box">
-                    <a href="tel:0981234567" class="btn-primary" style="flex:1;text-align:center;">
+                    <a href="tel:${escapeHtml(hotline)}" class="btn-primary" style="flex:1;text-align:center;">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;margin-right:6px;" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                         Liên Hệ Nhận Báo Giá
                     </a>
@@ -705,7 +899,7 @@ function initContactForm() {
         }
 
         try {
-            const res = await fetch(`${CMS_API}/contact-submissions`, {
+            const res = await fetch(`${CMS_API}/contact-inquiries`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ data: { name, phone, message } }),
@@ -744,61 +938,109 @@ function initContactForm() {
 }
 
 // ======================================================
-// ESTIMATOR (Cost Calculator)
+// ESTIMATOR (Cost Calculator) — Dynamic from CMS
 // ======================================================
-function initEstimator() {
+async function initEstimator() {
     const form = document.getElementById('calculator-form');
     if (!form) return;
 
     const groupSelect = document.getElementById('est-group');
     const oreSelect = document.getElementById('est-ore');
 
-    const oreOptions = {
-        'color-metal': [
-            { value: 'copper-ore', label: 'Quặng Đồng Chalcopyrite' },
-            { value: 'bauxite-ore', label: 'Quặng Bauxit Nhôm' },
-            { value: 'lead-zinc-ore', label: 'Quặng Chì - Kẽm Galena' },
-        ],
-        'black-metal': [
-            { value: 'iron-ore', label: 'Quặng Sắt Magnetite' },
-            { value: 'manganese-ore', label: 'Quặng Mangan' },
-        ],
-        'rare-earth': [
-            { value: 'rare-earth-ore', label: 'Quặng Đất Hiếm' },
-        ],
-    };
+    const [ores, analyses] = await Promise.all([
+        fetchFromCMS('ores?sort=name:asc', 'data/products.json'),
+        fetchFromCMS('pricing-analyses', 'data/pricing_analysis.json'),
+    ]);
+
+    const oreByGroup = {};
+    (ores || []).forEach(ore => {
+        const g = ore.group || 'other';
+        if (!oreByGroup[g]) oreByGroup[g] = [];
+        oreByGroup[g].push(ore);
+    });
+
+    const analysisMethods = (analyses || []).filter(a => a.price > 0);
+
+    const methodSelect = document.getElementById('est-method');
+    if (methodSelect && analysisMethods.length > 0) {
+        const rawOption = '<option value="raw">Không phân tích</option>';
+        const dynamicOptions = analysisMethods.map(a =>
+            `<option value="${escapeHtml(a.id || a.name)}" data-price="${a.price}">${escapeHtml(a.name)} — ${(a.price || 0).toLocaleString('vi-VN')}đ</option>`
+        ).join('');
+        methodSelect.innerHTML = rawOption + dynamicOptions;
+    }
 
     if (groupSelect && oreSelect) {
-        groupSelect.addEventListener('change', () => {
-            const options = oreOptions[groupSelect.value] || [];
-            oreSelect.innerHTML = options.map(o =>
-                `<option value="${o.value}">${o.label}</option>`
-            ).join('');
-        });
+        const updateOreOptions = () => {
+            const group = groupSelect.value;
+            const groupOres = oreByGroup[group] || [];
+
+            if (groupOres.length > 0) {
+                oreSelect.innerHTML = groupOres.map(o =>
+                    `<option value="${escapeHtml(o.uid || o.name)}" data-price="${o.base_price || 0}">${escapeHtml(o.name)}</option>`
+                ).join('');
+            } else {
+                const fallbackOptions = {
+                    'color-metal': [
+                        { value: 'copper-ore', label: 'Quặng Đồng Chalcopyrite', price: 85000 },
+                        { value: 'bauxite-ore', label: 'Quặng Bauxit Nhôm', price: 35000 },
+                        { value: 'lead-zinc-ore', label: 'Quặng Chì - Kẽm Galena', price: 65000 },
+                    ],
+                    'black-metal': [
+                        { value: 'iron-ore', label: 'Quặng Sắt Magnetite', price: 25000 },
+                        { value: 'manganese-ore', label: 'Quặng Mangan', price: 45000 },
+                    ],
+                    'rare-earth': [
+                        { value: 'rare-earth-ore', label: 'Quặng Đất Hiếm', price: 320000 },
+                    ],
+                };
+                const options = fallbackOptions[group] || [];
+                oreSelect.innerHTML = options.map(o =>
+                    `<option value="${o.value}" data-price="${o.price}">${o.label}</option>`
+                ).join('');
+            }
+        };
+
+        groupSelect.addEventListener('change', updateOreOptions);
+        updateOreOptions();
     }
+
+    const FALLBACK_PRICES = {
+        packaging: {
+            'box': { name: 'Hộp nhựa kín khí', price: 150000 },
+            'bag': { name: 'Bao chống ẩm', price: 250000 },
+            'barrel': { name: 'Thùng phuy bảo quản', price: 800000 },
+        },
+        permit: 500000,
+        bulkDiscountThreshold: 500,
+        bulkDiscountRate: 0.05,
+    };
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
 
-        const oreType = oreSelect?.value || 'copper-ore';
+        const selectedOre = oreSelect?.options[oreSelect.selectedIndex];
+        const orePrice = parseInt(selectedOre?.dataset?.price) || 85000;
+
         const weight = Math.max(1, parseInt(document.getElementById('est-weight')?.value) || 10);
-        const method = document.getElementById('est-method')?.value || 'raw';
+
+        const selectedMethod = methodSelect?.options[methodSelect.selectedIndex];
+        const analysisPrice = selectedMethod?.value === 'raw' ? 0 : (parseInt(selectedMethod?.dataset?.price) || 0);
+
         const pack = document.getElementById('est-pack')?.value || 'box';
         const needPermit = document.getElementById('est-permit')?.checked ?? false;
 
-        const oreInfo = ESTIMATOR_PRICES.ore[oreType] || ESTIMATOR_PRICES.ore['copper-ore'];
-        const analysisInfo = ESTIMATOR_PRICES.analysis[method] || ESTIMATOR_PRICES.analysis['raw'];
-        const packInfo = ESTIMATOR_PRICES.packaging[pack] || ESTIMATOR_PRICES.packaging['box'];
+        const packInfo = FALLBACK_PRICES.packaging[pack] || FALLBACK_PRICES.packaging['box'];
 
-        const oreCost = oreInfo.price * weight;
-        const analysisCost = analysisInfo.price;
-        const packCost = packInfo.price + (needPermit ? ESTIMATOR_PRICES.permit : 0);
+        const oreCost = orePrice * weight;
+        const analysisCost = analysisPrice;
+        const packCost = packInfo.price + (needPermit ? FALLBACK_PRICES.permit : 0);
 
         let subtotal = oreCost + analysisCost + packCost;
         let discount = 0;
 
-        if (weight >= ESTIMATOR_PRICES.bulkDiscountThreshold) {
-            discount = Math.round(oreCost * ESTIMATOR_PRICES.bulkDiscountRate);
+        if (weight >= FALLBACK_PRICES.bulkDiscountThreshold) {
+            discount = Math.round(oreCost * FALLBACK_PRICES.bulkDiscountRate);
             subtotal -= discount;
         }
 
@@ -806,7 +1048,7 @@ function initEstimator() {
 
         document.getElementById('result-total').textContent = fmt(subtotal);
         document.getElementById('result-total-weight').textContent = weight + ' kg';
-        document.getElementById('result-avg-price').textContent = fmt(oreInfo.price) + '/kg';
+        document.getElementById('result-avg-price').textContent = fmt(orePrice) + '/kg';
         document.getElementById('result-ore-cost').textContent = fmt(oreCost);
         document.getElementById('result-analysis-cost').textContent = fmt(analysisCost);
         document.getElementById('result-pack-cost').textContent = fmt(packCost);

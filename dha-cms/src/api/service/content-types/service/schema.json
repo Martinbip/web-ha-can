@@ -1,0 +1,45 @@
+{
+  "kind": "collectionType",
+  "collectionName": "services",
+  "info": {
+    "singularName": "service",
+    "pluralName": "services",
+    "displayName": "Dịch Vụ",
+    "description": "Các dịch vụ hiển thị trên trang chủ"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "text",
+      "required": true,
+      "maxLength": 1000
+    },
+    "features": {
+      "type": "json"
+    },
+    "icon_svg": {
+      "type": "text",
+      "maxLength": 2000
+    },
+    "link_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "link_text": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "sort_order": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "step_number": 1,
+    "title": "Tiếp nhận yêu cầu kỹ thuật",
+    "description": "Xác định chủng loại quặng mẫu, khối lượng, chỉ tiêu phân tích hóa học và quy cách đóng gói theo yêu cầu của đơn vị sử dụng.",
+    "sort_order": 0
+  },
+  {
+    "step_number": 2,
+    "title": "Thu thập mẫu thực địa",
+    "description": "Khai thác trực tiếp mẫu thô tại thực địa mỏ hoặc trích xuất từ kho lưu giữ mẫu địa chất tiêu chuẩn của DHA.",
+    "sort_order": 1
+  },
+  {
+    "step_number": 3,
+    "title": "Gia công & Chuẩn bị mẫu",
+    "description": "Sấy khô mẫu quặng, nghiền mịn cơ học đạt cỡ hạt micromet và chia mẫu bằng phương pháp góc tư để bảo đảm tính đại diện.",
+    "sort_order": 2
+  },
+  {
+    "step_number": 4,
+    "title": "Phân tích thành phần",
+    "description": "Đo hàm lượng nguyên tố hóa học tại phòng thí nghiệm bằng máy huỳnh quang tia X (XRF) hoặc quang phổ ICP-MS.",
+    "sort_order": 3
+  },
+  {
+    "step_number": 5,
+    "title": "Đóng gói bảo quản",
+    "description": "Đóng chai HDPE kín khí hoặc đóng bao hút chân không bảo ôn nhằm tránh oxy hóa bề mặt khoáng vật.",
+    "sort_order": 4
+  },
+  {
+    "step_number": 6,
+    "title": "Bàn giao mẫu & Chứng chỉ",
+    "description": "Vận chuyển mẫu đến địa chỉ yêu cầu, bàn giao kèm theo chứng chỉ phân tích thành phần (CoA) và chứng nhận xuất xứ (C/O).",
+    "sort_order": 5
+  }
+]

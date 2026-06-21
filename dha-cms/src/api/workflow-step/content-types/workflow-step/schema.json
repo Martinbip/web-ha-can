@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "workflow_steps",
+  "info": {
+    "singularName": "workflow-step",
+    "pluralName": "workflow-steps",
+    "displayName": "Bước Quy Trình",
+    "description": "Các bước quy trình thu thập & kiểm định mẫu"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "step_number": {
+      "type": "integer",
+      "required": true
+    },
+    "title": {
+      "type": "string",
+      "required": true,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "text",
+      "required": true,
+      "maxLength": 1000
+    },
+    "sort_order": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

@@ -55,6 +55,56 @@
     "twitter_url": {
       "type": "string",
       "maxLength": 500
+    },
+    "hero_tagline": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "hero_title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "hero_description": {
+      "type": "text",
+      "maxLength": 1000
+    },
+    "hero_cert_label": {
+      "type": "string",
+      "maxLength": 50,
+      "default": "CHỨNG CHỈ"
+    },
+    "hero_cert_value": {
+      "type": "string",
+      "maxLength": 100,
+      "default": "XRF · ICP-MS"
+    },
+    "brand_bio": {
+      "type": "text",
+      "maxLength": 1000
+    },
+    "stat1_number": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "stat1_label": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "stat2_number": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "stat2_label": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "stat3_number": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "stat3_label": {
+      "type": "string",
+      "maxLength": 100
     }
   }
 }
