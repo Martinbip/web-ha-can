@@ -64,6 +64,13 @@ if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^dha-cms/'; then
 else
     echo "▸ CMS không đổi → bỏ qua build Strapi (deploy nhanh)."
 fi
+
+# Cập nhật nginx config nếu có thay đổi
+if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^deploy/nginx.conf'; then
+    echo "▸ Phát hiện thay đổi nginx.conf → cập nhật & reload..."
+    cp /var/www/web-ha-can/deploy/nginx.conf /etc/nginx/sites-available/smadesign.vn
+    nginx -t && systemctl reload nginx
+fi
 REMOTE
 
 echo ""
