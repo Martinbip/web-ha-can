@@ -2,4 +2,4 @@
 
 const { factories } = require('@strapi/strapi');
 
-module.exports = factories.createCoreController('api::ore.ore');
+module.exports = factories.createCoreService('api::news.news');

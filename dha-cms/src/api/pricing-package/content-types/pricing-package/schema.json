@@ -14,30 +14,36 @@
   "attributes": {
     "metal": {
       "type": "string",
-      "required": true
+      "required": true,
+      "maxLength": 100
     },
     "lme_price": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 50
     },
     "domestic_price": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 50
     },
     "unit": {
       "type": "string",
-      "default": "/kg"
+      "default": "/kg",
+      "maxLength": 20
     },
     "change": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 20
     },
     "trend": {
       "type": "enumeration",
       "enum": [
         "up",
-        "down"
+        "down",
+        "stable"
       ]
     },
     "updated": {
-      "type": "string"
+      "type": "date"
     }
   }
 }

@@ -1,3 +1,16 @@
 'use strict';
-const { createCoreRouter } = require('@strapi/strapi').factories;
-module.exports = createCoreRouter('api::order-request.order-request');
+
+const { factories } = require('@strapi/strapi');
+
+module.exports = factories.createCoreRouter('api::order-request.order-request', {
+  config: {
+    create: {
+      middlewares: [
+        {
+          name: 'global::rate-limit',
+          config: { windowMs: 15 * 60 * 1000, max: 10 },
+        },
+      ],
+    },
+  },
+});

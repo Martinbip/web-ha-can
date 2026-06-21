@@ -18,14 +18,13 @@ module.exports = [
   {
     name: 'strapi::cors',
     config: {
-      // Allow file:// (origin "null"), localhost for dev, and production domain
       origin: (ctx) => {
         const origin = ctx.request.headers.origin;
         const allowed = [
-          'null',                       // file:// protocol
+          'null',
           'http://localhost',
           'http://127.0.0.1',
-          process.env.FRONTEND_URL,     // production domain via env
+          process.env.FRONTEND_URL,
         ].filter(Boolean);
 
         if (!origin || allowed.some((o) => origin.startsWith(o))) {
@@ -38,9 +37,21 @@ module.exports = [
       keepHeaderOnError: true,
     },
   },
-  'strapi::poweredBy',
+  {
+    name: 'strapi::poweredBy',
+    config: {
+      poweredBy: 'DHA CMS',
+    },
+  },
   'strapi::query',
-  'strapi::body',
+  {
+    name: 'strapi::body',
+    config: {
+      formLimit: '1mb',
+      jsonLimit: '1mb',
+      textLimit: '1mb',
+    },
+  },
   'strapi::session',
   'strapi::favicon',
   'strapi::public',

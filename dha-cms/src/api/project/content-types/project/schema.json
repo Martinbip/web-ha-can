@@ -14,20 +14,25 @@
   "attributes": {
     "name": {
       "type": "string",
-      "required": true
+      "required": true,
+      "maxLength": 300
     },
     "location": {
       "type": "string",
-      "required": true
+      "required": true,
+      "maxLength": 300
     },
     "scale": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 200
     },
     "method": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 200
     },
     "value": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 200
     },
     "image": {
       "type": "media",

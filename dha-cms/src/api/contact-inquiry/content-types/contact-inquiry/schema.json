@@ -14,18 +14,25 @@
   "attributes": {
     "name": {
       "type": "string",
-      "required": true
+      "required": true,
+      "minLength": 2,
+      "maxLength": 200
     },
     "phone": {
       "type": "string",
-      "required": true
+      "required": true,
+      "regex": "^[0-9+\\-\\s()]{8,20}$",
+      "maxLength": 20
     },
     "email": {
-      "type": "email"
+      "type": "email",
+      "maxLength": 254
     },
     "address": {
       "type": "string",
-      "required": true
+      "required": true,
+      "minLength": 5,
+      "maxLength": 500
     },
     "service": {
       "type": "enumeration",
@@ -38,7 +45,8 @@
       "default": "cung-cap-mau"
     },
     "message": {
-      "type": "text"
+      "type": "text",
+      "maxLength": 2000
     },
     "status": {
       "type": "enumeration",

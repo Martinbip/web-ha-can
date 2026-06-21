@@ -19,7 +19,8 @@
     },
     "name": {
       "type": "string",
-      "required": true
+      "required": true,
+      "maxLength": 200
     },
     "group": {
       "type": "enumeration",
@@ -27,22 +28,27 @@
       "required": true
     },
     "grade": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 100
     },
     "origin": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 200
     },
     "price": {
-      "type": "integer"
+      "type": "integer",
+      "min": 0
     },
     "description": {
-      "type": "text"
+      "type": "text",
+      "maxLength": 5000
     },
     "specs": {
       "type": "json"
     },
     "image": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 500
     },
     "featured": {
       "type": "boolean",

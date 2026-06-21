@@ -1,0 +1,54 @@
+{
+  "kind": "collectionType",
+  "collectionName": "news_articles",
+  "info": {
+    "singularName": "news",
+    "pluralName": "news-articles",
+    "displayName": "Tin Tức",
+    "description": "Tin tức thị trường kim loại, phân tích giá và cập nhật ngành khoáng sản"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "maxLength": 300
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true
+    },
+    "summary": {
+      "type": "text",
+      "required": true,
+      "maxLength": 500
+    },
+    "content": {
+      "type": "richtext",
+      "required": true
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": [
+        "gia-ca",
+        "quoc-te",
+        "noi-dia",
+        "phan-tich",
+        "cong-nghe"
+      ],
+      "required": true
+    },
+    "date": {
+      "type": "date",
+      "required": true
+    },
+    "image": {
+      "type": "string",
+      "maxLength": 500
+    }
+  }
+}

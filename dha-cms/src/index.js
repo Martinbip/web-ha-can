@@ -3,53 +3,51 @@
 const path = require('path');
 const fs = require('fs');
 
+function loadJsonFile(filename) {
+  const filePath = path.join(__dirname, '..', '..', 'data', filename);
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Seed file not found: ${filePath}`);
+  }
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
 module.exports = {
   register() {},
 
   async bootstrap({ strapi }) {
     console.log('--- CMS Bootstrapping: Seeding initial data if empty ---');
 
-    // Helper: seed a collection type from a JSON file if the collection is empty
     const seedCollection = async (uid, filename, mapFn = (d) => d) => {
       try {
         const count = await strapi.db.query(uid).count();
-        if (count === 0) {
-          console.log(`Seeding collection: ${uid}`);
-          const filePath = path.join(__dirname, '..', '..', 'data', filename);
-          if (fs.existsSync(filePath)) {
-            const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-            for (const item of data) {
-              await strapi.db.query(uid).create({
-                data: { ...mapFn(item), publishedAt: new Date() }
-              });
-            }
-            console.log(`Seeded ${data.length} items for ${uid}`);
-          }
+        if (count > 0) return;
+
+        console.log(`Seeding collection: ${uid}`);
+        const data = loadJsonFile(filename);
+        for (const item of data) {
+          await strapi.db.query(uid).create({
+            data: { ...mapFn(item), publishedAt: new Date() },
+          });
         }
+        console.log(`Seeded ${data.length} items for ${uid}`);
       } catch (err) {
-        console.error(`Error seeding ${uid}:`, err);
+        console.error(`Error seeding ${uid}:`, err.message);
       }
     };
 
-    // Helper: seed a single type from a JSON file if it doesn't exist yet
     const seedSingleType = async (uid, filename, mapFn = (d) => d) => {
       try {
         const existing = await strapi.db.query(uid).findOne({});
-        if (!existing) {
-          console.log(`Seeding single type: ${uid}`);
-          const filePath = path.join(__dirname, '..', '..', 'data', filename);
-          if (fs.existsSync(filePath)) {
-            const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-            await strapi.db.query(uid).create({ data: mapFn(data) });
-            console.log(`Seeded single type ${uid}`);
-          }
-        }
+        if (existing) return;
+
+        console.log(`Seeding single type: ${uid}`);
+        const data = loadJsonFile(filename);
+        await strapi.db.query(uid).create({ data: mapFn(data) });
+        console.log(`Seeded single type ${uid}`);
       } catch (err) {
-        console.error(`Error seeding single type ${uid}:`, err);
+        console.error(`Error seeding single type ${uid}:`, err.message);
       }
     };
-
-    // --- Seed Collection Types ---
 
     await seedCollection('api::pricing-package.pricing-package', 'pricing_packages.json', (item) => ({
       metal: item.metal,
@@ -99,10 +97,18 @@ module.exports = {
       sort_order: item.sort_order,
     }));
 
-    // --- Seed Single Types ---
+    await seedCollection('api::news.news', 'news.json', (item) => ({
+      title: item.title,
+      slug: item.slug,
+      summary: item.summary,
+      content: item.content,
+      category: item.category,
+      date: item.date,
+      image: item.image,
+    }));
+
     await seedSingleType('api::site-setting.site-setting', 'site_setting.json');
 
-    // --- Grant Public Permissions ---
     try {
       const publicRole = await strapi.db.query('plugin::users-permissions.role').findOne({
         where: { type: 'public' },
@@ -112,7 +118,6 @@ module.exports = {
         console.log('--- Granting public permissions ---');
 
         const actions = [
-          // Read access for display content types
           'api::project.project.find',
           'api::project.project.findOne',
           'api::pricing-package.pricing-package.find',
@@ -121,14 +126,14 @@ module.exports = {
           'api::pricing-analysis.pricing-analysis.findOne',
           'api::pricing-survey.pricing-survey.find',
           'api::pricing-survey.pricing-survey.findOne',
-          // Read access for site settings (public info: phone, address, socials)
           'api::site-setting.site-setting.find',
-          // Read access for product catalog
           'api::product.product.find',
           'api::product.product.findOne',
-          // Write access for contact form submissions (create only — no read for public)
+          'api::ore.ore.find',
+          'api::ore.ore.findOne',
+          'api::news.news.find',
+          'api::news.news.findOne',
           'api::contact-inquiry.contact-inquiry.create',
-          // Write access for product order requests (create only)
           'api::order-request.order-request.create',
         ];
 
@@ -147,7 +152,7 @@ module.exports = {
         console.log('--- Public permissions granted ---');
       }
     } catch (err) {
-      console.error('Error granting public permissions:', err);
+      console.error('Error granting public permissions:', err.message);
     }
 
     console.log('--- CMS Bootstrapping Complete ---');

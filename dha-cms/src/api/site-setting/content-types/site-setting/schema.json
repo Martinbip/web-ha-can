@@ -14,37 +14,47 @@
   "attributes": {
     "hotline": {
       "type": "string",
-      "required": true
+      "required": true,
+      "maxLength": 20
     },
     "hotline2": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 20
     },
     "email": {
       "type": "email",
-      "required": true
+      "required": true,
+      "maxLength": 254
     },
     "address": {
       "type": "text",
-      "required": true
+      "required": true,
+      "maxLength": 500
     },
     "office_name": {
       "type": "string",
-      "default": "Văn Phòng Hà Nội"
+      "default": "Văn Phòng Hà Nội",
+      "maxLength": 200
     },
     "tax_code": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 20
     },
     "facebook_url": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 500
     },
     "youtube_url": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 500
     },
     "zalo_url": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 500
     },
     "twitter_url": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 500
     }
   }
 }

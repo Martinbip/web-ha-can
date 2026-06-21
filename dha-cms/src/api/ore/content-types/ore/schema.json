@@ -15,11 +15,13 @@
     "uid": {
       "type": "string",
       "required": true,
-      "unique": true
+      "unique": true,
+      "maxLength": 100
     },
     "name": {
       "type": "string",
-      "required": true
+      "required": true,
+      "maxLength": 200
     },
     "group": {
       "type": "enumeration",
@@ -32,7 +34,8 @@
     },
     "price": {
       "type": "integer",
-      "required": true
+      "required": true,
+      "min": 0
     }
   }
 }
