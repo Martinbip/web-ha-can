@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Preview — DHA Minerals</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=1.1.0">
+    <style>
+        .preview-bar {
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+            border-bottom: 3px solid #c8a456;
+        }
+        .preview-bar-badge {
+            background: #c8a456;
+            color: #1a1a2e;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .preview-bar-info {
+            flex: 1;
+        }
+        .preview-bar-info strong {
+            color: #c8a456;
+        }
+        .preview-bar a {
+            color: #c8a456;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .preview-bar a:hover {
+            text-decoration: underline;
+        }
+        .preview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+        .preview-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #999;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .preview-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .preview-section h2 {
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .preview-error {
+            text-align: center;
+            padding: 80px 24px;
+            color: #999;
+        }
+        .preview-error h2 {
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        /* Hero slide preview */
+        .preview-hero-slide {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 700px;
+        }
+        .preview-hero-slide img {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            display: block;
+        }
+        .preview-hero-slide .hero-image-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            color: #fff;
+        }
+        .preview-hero-slide .overlay-subtitle {
+            display: block;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #c8a456;
+            margin-bottom: 4px;
+        }
+        .preview-hero-slide .overlay-title {
+            display: block;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        /* Service card preview */
+        .preview-service-card {
+            max-width: 400px;
+        }
+
+        /* Workflow step preview */
+        .preview-workflow {
+            max-width: 600px;
+        }
+
+        /* Site setting preview */
+        .preview-site-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .preview-field {
+            padding: 12px 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 3px solid #c8a456;
+        }
+        .preview-field-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+        .preview-field-value {
+            font-size: 15px;
+            color: #333;
+            font-weight: 500;
+        }
+        .preview-field-value:empty::after {
+            content: '(trống)';
+            color: #ccc;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .preview-site-fields {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-bar">
+        <span class="preview-bar-badge">Preview</span>
+        <span class="preview-bar-info">
+            Đây là bản xem trước. Nội dung hiển thị đúng như trên website.
+        </span>
+        <a href="javascript:window.close()">Đóng</a>
+    </div>
+
+    <div class="preview-container" id="preview-root">
+        <div class="preview-error" id="preview-loading">
+            <h2>Đang tải preview...</h2>
+            <p>Vui lòng đợi trong giây lát.</p>
+        </div>
+    </div>
+
+    <script>window.__STRAPI_URL="https://smadesign.vn";</script>
+    <script src="app.js"></script>
+    <script>
+    (async function() {
+        const params = new URLSearchParams(window.location.search);
+        const type = params.get('type');
+        const documentId = params.get('documentId');
+        const root = document.getElementById('preview-root');
+
+        if (!type) {
+            root.innerHTML = '<div class="preview-error"><h2>Thiếu tham số</h2><p>URL cần có ?type=... để hiển thị preview.</p></div>';
+            return;
+        }
+
+        const CMS_BASE = (window.__STRAPI_URL || 'http://localhost:1337');
+
+        function esc(str) {
+            if (str == null) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        async function fetchEntry(endpoint) {
+            try {
+                const res = await fetch(`${CMS_BASE}/api/${endpoint}`, { signal: AbortSignal.timeout(8000) });
+                if (!res.ok) throw new Error(res.status);
+                const json = await res.json();
+                return json.data;
+            } catch(e) {
+                console.error('[Preview]', e);
+                return null;
+            }
+        }
+
+        try {
+            if (type === 'hero-slide') {
+                const data = documentId
+                    ? await fetchEntry(`hero-slides/${documentId}`)
+                    : (await fetchEntry('hero-slides?sort=sort_order:asc'))?.[0];
+
+                if (!data) throw new Error('not found');
+                const d = data.attributes || data;
+
+                document.title = `Preview: ${d.title} — Hero Slide`;
+                root.innerHTML = `
+                    <p class="preview-label">Hero Slide — Carousel trang chủ</p>
+                    <div class="preview-section">
+                        <h2>Xem trước slide</h2>
+                        <div class="preview-hero-slide">
+                            <img src="${esc(d.image_url)}" alt="${esc(d.image_alt || d.title)}">
+                            <div class="hero-image-overlay">
+                                <span class="overlay-subtitle">${esc(d.subtitle)}</span>
+                                <span class="overlay-title">${esc(d.title)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preview-section">
+                        <h2>Thông tin chi tiết</h2>
+                        <div class="preview-site-fields">
+                            <div class="preview-field">
+                                <div class="preview-field-label">Subtitle</div>
+                                <div class="preview-field-value">${esc(d.subtitle)}</div>
+                            </div>
+                            <div class="preview-field">
+                                <div class="preview-field-label">Title</div>
+                                <div class="preview-field-value">${esc(d.title)}</div>
+                            </div>
+                            <div class="preview-field">
+                                <div class="preview-field-label">Image URL</div>
+                                <div class="preview-field-value">${esc(d.image_url)}</div>
+                            </div>
+                            <div class="preview-field">
+                                <div class="preview-field-label">Image Alt</div>
+                                <div class="preview-field-value">${esc(d.image_alt)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            } else if (type === 'service') {
+                const data = documentId
+                    ? await fetchEntry(`services/${documentId}`)
+                    : (await fetchEntry('services?sort=sort_order:asc'))?.[0];
+
+                if (!data) throw new Error('not found');
+                const d = data.attributes || data;
+                const features = (Array.isArray(d.features) ? d.features : [])
+                    .map(f => `<li><span class="bullet">✓</span> ${esc(f)}</li>`).join('');
+
+                document.title = `Preview: ${d.title} — Dịch Vụ`;
+                root.innerHTML = `
+                    <p class="preview-label">Dịch Vụ — Hiển thị ở mục "Khoáng Sản & Dịch Vụ Địa Chất"</p>
+                    <div class="preview-section">
+                        <h2>Xem trước card dịch vụ</h2>
+                        <div class="preview-service-card">
+                            <div class="service-card card" style="cursor:default;">
+                                <div class="service-icon-box">
+                                    <svg class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="${esc(d.icon_svg || '')}"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="service-title">${esc(d.title)}</h3>
+                                <p class="service-description">${esc(d.description)}</p>
+                                ${features ? `<ul class="service-features">${features}</ul>` : ''}
+                                ${d.link_text ? `<span class="service-link font-accent">${esc(d.link_text)}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preview-section">
+                        <h2>Thông tin chi tiết</h2>
+                        <div class="preview-site-fields">
+                            <div class="preview-field">
+                                <div class="preview-field-label">Tiêu đề</div>
+                                <div class="preview-field-value">${esc(d.title)}</div>
+                            </div>
+                            <div class="preview-field">
+                                <div class="preview-field-label">Mô tả</div>
+                                <div class="preview-field-value">${esc(d.description)}</div>
+                            </div>
+                            <div class="preview-field">
+                                <div class="preview-field-label">Link URL</div>
+                                <div class="preview-field-value">${esc(d.link_url)}</div>
+                            </div>
+                            <div class="preview-field">
+                                <div class="preview-field-label">Link Text</div>
+                                <div class="preview-field-value">${esc(d.link_text)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            } else if (type === 'workflow-step') {
+                const data = documentId
+                    ? await fetchEntry(`workflow-steps/${documentId}`)
+                    : (await fetchEntry('workflow-steps?sort=sort_order:asc'))?.[0];
+
+                if (!data) throw new Error('not found');
+                const d = data.attributes || data;
+
+                document.title = `Preview: ${d.title} — Quy Trình`;
+                root.innerHTML = `
+                    <p class="preview-label">Quy Trình — Hiển thị ở mục "Quy Trình Thu Thập & Kiểm Định Mẫu"</p>
+                    <div class="preview-section">
+                        <h2>Xem trước bước quy trình</h2>
+                        <div class="preview-workflow">
+                            <div class="workflow-timeline" style="position:relative;">
+                                <div class="timeline-item">
+                                    <div class="timeline-badge font-accent">${String(d.step_number).padStart(2, '0')}</div>
+                                    <div class="timeline-panel card">
+                                        <h3 class="step-title">${esc(d.title)}</h3>
+                                        <p class="step-desc">${esc(d.description)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            } else if (type === 'site-setting') {
+                const data = await fetchEntry('site-setting');
+                if (!data) throw new Error('not found');
+                const d = data.attributes || data;
+
+                document.title = 'Preview: Cài Đặt Website';
+
+                const fields = [
+                    ['Hotline', d.hotline],
+                    ['Hotline 2', d.hotline2],
+                    ['Email', d.email],
+                    ['Địa chỉ', d.address],
+                    ['Tên VP', d.office_name],
+                    ['Mã số thuế', d.tax_code],
+                    ['Facebook', d.facebook_url],
+                    ['Zalo', d.zalo_url],
+                    ['Hero Tagline', d.hero_tagline],
+                    ['Hero Title', d.hero_title],
+                    ['Hero Description', d.hero_description],
+                    ['Cert Label', d.hero_cert_label],
+                    ['Cert Value', d.hero_cert_value],
+                    ['Brand Bio', d.brand_bio],
+                    ['Stat 1', `${d.stat1_number} — ${d.stat1_label}`],
+                    ['Stat 2', `${d.stat2_number} — ${d.stat2_label}`],
+                    ['Stat 3', `${d.stat3_number} — ${d.stat3_label}`],
+                ];
+
+                root.innerHTML = `
+                    <p class="preview-label">Cài Đặt Website — Thông tin hiển thị trên header, footer, sidebar</p>
+                    <div class="preview-section">
+                        <h2>Xem trước Header</h2>
+                        <div class="top-header" style="position:relative;border-radius:8px;overflow:hidden;">
+                            <div class="container">
+                                <div class="top-header-left">
+                                    <span>📞 Hotline: <a href="#">${esc(d.hotline)}</a></span>
+                                </div>
+                                <div class="top-header-right">
+                                    <a href="#">Facebook</a>
+                                    <a href="#">Zalo</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preview-section">
+                        <h2>Xem trước Hero</h2>
+                        <div style="background:#1a1a2e;padding:32px;border-radius:8px;color:#fff;">
+                            <span style="color:#c8a456;font-size:13px;letter-spacing:1px;">${esc(d.hero_tagline)}</span>
+                            <h1 style="color:#fff;font-size:32px;margin:12px 0;">${esc(d.hero_title).replace(/\\n/g, '<br>')}</h1>
+                            <p style="color:#ccc;">${esc(d.hero_description)}</p>
+                            <div style="display:flex;gap:32px;margin-top:20px;">
+                                <div><strong style="color:#c8a456;font-size:24px;">${esc(d.stat1_number)}</strong><br><small style="color:#999;">${esc(d.stat1_label)}</small></div>
+                                <div><strong style="color:#c8a456;font-size:24px;">${esc(d.stat2_number)}</strong><br><small style="color:#999;">${esc(d.stat2_label)}</small></div>
+                                <div><strong style="color:#c8a456;font-size:24px;">${esc(d.stat3_number)}</strong><br><small style="color:#999;">${esc(d.stat3_label)}</small></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preview-section">
+                        <h2>Xem trước Footer</h2>
+                        <div class="footer" style="position:relative;border-radius:8px;overflow:hidden;">
+                            <div style="padding:32px;">
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+                                    <div>
+                                        <p style="color:#ccc;">${esc(d.brand_bio)}</p>
+                                    </div>
+                                    <div>
+                                        <h4 style="color:#c8a456;">${esc(d.office_name)}</h4>
+                                        <p style="color:#ccc;">${esc(d.address)}</p>
+                                        <p style="color:#ccc;">Hotline: ${esc(d.hotline)}</p>
+                                        <p style="color:#ccc;">MST: ${esc(d.tax_code)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preview-section">
+                        <h2>Tất cả dữ liệu</h2>
+                        <div class="preview-site-fields">
+                            ${fields.map(([label, value]) => `
+                                <div class="preview-field">
+                                    <div class="preview-field-label">${esc(label)}</div>
+                                    <div class="preview-field-value">${esc(value)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+            } else if (type === 'product') {
+                const data = documentId
+                    ? await fetchEntry(`products/${documentId}`)
+                    : (await fetchEntry('products?sort=sort_order:asc'))?.[0];
+
+                if (!data) throw new Error('not found');
+                const d = data.attributes || data;
+
+                document.title = `Preview: ${d.name} — Sản Phẩm`;
+                root.innerHTML = `
+                    <p class="preview-label">Sản Phẩm — Card hiển thị trong danh mục</p>
+                    <div class="preview-section">
+                        <h2>Xem trước card sản phẩm</h2>
+                        <div style="max-width:380px;">
+                            ${buildProductCard(d)}
+                        </div>
+                    </div>
+                `;
+
+            } else if (type === 'project') {
+                const data = documentId
+                    ? await fetchEntry(`projects/${documentId}`)
+                    : (await fetchEntry('projects'))?.[0];
+
+                if (!data) throw new Error('not found');
+                const d = data.attributes || data;
+
+                document.title = `Preview: ${d.name} — Dự Án`;
+                root.innerHTML = `
+                    <p class="preview-label">Dự Án — Card hiển thị ở trang Dự Án</p>
+                    <div class="preview-section">
+                        <h2>Xem trước card dự án</h2>
+                        <div style="max-width:400px;">
+                            <div class="portfolio-item card">
+                                <div class="portfolio-img-wrap">
+                                    <img src="${esc(d.image || 'assets/mo_quang_ha_nam.png')}" alt="${esc(d.name)}" class="portfolio-img" loading="lazy">
+                                </div>
+                                <div class="portfolio-body">
+                                    <h3 class="portfolio-name">${esc(d.name)}</h3>
+                                    <div class="portfolio-meta"><strong>Địa điểm:</strong> ${esc(d.location)}</div>
+                                    <div class="portfolio-meta"><strong>Quy mô:</strong> ${esc(d.scale)}</div>
+                                    <div class="portfolio-meta"><strong>Phương pháp:</strong> ${esc(d.method)}</div>
+                                    ${d.value ? `<div class="portfolio-meta"><strong>Kết quả:</strong> ${esc(d.value)}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            } else if (type === 'news') {
+                const data = documentId
+                    ? await fetchEntry(`news/${documentId}`)
+                    : (await fetchEntry('news'))?.[0];
+
+                if (!data) throw new Error('not found');
+                const d = data.attributes || data;
+
+                document.title = `Preview: ${d.title} — Tin Tức`;
+                root.innerHTML = `
+                    <p class="preview-label">Tin Tức — Card hiển thị ở trang chủ và trang tin tức</p>
+                    <div class="preview-section">
+                        <h2>Xem trước card tin tức</h2>
+                        <div style="max-width:380px;">
+                            ${buildNewsCard(d, false)}
+                        </div>
+                    </div>
+                `;
+
+            } else {
+                root.innerHTML = `<div class="preview-error"><h2>Không hỗ trợ</h2><p>Content type "${esc(type)}" chưa có preview.</p></div>`;
+            }
+        } catch(e) {
+            console.error('[Preview]', e);
+            root.innerHTML = `<div class="preview-error"><h2>Không tìm thấy dữ liệu</h2><p>Kiểm tra lại entry đã được lưu và publish chưa.</p></div>`;
+        }
+    })();
+    </script>
+</body>
+</html>
