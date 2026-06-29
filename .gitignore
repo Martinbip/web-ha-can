@@ -17,6 +17,9 @@ deploy/.env
 # Local backups
 backups/
 
+# Local agent config
+.codex/
+
 # OS
 .DS_Store
 Thumbs.db
