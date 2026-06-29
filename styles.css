@@ -222,12 +222,22 @@ button, a, input, select, textarea {
     color: #333333;
     background-color: #FFFFFF;
     border-radius: 2px 0 0 2px;
-    outline: none;
     box-sizing: border-box;
 }
 
 .header-search input:focus {
     border-color: #C5A059;
+}
+
+.header-search input:focus-visible,
+.input:focus-visible,
+.home-search-wrap input:focus-visible,
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #C5A059;
+    outline-offset: 2px;
 }
 
 .header-search button {
@@ -1027,6 +1037,8 @@ button, a, input, select, textarea {
 .service-card {
     display: flex;
     flex-direction: column;
+    color: inherit;
+    text-decoration: none;
 }
 
 .service-icon-box {
@@ -1110,7 +1122,6 @@ button, a, input, select, textarea {
 }
 
 .input:focus {
-    outline: none;
     border-color: #C5A059;
 }
 
@@ -1552,6 +1563,13 @@ a.product-card {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
+}
+
+.detail-order-form {
+    margin-top: 24px;
+    padding: 18px;
+    border: 1px solid #DDDDDD;
+    background-color: #FFFFFF;
 }
 
 /* ----------------------------------------------------
@@ -2707,7 +2725,6 @@ a.product-card {
 
 .home-search-wrap input {
     border: none;
-    outline: none;
     font-size: 14px;
     color: #333333;
     width: 100%;

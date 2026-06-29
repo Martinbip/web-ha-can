@@ -14,6 +14,9 @@ dha-cms/.tmp/
 dha-cms/.env
 deploy/.env
 
+# Local backups
+backups/
+
 # OS
 .DS_Store
 Thumbs.db

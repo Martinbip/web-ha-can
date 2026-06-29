@@ -15,10 +15,15 @@ CMS_DIR="/var/www/dha-cms"
 
 SSH="ssh -p $VPS_PORT $VPS_USER@$VPS_HOST"
 
-echo "==> [1/3] Push code lên GitHub..."
+echo "==> [1/3] Kiểm tra working tree & push code lên GitHub..."
 cd "$(dirname "$0")/.."
-git add -A
-git commit -m "deploy: $(date '+%Y-%m-%d %H:%M')" || echo "(Không có thay đổi mới)"
+
+if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+    echo "❌ Working tree chưa sạch. Hãy commit/stash các thay đổi trước khi deploy."
+    git status --short
+    exit 1
+fi
+
 git push origin main
 
 echo "==> [2/3] VPS kéo code từ GitHub..."

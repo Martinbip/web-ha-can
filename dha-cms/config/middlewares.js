@@ -22,15 +22,29 @@ module.exports = [
         const origin = ctx.request.headers.origin;
         const allowed = [
           'null',
-          'http://localhost',
-          'http://127.0.0.1',
+          'http://localhost:3000',
+          'http://127.0.0.1:3000',
           process.env.FRONTEND_URL,
         ].filter(Boolean);
 
-        if (!origin || allowed.some((o) => origin.startsWith(o))) {
-          return origin || '*';
+        const exactOriginAllowed = (candidate) => {
+          if (!candidate) return true;
+          if (candidate === 'null') return allowed.includes('null');
+          try {
+            const candidateOrigin = new URL(candidate).origin;
+            return allowed.some((allowedOrigin) => {
+              if (allowedOrigin === 'null') return false;
+              return candidateOrigin === new URL(allowedOrigin).origin;
+            });
+          } catch {
+            return false;
+          }
+        };
+
+        if (exactOriginAllowed(origin)) {
+          return origin ? [origin] : ['*'];
         }
-        return false;
+        return [];
       },
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
       headers: ['Content-Type', 'Authorization', 'Origin', 'Accept'],

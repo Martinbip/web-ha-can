@@ -38,6 +38,17 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+function safeInternalUrl(value, fallback = '#') {
+    if (!value) return fallback;
+    const raw = String(value).trim();
+    if (raw.startsWith('/') || raw.startsWith('#')) return raw;
+    return fallback;
+}
+
+function getOrePrice(ore) {
+    return Number(ore?.price ?? ore?.base_price ?? 0) || 0;
+}
+
 // ======================================================
 // CMS DATA FETCHING
 // ======================================================
@@ -421,7 +432,7 @@ async function initServicesSection() {
             .join('');
 
         return `
-            <div class="service-card card cursor-pointer" onclick="location.href='${escapeHtml(svc.link_url || '#')}'">
+            <a class="service-card card cursor-pointer" href="${escapeHtml(safeInternalUrl(svc.link_url || '#'))}">
                 <div class="service-icon-box">
                     <svg class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="${escapeHtml(svc.icon_svg || '')}"></path>
@@ -431,7 +442,7 @@ async function initServicesSection() {
                 <p class="service-description">${escapeHtml(svc.description)}</p>
                 ${features ? `<ul class="service-features">${features}</ul>` : ''}
                 ${svc.link_text ? `<span class="service-link font-accent">${escapeHtml(svc.link_text)}</span>` : ''}
-            </div>
+            </a>
         `;
     }).join('');
 }
@@ -858,19 +869,108 @@ async function initProductDetailPage() {
                     <h3 class="detail-specs-title">Thông Số Kỹ Thuật</h3>
                     <ul class="detail-specs-list">${specsHtml}</ul>
                 </div>` : ''}
-                <div class="detail-cta-box">
-                    <a href="tel:${escapeHtml(hotline)}" class="btn-primary" style="flex:1;text-align:center;">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;margin-right:6px;" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                        Liên Hệ Nhận Báo Giá
-                    </a>
-                    <a href="/products?filter=${encodeURIComponent(product.group)}" class="btn-secondary" style="flex:1;text-align:center;">← Quay Lại Danh Mục</a>
+                    <div class="detail-cta-box">
+                        <a href="tel:${escapeHtml(hotline)}" class="btn-primary" style="flex:1;text-align:center;">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;margin-right:6px;" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                            Liên Hệ Nhận Báo Giá
+                        </a>
+                        <a href="/products?filter=${encodeURIComponent(product.group)}" class="btn-secondary" style="flex:1;text-align:center;">← Quay Lại Danh Mục</a>
+                    </div>
+                    <form id="order-form" class="detail-order-form">
+                        <h3 class="detail-specs-title">Gửi Yêu Cầu Đặt Mẫu</h3>
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="order-customer-name" class="form-label">Họ và Tên <span class="required">*</span></label>
+                                <input id="order-customer-name" class="input" type="text" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="order-phone" class="form-label">Số Điện Thoại <span class="required">*</span></label>
+                                <input id="order-phone" class="input" type="tel" required>
+                            </div>
+                        </div>
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="order-email" class="form-label">Email</label>
+                                <input id="order-email" class="input" type="email">
+                            </div>
+                            <div class="form-group">
+                                <label for="order-quantity" class="form-label">Số Lượng <span class="required">*</span></label>
+                                <input id="order-quantity" class="input" type="number" min="0.01" step="0.01" value="1" required>
+                            </div>
+                        </div>
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="order-unit" class="form-label">Đơn Vị</label>
+                                <select id="order-unit" class="input form-select">
+                                    <option value="kg" selected>kg</option>
+                                    <option value="tan">tấn</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="order-note" class="form-label">Ghi Chú</label>
+                                <input id="order-note" class="input" type="text" placeholder="Quy cách, địa điểm giao hàng...">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary w-full cursor-pointer btn-submit-order">Gửi Đơn Đặt Mẫu</button>
+                    </form>
                 </div>
-            </div>
-        `;
-    } catch (e) {
-        console.error('[Product Detail]', e);
-        contentEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;"><p>Lỗi tải thông tin sản phẩm.</p></div>';
+            `;
+            initProductOrderForm(product);
+        } catch (e) {
+            console.error('[Product Detail]', e);
+            contentEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;"><p>Lỗi tải thông tin sản phẩm.</p></div>';
+        }
     }
+
+function initProductOrderForm(product) {
+    const form = document.getElementById('order-form');
+    if (!form || !product) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const product_name = product.name || '';
+        const product_uid = product.uid || '';
+        const customer_name = document.getElementById('order-customer-name')?.value?.trim();
+        const phone = document.getElementById('order-phone')?.value?.trim();
+        const email = document.getElementById('order-email')?.value?.trim();
+        const quantity = Number(document.getElementById('order-quantity')?.value || 0);
+        const unit = document.getElementById('order-unit')?.value || 'kg';
+        const note = document.getElementById('order-note')?.value?.trim();
+
+        if (!product_name || !customer_name || !phone || quantity <= 0) {
+            alert('Vui lòng nhập Họ tên, Số điện thoại và Số lượng hợp lệ.');
+            return;
+        }
+
+        const submitBtn = form.querySelector('.btn-submit-order');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang gửi...';
+        }
+
+        try {
+            const res = await fetch(`${CMS_API}/order-requests`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    data: { product_name, product_uid, customer_name, phone, email, quantity, unit, note },
+                }),
+                signal: AbortSignal.timeout(10000),
+            });
+
+            if (!res.ok) throw new Error(`Server responded ${res.status}`);
+            alert('Đã gửi đơn đặt mẫu. DHA sẽ liên hệ xác nhận trong thời gian sớm nhất.');
+            form.reset();
+        } catch {
+            alert('Chưa gửi được đơn đặt mẫu. Vui lòng gọi hotline hoặc thử lại sau ít phút.');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Gửi Đơn Đặt Mẫu';
+            }
+        }
+    });
 }
 
 // ======================================================
@@ -885,10 +985,13 @@ function initContactForm() {
 
         const name    = document.getElementById('contact-name')?.value?.trim();
         const phone   = document.getElementById('contact-phone')?.value?.trim();
+        const email   = document.getElementById('contact-email')?.value?.trim();
+        const address = document.getElementById('contact-address')?.value?.trim();
+        const service = document.getElementById('contact-service')?.value || 'cung-cap-mau';
         const message = document.getElementById('contact-message')?.value?.trim();
 
-        if (!name || !phone) {
-            alert('Vui lòng nhập đầy đủ Họ tên và Số điện thoại.');
+        if (!name || !phone || !address) {
+            alert('Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ.');
             return;
         }
 
@@ -902,16 +1005,18 @@ function initContactForm() {
             const res = await fetch(`${CMS_API}/contact-inquiries`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: { name, phone, message } }),
+                body: JSON.stringify({ data: { name, phone, email, address, service, message } }),
                 signal: AbortSignal.timeout(10000),
             });
 
             if (!res.ok) throw new Error(`Server responded ${res.status}`);
         } catch {
-            console.warn('[Contact] CMS submission failed, saving to localStorage as fallback');
-            const pending = JSON.parse(localStorage.getItem('dha_pending_contacts') || '[]');
-            pending.push({ name, phone, message, date: new Date().toISOString() });
-            localStorage.setItem('dha_pending_contacts', JSON.stringify(pending));
+            alert('Chưa gửi được yêu cầu. Vui lòng gọi hotline hoặc thử lại sau ít phút.');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Gửi Yêu Cầu Báo Giá';
+            }
+            return;
         }
 
         const modal = document.getElementById('success-modal');
@@ -977,7 +1082,7 @@ async function initEstimator() {
 
             if (groupOres.length > 0) {
                 oreSelect.innerHTML = groupOres.map(o =>
-                    `<option value="${escapeHtml(o.uid || o.name)}" data-price="${o.base_price || 0}">${escapeHtml(o.name)}</option>`
+                    `<option value="${escapeHtml(o.uid || o.name)}" data-price="${getOrePrice(o)}">${escapeHtml(o.name)}</option>`
                 ).join('');
             } else {
                 const fallbackOptions = {

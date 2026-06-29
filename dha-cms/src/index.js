@@ -11,6 +11,21 @@ function loadJsonFile(filename) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
+function getOreGroup(item) {
+  if (item.group === 'quang' && (item.uid || '').includes('sat')) return 'black-metal';
+  if (item.group === 'rare-earth' || (item.name || '').toLowerCase().includes('đất hiếm')) return 'rare-earth';
+  return 'color-metal';
+}
+
+function getOreSeedPrice(item) {
+  const uid = item.uid || '';
+  if (uid.includes('sat')) return 25000;
+  if (uid.includes('nhom') || uid.includes('bauxite')) return 35000;
+  if (uid.includes('chi')) return 65000;
+  if (uid.includes('thiec')) return 120000;
+  return 85000;
+}
+
 module.exports = {
   register() {},
 
@@ -107,6 +122,38 @@ module.exports = {
       image: item.image,
     }));
 
+    await seedCollection('api::hero-slide.hero-slide', 'hero_slides.json', (item) => ({
+      subtitle: item.subtitle,
+      title: item.title,
+      image_url: item.image_url,
+      image_alt: item.image_alt,
+      sort_order: item.sort_order,
+    }));
+
+    await seedCollection('api::service.service', 'services.json', (item) => ({
+      title: item.title,
+      description: item.description,
+      features: item.features,
+      icon_svg: item.icon_svg,
+      link_url: item.link_url,
+      link_text: item.link_text,
+      sort_order: item.sort_order,
+    }));
+
+    await seedCollection('api::workflow-step.workflow-step', 'workflow_steps.json', (item) => ({
+      step_number: item.step_number,
+      title: item.title,
+      description: item.description,
+      sort_order: item.sort_order,
+    }));
+
+    await seedCollection('api::ore.ore', 'products.json', (item) => ({
+      uid: item.uid,
+      name: item.name,
+      group: getOreGroup(item),
+      price: item.price || getOreSeedPrice(item),
+    }));
+
     await seedSingleType('api::site-setting.site-setting', 'site_setting.json');
 
     try {
@@ -133,6 +180,12 @@ module.exports = {
           'api::ore.ore.findOne',
           'api::news.news.find',
           'api::news.news.findOne',
+          'api::hero-slide.hero-slide.find',
+          'api::hero-slide.hero-slide.findOne',
+          'api::service.service.find',
+          'api::service.service.findOne',
+          'api::workflow-step.workflow-step.find',
+          'api::workflow-step.workflow-step.findOne',
           'api::contact-inquiry.contact-inquiry.create',
           'api::order-request.order-request.create',
         ];

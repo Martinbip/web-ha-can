@@ -16,6 +16,15 @@ CMS_DIR="$PROJECT_DIR/dha-cms"
 CMS_PORT=1337
 FRONTEND_PORT=3000
 
+# Prefer a project-compatible Node from nvm if available. Some machines may have
+# Homebrew npm wired to a newer unsupported Node, which breaks better-sqlite3.
+for node_dir in "$HOME"/.nvm/versions/node/v22* "$HOME"/.nvm/versions/node/v20*; do
+    if [ -x "$node_dir/bin/node" ] && [ -x "$node_dir/bin/npm" ]; then
+        export PATH="$node_dir/bin:$PATH"
+        break
+    fi
+done
+
 # Cleanup khi thoát
 cleanup() {
     echo ""
@@ -39,10 +48,20 @@ free_port() {
     local name=$2
     local pids=$(lsof -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null)
     if [ -n "$pids" ]; then
-        echo -e "${YELLOW}⚠  Port $port ($name) đang bị chiếm. Đang giải phóng...${NC}"
-        echo "$pids" | xargs kill -9 2>/dev/null
-        sleep 1
-        echo -e "${GREEN}  ✔  Đã giải phóng port $port.${NC}"
+        echo -e "${YELLOW}⚠  Port $port ($name) đang bị chiếm bởi PID: $pids${NC}"
+        if [ "$DHA_AUTO_FREE_PORTS" = "1" ]; then
+            echo -e "${YELLOW}   DHA_AUTO_FREE_PORTS=1 → gửi tín hiệu dừng nhẹ...${NC}"
+            echo "$pids" | xargs kill 2>/dev/null
+            sleep 2
+            if lsof -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1; then
+                echo -e "${RED}✘  Port $port vẫn đang bị chiếm. Hãy dừng process đó thủ công rồi chạy lại.${NC}"
+                exit 1
+            fi
+            echo -e "${GREEN}  ✔  Đã giải phóng port $port.${NC}"
+        else
+            echo -e "${RED}✘  Hãy dừng process đang dùng port $port hoặc chạy DHA_AUTO_FREE_PORTS=1 ./start.sh${NC}"
+            exit 1
+        fi
     fi
 }
 
