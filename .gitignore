@@ -22,6 +22,7 @@ backups/
 
 # Local agent config
 .codex/
+.superpowers/
 
 # OS
 .DS_Store
