@@ -17,6 +17,9 @@ deploy/.env
 # Local backups
 backups/
 
+# Local worktrees
+.worktrees/
+
 # Local agent config
 .codex/
 
