@@ -523,7 +523,7 @@ test('admin-ui auth uses http-only cookie and never exposes Cloudinary secrets',
   assert.match(authSource, /httpOnly:\s*true/, 'session cookie is http-only');
   assert.match(authSource, /sameSite:\s*['"]lax['"]/, 'session cookie is sameSite lax');
   assert.match(authSource, /ADMIN_UI_SESSION_SECRET/, 'custom session secret is required');
-  assert.doesNotMatch(routesSource, /auth:\s*false[\s\S]*resources/, 'resource routes must not disable auth');
+  assert.match(routesSource, /auth:\s*false/, 'admin-ui routes bypass Strapi Content API auth');
   assert.doesNotMatch(authSource, /CLOUDINARY_API_SECRET|CLOUDINARY_URL/, 'auth service must not read Cloudinary secrets');
 });
 ```
