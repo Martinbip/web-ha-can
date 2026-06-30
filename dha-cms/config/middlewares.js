@@ -48,6 +48,7 @@ module.exports = [
       },
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
       headers: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
+      credentials: true,
       keepHeaderOnError: true,
     },
   },

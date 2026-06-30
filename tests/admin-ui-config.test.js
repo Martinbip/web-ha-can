@@ -72,3 +72,14 @@ test('project and hero editor labels match Task 1 schema and locale', () => {
   assert.equal(siteSetting.fields.hero_title.label, 'Tiêu đề trang chủ');
   assert.equal(siteSetting.fields.hero_description.label, 'Mô tả trang chủ');
 });
+
+test('admin-ui auth uses http-only cookie and never exposes Cloudinary secrets', () => {
+  const authSource = read('dha-cms/src/api/admin-ui/services/auth.js');
+  const routesSource = read('dha-cms/src/api/admin-ui/routes/admin-ui.js');
+
+  assert.match(authSource, /httpOnly:\s*true/, 'session cookie is http-only');
+  assert.match(authSource, /sameSite:\s*['"]lax['"]/, 'session cookie is sameSite lax');
+  assert.match(authSource, /ADMIN_UI_SESSION_SECRET/, 'custom session secret is required');
+  assert.match(routesSource, /auth:\s*false/, 'admin-ui routes bypass Strapi Content API auth');
+  assert.doesNotMatch(authSource, /CLOUDINARY_API_SECRET|CLOUDINARY_URL/, 'auth service must not read Cloudinary secrets');
+});
