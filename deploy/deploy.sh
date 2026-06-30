@@ -71,6 +71,7 @@ else
 fi
 
 # Cảnh báo nếu nginx config thay đổi (không tự ghi đè vì Certbot quản lý SSL)
+cd /var/www/web-ha-can
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^deploy/nginx.conf'; then
     echo "⚠️  deploy/nginx.conf đã thay đổi — cần cập nhật thủ công trên server:"
     echo "   Xem diff: diff /var/www/web-ha-can/deploy/nginx.conf /etc/nginx/sites-available/smadesign.vn"
