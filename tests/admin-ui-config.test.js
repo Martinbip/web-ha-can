@@ -103,3 +103,13 @@ test('admin-ui CORS does not allowlist null origin for credentials', () => {
 
   assert.doesNotMatch(middlewaresSource, /['"]null['"]/, 'credentialed CORS must not allowlist Origin: null');
 });
+
+test('admin-ui resources use whitelisted config and Strapi 5 document service', () => {
+  const source = read('dha-cms/src/api/admin-ui/services/resources.js');
+
+  assert.match(source, /getResourceConfig/, 'resource service loads whitelist config');
+  assert.match(source, /strapi\.documents\(config\.uid\)/, 'resource service uses Strapi 5 document service');
+  assert.doesNotMatch(source, /strapi\.documents\(ctx\.params\.type\)/, 'route param is never used as a document UID');
+  assert.match(source, /editableFields/, 'writes are limited to editable fields');
+  assert.match(source, /publishedAt/, 'publish state is represented in responses');
+});
