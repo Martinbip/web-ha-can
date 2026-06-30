@@ -83,3 +83,23 @@ test('admin-ui auth uses http-only cookie and never exposes Cloudinary secrets',
   assert.match(routesSource, /auth:\s*false/, 'admin-ui routes bypass Strapi Content API auth');
   assert.doesNotMatch(authSource, /CLOUDINARY_API_SECRET|CLOUDINARY_URL/, 'auth service must not read Cloudinary secrets');
 });
+
+test('admin-ui login route is tightly rate limited', () => {
+  const routesSource = read('dha-cms/src/api/admin-ui/routes/admin-ui.js');
+
+  assert.match(routesSource, /path:\s*['"]\/admin-ui\/auth\/login['"][\s\S]*name:\s*['"]global::rate-limit['"]/, 'login route uses global rate-limit middleware');
+  assert.match(routesSource, /windowMs:\s*15\s*\*\s*60\s*\*\s*1000/, 'login rate limit uses a 15 minute window');
+  assert.match(routesSource, /max:\s*5/, 'login rate limit allows at most 5 attempts');
+});
+
+test('admin-ui auth compares signatures without timingSafeEqual length throws', () => {
+  const authSource = read('dha-cms/src/api/admin-ui/services/auth.js');
+
+  assert.match(authSource, /safe[A-Za-z]*Equal|signature\.length\s*!==\s*expected\.length|expected\.length\s*!==\s*signature\.length/, 'auth service guards timingSafeEqual length mismatch or uses a safe comparison helper');
+});
+
+test('admin-ui CORS does not allowlist null origin for credentials', () => {
+  const middlewaresSource = read('dha-cms/config/middlewares.js');
+
+  assert.doesNotMatch(middlewaresSource, /['"]null['"]/, 'credentialed CORS must not allowlist Origin: null');
+});

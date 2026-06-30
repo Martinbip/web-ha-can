@@ -20,14 +20,37 @@ function sign(payload) {
   return `${body}.${signature}`;
 }
 
+function safeSignatureEqual(signature, expected) {
+  const signatureBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (signatureBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
+}
+
 function verify(token) {
-  if (!token || !token.includes('.')) return null;
-  const [body, signature] = token.split('.');
-  const expected = crypto.createHmac('sha256', getSessionSecret()).update(body).digest('base64url');
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
-  const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
-  if (!payload.exp || payload.exp < Date.now()) return null;
-  return payload;
+  if (!token) return null;
+
+  const pieces = String(token).split('.');
+  if (pieces.length !== 2) return null;
+
+  const [body, signature] = pieces;
+  if (!body || !signature) return null;
+
+  try {
+    const expected = crypto.createHmac('sha256', getSessionSecret()).update(body).digest('base64url');
+    if (!safeSignatureEqual(signature, expected)) return null;
+
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (!payload || !Number.isFinite(payload.exp) || payload.exp < Date.now()) return null;
+
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 function setSessionCookie(ctx, payload) {
