@@ -96,7 +96,7 @@ test('deployment scripts avoid accidental commits and destructive port kills', (
   assert.doesNotMatch(start, /kill -9/, 'dev startup should not force kill unrelated processes');
   assert.match(backup, /dha-cms\/\.tmp\/data\.db/, 'backup script includes Strapi sqlite database');
   assert.match(backup, /public\/uploads/, 'backup script includes Strapi uploads');
-  assert.equal(rootPackage.scripts.test, 'node --test tests/regression.test.js');
+  assert.equal(rootPackage.scripts.test, 'node --test tests/regression.test.js tests/admin-ui-config.test.js');
 });
 
 test('keyboard focus remains visible on interactive inputs', () => {

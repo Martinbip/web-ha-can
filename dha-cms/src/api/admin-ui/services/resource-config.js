@@ -76,7 +76,7 @@ const RESOURCE_CONFIG = {
     titleField: 'name',
     defaultSort: { createdAt: 'desc' },
     searchableFields: ['name', 'location', 'method'],
-    editableFields: ['name', 'location', 'scale', 'method', 'value', 'cloudinary_image_url', 'cloudinary_public_id'],
+    editableFields: ['name', 'location', 'scale', 'method', 'value', 'image'],
     listFields: ['name', 'location', 'method', 'publishedAt'],
     fields: {
       name: { label: 'Tên dự án', type: 'text', required: true, maxLength: 300 },
@@ -84,8 +84,7 @@ const RESOURCE_CONFIG = {
       scale: { label: 'Quy mô', type: 'text', maxLength: 200 },
       method: { label: 'Phương pháp', type: 'text', maxLength: 200 },
       value: { label: 'Giá trị', type: 'text', maxLength: 200 },
-      cloudinary_image_url: { label: 'Ảnh dự án', type: 'cloudinary-image', folder: 'ha-can/projects', publicIdField: 'cloudinary_public_id' },
-      cloudinary_public_id: { label: 'Cloudinary public ID', type: 'hidden' },
+      image: { label: 'Ảnh dự án', type: 'cloudinary-image', folder: 'ha-can/projects' },
     },
   },
   'services': {
@@ -110,8 +109,8 @@ const RESOURCE_CONFIG = {
   },
   'hero-slides': {
     uid: 'api::hero-slide.hero-slide',
-    label: 'Hero slide',
-    pluralLabel: 'Hero slides',
+    label: 'Slide trang chủ',
+    pluralLabel: 'Slide trang chủ',
     draftAndPublish: true,
     titleField: 'title',
     defaultSort: { sort_order: 'asc' },
@@ -257,9 +256,9 @@ const RESOURCE_CONFIG = {
       youtube_url: { label: 'YouTube', type: 'url', maxLength: 500 },
       zalo_url: { label: 'Zalo', type: 'url', maxLength: 500 },
       twitter_url: { label: 'Twitter/X', type: 'url', maxLength: 500 },
-      hero_tagline: { label: 'Hero tagline', type: 'text', maxLength: 200 },
-      hero_title: { label: 'Hero title', type: 'text', maxLength: 200 },
-      hero_description: { label: 'Hero description', type: 'textarea', maxLength: 1000 },
+      hero_tagline: { label: 'Dòng giới thiệu trang chủ', type: 'text', maxLength: 200 },
+      hero_title: { label: 'Tiêu đề trang chủ', type: 'text', maxLength: 200 },
+      hero_description: { label: 'Mô tả trang chủ', type: 'textarea', maxLength: 1000 },
       hero_cert_label: { label: 'Nhãn chứng chỉ', type: 'text', maxLength: 50 },
       hero_cert_value: { label: 'Giá trị chứng chỉ', type: 'text', maxLength: 100 },
       brand_bio: { label: 'Giới thiệu thương hiệu', type: 'textarea', maxLength: 1000 },
@@ -320,7 +319,11 @@ const RESOURCE_CONFIG = {
 };
 
 function getResourceConfig(type) {
-  return RESOURCE_CONFIG[type] || null;
+  if (!Object.prototype.hasOwnProperty.call(RESOURCE_CONFIG, type)) {
+    return null;
+  }
+
+  return RESOURCE_CONFIG[type];
 }
 
 function listResourceConfigs() {
