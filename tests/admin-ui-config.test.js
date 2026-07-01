@@ -113,3 +113,16 @@ test('admin-ui resources use whitelisted config and Strapi 5 document service', 
   assert.match(source, /editableFields/, 'writes are limited to editable fields');
   assert.match(source, /publishedAt/, 'publish state is represented in responses');
 });
+
+test('admin-ui resource responses use explicit read whitelists', () => {
+  const source = read('dha-cms/src/api/admin-ui/services/resources.js');
+  const configSource = read('dha-cms/src/api/admin-ui/services/resource-config.js');
+
+  assert.doesNotMatch(source, /publicationState/, 'Strapi 5 document service must not use v4 publicationState');
+  assert.match(source, /function getReadableFields/, 'resource service defines readable field whitelist');
+  assert.match(source, /function normalizeEntry/, 'resource service normalizes outbound entries');
+  assert.doesNotMatch(source, /function normalizeEntry\(entry\)\s*{\s*return entry;\s*}/, 'normalizeEntry must not return raw documents');
+  assert.match(source, /fields:\s*getDocumentFields\(config\)/, 'document reads request whitelisted fields');
+  assert.match(configSource, /readFields:\s*\[[^\]]*email[^\]]*address[^\]]*message[^\]]*\]/, 'contact details are explicitly whitelisted');
+  assert.match(configSource, /readFields:\s*\[[^\]]*product_uid[^\]]*email[^\]]*unit[^\]]*note[^\]]*\]/, 'order details are explicitly whitelisted');
+});

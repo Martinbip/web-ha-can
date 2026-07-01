@@ -44,7 +44,7 @@ function getFilters(config, ctx) {
 function getSort(config, ctx) {
   if (ctx.query.sort) {
     const [field, direction = 'asc'] = String(ctx.query.sort).split(':');
-    if ([config.titleField, ...config.listFields, ...config.editableFields, 'createdAt', 'updatedAt', 'publishedAt'].includes(field)) {
+    if (getReadableFields(config).includes(field)) {
       return { [field]: direction.toLowerCase() === 'desc' ? 'desc' : 'asc' };
     }
   }
@@ -62,8 +62,39 @@ async function loadConfig(ctx) {
   return config;
 }
 
-function normalizeEntry(entry) {
-  return entry;
+function unique(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function getReadableFields(config) {
+  return unique([
+    'id',
+    'documentId',
+    'createdAt',
+    'updatedAt',
+    'publishedAt',
+    config.titleField,
+    ...(config.listFields || []),
+    ...(config.editableFields || []),
+    ...(config.readFields || []),
+  ]);
+}
+
+function getDocumentFields(config) {
+  return getReadableFields(config).filter((field) => !['id', 'documentId'].includes(field));
+}
+
+function normalizeEntry(entry, config) {
+  if (!entry) return entry;
+  if (Array.isArray(entry)) return entry.map((item) => normalizeEntry(item, config));
+
+  const readableFields = getReadableFields(config);
+  return readableFields.reduce((data, field) => {
+    if (Object.prototype.hasOwnProperty.call(entry, field)) {
+      data[field] = entry[field];
+    }
+    return data;
+  }, {});
 }
 
 async function meta(ctx) {
@@ -80,7 +111,7 @@ async function dashboard(ctx) {
   const cards = [];
   for (const config of listResourceConfigs()) {
     if (config.singleType) continue;
-    const count = await strapi.documents(config.uid).count();
+    const count = await strapi.documents(config.uid).count({});
     cards.push({ type: config.type, label: config.pluralLabel, count });
   }
   ctx.body = { cards };
@@ -91,8 +122,8 @@ async function list(ctx) {
   if (!config) return;
 
   if (config.singleType) {
-    const entries = await getService(config).findMany({ limit: 1 });
-    ctx.body = { data: entries[0] || null, meta: { page: 1, pageSize: 1, total: entries.length } };
+    const entries = await getService(config).findMany({ fields: getDocumentFields(config), limit: 1 });
+    ctx.body = { data: normalizeEntry(entries[0] || null, config), meta: { page: 1, pageSize: 1, total: entries.length } };
     return;
   }
 
@@ -101,12 +132,12 @@ async function list(ctx) {
   const sort = getSort(config, ctx);
   const service = getService(config);
   const [data, total] = await Promise.all([
-    service.findMany({ filters, sort, start: pagination.start, limit: pagination.limit, publicationState: 'preview' }),
+    service.findMany({ fields: getDocumentFields(config), filters, sort, start: pagination.start, limit: pagination.limit }),
     service.count({ filters }),
   ]);
 
   ctx.body = {
-    data: data.map(normalizeEntry),
+    data: data.map((entry) => normalizeEntry(entry, config)),
     meta: { page: pagination.page, pageSize: pagination.pageSize, total },
   };
 }
@@ -114,9 +145,9 @@ async function list(ctx) {
 async function get(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
-  const data = await getService(config).findOne({ documentId: ctx.params.id, publicationState: 'preview' });
+  const data = await getService(config).findOne({ documentId: ctx.params.id, fields: getDocumentFields(config) });
   if (!data) return sendError(ctx, 404, 'NOT_FOUND', 'Không tìm thấy dữ liệu.');
-  ctx.body = { data: normalizeEntry(data) };
+  ctx.body = { data: normalizeEntry(data, config) };
 }
 
 async function create(ctx) {
@@ -124,14 +155,14 @@ async function create(ctx) {
   if (!config) return;
   if (config.readOnlyCreate) return sendError(ctx, 403, 'READ_ONLY', 'Module này không cho tạo dữ liệu từ admin.');
   const data = await getService(config).create({ data: cleanData(config, ctx.request.body) });
-  ctx.body = { data: normalizeEntry(data) };
+  ctx.body = { data: normalizeEntry(data, config) };
 }
 
 async function update(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
   const data = await getService(config).update({ documentId: ctx.params.id, data: cleanData(config, ctx.request.body) });
-  ctx.body = { data: normalizeEntry(data) };
+  ctx.body = { data: normalizeEntry(data, config) };
 }
 
 async function remove(ctx) {
@@ -147,7 +178,7 @@ async function publish(ctx) {
   if (!config) return;
   if (!config.draftAndPublish) return sendError(ctx, 400, 'PUBLISH_UNSUPPORTED', 'Module này không hỗ trợ xuất bản.');
   const data = await getService(config).publish({ documentId: ctx.params.id });
-  ctx.body = { data };
+  ctx.body = { data: normalizeEntry(data, config) };
 }
 
 async function unpublish(ctx) {
@@ -155,7 +186,7 @@ async function unpublish(ctx) {
   if (!config) return;
   if (!config.draftAndPublish) return sendError(ctx, 400, 'PUBLISH_UNSUPPORTED', 'Module này không hỗ trợ xuất bản.');
   const data = await getService(config).unpublish({ documentId: ctx.params.id });
-  ctx.body = { data };
+  ctx.body = { data: normalizeEntry(data, config) };
 }
 
 module.exports = {
@@ -168,4 +199,6 @@ module.exports = {
   delete: remove,
   publish,
   unpublish,
+  getReadableFields,
+  normalizeEntry,
 };

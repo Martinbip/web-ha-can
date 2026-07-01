@@ -280,6 +280,7 @@ const RESOURCE_CONFIG = {
     defaultSort: { createdAt: 'desc' },
     searchableFields: ['name', 'phone', 'email', 'address', 'message'],
     editableFields: ['status'],
+    readFields: ['email', 'address', 'message'],
     listFields: ['name', 'phone', 'service', 'status', 'createdAt'],
     fields: {
       status: {
@@ -303,6 +304,7 @@ const RESOURCE_CONFIG = {
     defaultSort: { createdAt: 'desc' },
     searchableFields: ['product_name', 'customer_name', 'phone', 'email', 'note'],
     editableFields: ['status'],
+    readFields: ['product_uid', 'email', 'unit', 'note'],
     listFields: ['product_name', 'customer_name', 'phone', 'quantity', 'status', 'createdAt'],
     fields: {
       status: {
