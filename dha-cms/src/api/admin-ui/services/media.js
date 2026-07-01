@@ -42,7 +42,25 @@ function getBoundedInteger(value, fallback, min, max) {
 }
 
 function getScopedPrefix(value, fallback = 'ha-can/') {
-  const prefix = String(value || fallback).replace(/^\/+/, '');
+  const raw = String(value || fallback);
+  const hasTrailingSlash = raw.endsWith('/');
+
+  // Split into segments and strip anything that could traverse out of the
+  // ha-can/ namespace (empty segments from repeated slashes, '.' and '..').
+  // Cloudinary folder/prefix values are opaque strings, not filesystem
+  // paths, so the safe behavior is to drop traversal segments entirely
+  // rather than try to resolve them against a parent directory.
+  const segments = raw
+    .split('/')
+    .filter((segment) => segment !== '' && segment !== '.' && segment !== '..');
+
+  if (segments.length === 0 || segments[0] !== 'ha-can') {
+    return fallback;
+  }
+
+  let prefix = segments.join('/');
+  if (hasTrailingSlash) prefix += '/';
+
   if (!prefix.startsWith('ha-can/')) return fallback;
   return prefix;
 }

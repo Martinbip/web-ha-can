@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..');
 const {
   getResourceConfig,
 } = require('../dha-cms/src/api/admin-ui/services/resource-config');
+const { getScopedPrefix } = require('../dha-cms/src/api/admin-ui/services/media');
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), 'utf8');
@@ -170,4 +171,16 @@ test('admin-ui media service scopes library access and validates uploads', () =>
   assert.match(source, /image\/png/, 'upload allows png images explicitly');
   assert.match(source, /image\/webp/, 'upload allows webp images explicitly');
   assert.match(source, /INVALID_FILE_TYPE/, 'invalid upload type returns a clear error');
+});
+
+test('getScopedPrefix resolves path segments and rejects traversal at runtime', () => {
+  assert.equal(getScopedPrefix(undefined), 'ha-can/', 'no value falls back to default prefix');
+  assert.equal(getScopedPrefix(undefined, 'ha-can/uploads'), 'ha-can/uploads', 'no value falls back to custom fallback');
+  assert.equal(getScopedPrefix('ha-can/products'), 'ha-can/products', 'valid subfolder is preserved unchanged');
+  assert.equal(getScopedPrefix('something-else/'), 'ha-can/', 'value outside ha-can namespace falls back');
+
+  const traversalResult = getScopedPrefix('ha-can/../../other-tenant-prefix');
+  assert.ok(traversalResult.startsWith('ha-can/'), 'traversal input still resolves inside ha-can/ namespace');
+  assert.ok(!traversalResult.includes('..'), 'traversal segments are stripped from the resolved prefix');
+  assert.equal(traversalResult, 'ha-can/other-tenant-prefix', 'traversal segments collapse to a safe in-namespace prefix');
 });
