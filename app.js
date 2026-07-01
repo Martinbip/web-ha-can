@@ -49,6 +49,13 @@ function getOrePrice(ore) {
     return Number(ore?.price ?? ore?.base_price ?? 0) || 0;
 }
 
+function getProjectImageUrl(project) {
+    if (project?.cloudinary_image_url) return project.cloudinary_image_url;
+    if (project?.image?.url) return `${CMS_BASE}${project.image.url}`;
+    if (typeof project?.image === 'string') return project.image;
+    return '';
+}
+
 // ======================================================
 // CMS DATA FETCHING
 // ======================================================
@@ -1187,10 +1194,12 @@ async function initProjectsPage() {
             return;
         }
 
-        container.innerHTML = projects.map(item => `
+        container.innerHTML = projects.map(item => {
+            const imageUrl = getProjectImageUrl(item) || 'assets/mo_quang_ha_nam.png';
+            return `
             <div class="portfolio-item card">
                 <div class="portfolio-img-wrap">
-                    <img src="${escapeHtml(item.image || 'assets/mo_quang_ha_nam.png')}" alt="${escapeHtml(item.name)}" class="portfolio-img" loading="lazy">
+                    <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.name)}" class="portfolio-img" loading="lazy">
                 </div>
                 <div class="portfolio-body">
                     <h3 class="portfolio-name">${escapeHtml(item.name)}</h3>
@@ -1200,7 +1209,8 @@ async function initProjectsPage() {
                     ${item.value ? `<div class="portfolio-meta"><strong>Kết quả:</strong> ${escapeHtml(item.value)}</div>` : ''}
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
     } catch (e) {
         console.error('[Projects] Error:', e);
         container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;"><p>Không thể tải danh mục dự án.</p></div>';

@@ -105,3 +105,13 @@ test('keyboard focus remains visible on interactive inputs', () => {
   assert.match(styles, /:focus-visible/, 'styles should define focus-visible states');
   assert.doesNotMatch(styles, /outline:\s*none;/, 'styles should not remove outlines without replacement');
 });
+
+test('project rendering prefers Cloudinary image URLs during media migration', () => {
+  const projectSchema = schema('dha-cms/src/api/project/content-types/project/schema.json');
+  const appJs = read('app.js');
+
+  assert.ok(projectSchema.attributes.cloudinary_image_url, 'project schema includes Cloudinary image URL');
+  assert.ok(projectSchema.attributes.cloudinary_public_id, 'project schema stores Cloudinary public ID');
+  assert.match(appJs, /cloudinary_image_url/, 'frontend checks project Cloudinary image URL');
+  assert.match(appJs, /getProjectImageUrl/, 'frontend uses one normalizer for project images');
+});

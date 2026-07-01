@@ -41,6 +41,14 @@
       "allowedTypes": [
         "images"
       ]
+    },
+    "cloudinary_image_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "cloudinary_public_id": {
+      "type": "string",
+      "maxLength": 300
     }
   }
 }
