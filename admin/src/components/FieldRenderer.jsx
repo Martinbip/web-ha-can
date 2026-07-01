@@ -5,7 +5,7 @@ import ImagePicker from './ImagePicker.jsx';
 // Maps one field config entry (from RESOURCE_CONFIG) + its current value to the
 // right input control. Keeps list/edit pages free of per-type branching: they just
 // render <FieldRenderer field={...} value={...} onChange={...} /> for every field.
-export default function FieldRenderer({ name, field, value, onChange }) {
+export default function FieldRenderer({ name, field, value, onChange, setField }) {
   const id = `field-${name}`;
   const label = field.label || name;
 
@@ -15,14 +15,15 @@ export default function FieldRenderer({ name, field, value, onChange }) {
         <label htmlFor={id}>
           {label}
           {field.required ? <span className="field-required"> *</span> : null}
+          {field.readOnly ? <span className="field-readonly-hint"> (chỉ đọc)</span> : null}
         </label>
       ) : null}
-      {renderInput({ id, field, value, onChange })}
+      {renderInput({ id, field, value, onChange, setField })}
     </div>
   );
 }
 
-function renderInput({ id, field, value, onChange }) {
+function renderInput({ id, field, value, onChange, setField }) {
   switch (field.type) {
     case 'text':
       return (
@@ -31,6 +32,8 @@ function renderInput({ id, field, value, onChange }) {
           type="text"
           value={value ?? ''}
           required={field.required}
+          readOnly={field.readOnly}
+          disabled={field.readOnly}
           onChange={(event) => onChange(event.target.value)}
         />
       );
@@ -42,6 +45,8 @@ function renderInput({ id, field, value, onChange }) {
           type="email"
           value={value ?? ''}
           required={field.required}
+          readOnly={field.readOnly}
+          disabled={field.readOnly}
           onChange={(event) => onChange(event.target.value)}
         />
       );
@@ -53,6 +58,8 @@ function renderInput({ id, field, value, onChange }) {
           type="url"
           value={value ?? ''}
           required={field.required}
+          readOnly={field.readOnly}
+          disabled={field.readOnly}
           onChange={(event) => onChange(event.target.value)}
         />
       );
@@ -64,6 +71,8 @@ function renderInput({ id, field, value, onChange }) {
           type="date"
           value={toDateInputValue(value)}
           required={field.required}
+          readOnly={field.readOnly}
+          disabled={field.readOnly}
           onChange={(event) => onChange(event.target.value)}
         />
       );
@@ -75,6 +84,8 @@ function renderInput({ id, field, value, onChange }) {
           type="number"
           value={value ?? ''}
           required={field.required}
+          readOnly={field.readOnly}
+          disabled={field.readOnly}
           onChange={(event) => onChange(event.target.value === '' ? '' : Number(event.target.value))}
         />
       );
@@ -86,6 +97,8 @@ function renderInput({ id, field, value, onChange }) {
           rows={4}
           value={value ?? ''}
           required={field.required}
+          readOnly={field.readOnly}
+          disabled={field.readOnly}
           onChange={(event) => onChange(event.target.value)}
         />
       );
@@ -143,6 +156,11 @@ function renderInput({ id, field, value, onChange }) {
           id={id}
           value={value}
           onChange={onChange}
+          onSelect={
+            field.publicIdField && setField
+              ? (asset) => setField(field.publicIdField, asset.public_id)
+              : undefined
+          }
           folder={field.folder}
         />
       );

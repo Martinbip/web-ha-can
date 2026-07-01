@@ -38,8 +38,12 @@ export default function ResourceEditPage({ mode }) {
     );
   }
 
-  function handleChange(field, value) {
+  function setField(field, value) {
     setValues((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleChange(field, value) {
+    setField(field, value);
   }
 
   async function handleSubmit(event) {
@@ -81,6 +85,7 @@ export default function ResourceEditPage({ mode }) {
                 field={field}
                 value={values[name]}
                 onChange={(value) => handleChange(name, value)}
+                setField={setField}
               />
             ))}
           </div>

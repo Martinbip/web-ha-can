@@ -84,8 +84,8 @@ export const RESOURCE_CONFIG = {
       stat3_label: { label: 'Nhãn số liệu 3', type: 'text' },
     },
   },
-  'contact-inquiries': { label: 'Yêu cầu liên hệ', titleField: 'name', readOnlyCreate: true, listFields: ['name', 'phone', 'service', 'status', 'createdAt'], fields: { status: { label: 'Trạng thái', type: 'select', options: ['new', 'contacted', 'completed'] } } },
-  'order-requests': { label: 'Đơn đặt mẫu', titleField: 'customer_name', readOnlyCreate: true, listFields: ['product_name', 'customer_name', 'phone', 'quantity', 'status', 'createdAt'], fields: { status: { label: 'Trạng thái', type: 'select', options: ['new', 'processing', 'done'] } } },
+  'contact-inquiries': { label: 'Yêu cầu liên hệ', titleField: 'name', readOnlyCreate: true, listFields: ['name', 'phone', 'service', 'status', 'createdAt'], fields: { email: { label: 'Email', type: 'email', readOnly: true }, address: { label: 'Địa chỉ', type: 'textarea', readOnly: true }, message: { label: 'Lời nhắn', type: 'textarea', readOnly: true }, status: { label: 'Trạng thái', type: 'select', options: ['new', 'contacted', 'completed'] } } },
+  'order-requests': { label: 'Đơn đặt mẫu', titleField: 'customer_name', readOnlyCreate: true, listFields: ['product_name', 'customer_name', 'phone', 'quantity', 'status', 'createdAt'], fields: { product_uid: { label: 'Mã sản phẩm', type: 'text', readOnly: true }, email: { label: 'Email', type: 'email', readOnly: true }, unit: { label: 'Đơn vị', type: 'text', readOnly: true }, note: { label: 'Ghi chú', type: 'textarea', readOnly: true }, status: { label: 'Trạng thái', type: 'select', options: ['new', 'processing', 'done'] } } },
 };
 
 export function getResourceConfig(type) {

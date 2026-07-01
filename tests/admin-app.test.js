@@ -48,6 +48,48 @@ test('admin resource config covers all full admin modules and field types', () =
   assert.match(editPage, /saveResource/, 'edit page saves resources');
 });
 
+test('cloudinary-image fields capture the sibling public ID field on select', () => {
+  const config = read('admin/src/config/resources.js');
+  const editPage = read('admin/src/pages/ResourceEditPage.jsx');
+  const fieldRenderer = read('admin/src/components/FieldRenderer.jsx');
+
+  assert.match(
+    config,
+    /cloudinary_image_url:\s*{[^}]*publicIdField:\s*['"]cloudinary_public_id['"]/,
+    'projects image field declares its sibling public ID field',
+  );
+  assert.match(editPage, /function setField/, 'edit page exposes a setField updater');
+  assert.match(editPage, /setField=\{setField\}/, 'edit page passes setField down to FieldRenderer');
+  assert.match(
+    fieldRenderer,
+    /field\.publicIdField[\s\S]{0,120}setField\(field\.publicIdField,\s*asset\.public_id\)/,
+    'FieldRenderer writes the picked asset public_id into the configured sibling field',
+  );
+});
+
+test('contact-inquiries and order-requests expose lead data as read-only fields', () => {
+  const config = read('admin/src/config/resources.js');
+  const fieldRenderer = read('admin/src/components/FieldRenderer.jsx');
+  const configSource = read('dha-cms/src/api/admin-ui/services/resource-config.js');
+
+  assert.match(configSource, /readFields:\s*\[[^\]]*email[^\]]*address[^\]]*message[^\]]*\]/, 'backend whitelists contact detail read fields');
+  assert.match(configSource, /readFields:\s*\[[^\]]*product_uid[^\]]*email[^\]]*unit[^\]]*note[^\]]*\]/, 'backend whitelists order detail read fields');
+
+  const contactMatch = config.match(/'contact-inquiries':\s*{[\s\S]*?fields:\s*{([\s\S]*?)}\s*},\n\s*'order-requests'/);
+  assert.ok(contactMatch, 'contact-inquiries config block is present');
+  for (const field of ['email', 'address', 'message']) {
+    assert.match(contactMatch[1], new RegExp(`${field}:\\s*{[^}]*readOnly:\\s*true`), `contact-inquiries.${field} is read-only`);
+  }
+
+  const orderMatch = config.match(/'order-requests':\s*{[\s\S]*?fields:\s*{([\s\S]*?)}\s*},\n};/);
+  assert.ok(orderMatch, 'order-requests config block is present');
+  for (const field of ['product_uid', 'email', 'unit', 'note']) {
+    assert.match(orderMatch[1], new RegExp(`${field}:\\s*{[^}]*readOnly:\\s*true`), `order-requests.${field} is read-only`);
+  }
+
+  assert.match(fieldRenderer, /field\.readOnly/, 'FieldRenderer honors a readOnly field flag');
+});
+
 test('admin media UI uploads through admin-ui and never stores Cloudinary secrets', () => {
   const mediaPage = read('admin/src/pages/MediaLibraryPage.jsx');
   const mediaApi = read('admin/src/api/media.js');
