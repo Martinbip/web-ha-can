@@ -28,3 +28,14 @@ export function publishResource(type, id) {
 export function unpublishResource(type, id) {
   return apiRequest(`/resources/${type}/${id}/unpublish`, { method: 'POST' });
 }
+
+// Single-type resources (e.g. `site-setting`) have no list/create — the backend's
+// list() endpoint returns the one record (or null) directly as `data`, including its
+// `documentId`, which we then reuse with the regular saveResource PUT to update it.
+export function getSingletonResource(type) {
+  return listResources(type).then((payload) => payload.data || null);
+}
+
+export function saveSingletonResource(type, id, data) {
+  return saveResource(type, id, data);
+}

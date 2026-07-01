@@ -62,3 +62,21 @@ test('admin media UI uploads through admin-ui and never stores Cloudinary secret
     'frontend has no Cloudinary secrets',
   );
 });
+
+test('admin has grouped homepage pricing and settings screens', () => {
+  const app = read('admin/src/App.jsx');
+  const home = read('admin/src/pages/HomePageEditor.jsx');
+  const pricing = read('admin/src/pages/PricingPage.jsx');
+  const settings = read('admin/src/pages/SettingsPage.jsx');
+
+  assert.match(app, /\/home/, 'homepage editor route exists');
+  assert.match(app, /\/pricing/, 'pricing route exists');
+  assert.match(app, /\/settings/, 'settings route exists');
+  assert.match(home, /hero-slides/, 'home editor manages hero slides');
+  assert.match(home, /workflow-steps/, 'home editor manages workflow steps');
+  assert.match(home, /site-setting/, 'home editor manages site-setting hero fields');
+  assert.match(pricing, /pricing-packages/, 'pricing page manages market prices');
+  assert.match(pricing, /pricing-analyses/, 'pricing page manages analysis prices');
+  assert.match(pricing, /pricing-surveys/, 'pricing page manages survey prices');
+  assert.match(settings, /hotline/, 'settings page manages contact fields');
+});
