@@ -41,9 +41,9 @@ function getBoundedInteger(value, fallback, min, max) {
   return Math.min(Math.max(Math.floor(parsed), min), max);
 }
 
-function getScopedPrefix(value) {
-  const prefix = String(value || 'ha-can/').replace(/^\/+/, '');
-  if (!prefix.startsWith('ha-can/')) return 'ha-can/';
+function getScopedPrefix(value, fallback = 'ha-can/') {
+  const prefix = String(value || fallback).replace(/^\/+/, '');
+  if (!prefix.startsWith('ha-can/')) return fallback;
   return prefix;
 }
 
@@ -108,10 +108,7 @@ async function upload(ctx) {
     return sendError(ctx, validation.status, validation.code, validation.message);
   }
 
-  const folder = String(ctx.request.body.folder || 'ha-can/uploads').replace(/^\/+/, '');
-  if (!folder.startsWith('ha-can/')) {
-    return sendError(ctx, 400, 'INVALID_FOLDER', 'Thư mục ảnh không hợp lệ.');
-  }
+  const folder = getScopedPrefix(ctx.request.body.folder, 'ha-can/uploads');
 
   const result = await cloudinary.uploader.upload(file.filepath || file.path, {
     resource_type: 'image',
