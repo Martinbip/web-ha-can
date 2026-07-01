@@ -4,6 +4,8 @@ import { AuthProvider, ProtectedRoute } from './auth/AuthProvider.jsx';
 import AdminShell from './layout/AdminShell.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import ResourceListPage from './pages/ResourceListPage.jsx';
+import ResourceEditPage from './pages/ResourceEditPage.jsx';
 
 export default function App() {
   return (
@@ -20,6 +22,9 @@ export default function App() {
             }
           >
             <Route index element={<DashboardPage />} />
+            <Route path="/resources/:type" element={<ResourceListPage />} />
+            <Route path="/resources/:type/new" element={<ResourceEditPage mode="new" />} />
+            <Route path="/resources/:type/:id" element={<ResourceEditPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

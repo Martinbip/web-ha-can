@@ -29,3 +29,21 @@ test('admin shell uses WordPress-style navigation labels', () => {
     assert.match(shell, new RegExp(label), `${label} navigation label exists`);
   }
 });
+
+test('admin resource config covers all full admin modules and field types', () => {
+  const config = read('admin/src/config/resources.js');
+  const listPage = read('admin/src/pages/ResourceListPage.jsx');
+  const editPage = read('admin/src/pages/ResourceEditPage.jsx');
+  const fieldRenderer = read('admin/src/components/FieldRenderer.jsx');
+
+  for (const alias of ['news', 'products', 'projects', 'services', 'hero-slides', 'workflow-steps', 'pricing-packages', 'pricing-analyses', 'pricing-surveys', 'contact-inquiries', 'order-requests']) {
+    assert.match(config, new RegExp(`['"]${alias}['"]`), `${alias} frontend config exists`);
+  }
+
+  for (const fieldType of ['richtext', 'cloudinary-image', 'key-value-table', 'text-list']) {
+    assert.match(fieldRenderer, new RegExp(fieldType), `${fieldType} input is handled`);
+  }
+
+  assert.match(listPage, /publishResource/, 'list supports publish actions');
+  assert.match(editPage, /saveResource/, 'edit page saves resources');
+});
