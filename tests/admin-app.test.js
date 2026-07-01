@@ -50,10 +50,15 @@ test('admin resource config covers all full admin modules and field types', () =
 
 test('admin media UI uploads through admin-ui and never stores Cloudinary secrets', () => {
   const mediaPage = read('admin/src/pages/MediaLibraryPage.jsx');
+  const mediaApi = read('admin/src/api/media.js');
   const picker = read('admin/src/components/ImagePicker.jsx');
 
-  assert.match(mediaPage, /\/media\/upload/, 'media page uploads through backend endpoint');
-  assert.match(mediaPage, /FormData/, 'media upload uses multipart FormData');
+  assert.match(mediaApi, /\/media\/upload/, 'media upload goes through the backend endpoint');
+  assert.match(mediaApi, /FormData/, 'media upload uses multipart FormData');
   assert.match(picker, /onSelect/, 'image picker returns selected media');
-  assert.doesNotMatch(mediaPage + picker, /CLOUDINARY_API_SECRET|api_secret|cloudinary\.config/, 'frontend has no Cloudinary secrets');
+  assert.doesNotMatch(
+    mediaPage + mediaApi + picker,
+    /CLOUDINARY_API_SECRET|api_secret|cloudinary\.config/,
+    'frontend has no Cloudinary secrets',
+  );
 });

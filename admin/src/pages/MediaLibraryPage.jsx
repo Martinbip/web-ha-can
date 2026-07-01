@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { apiRequest } from '../api/client.js';
-import { MEDIA_FOLDERS, deleteMedia, listMedia } from '../api/media.js';
+import { MEDIA_FOLDERS, deleteMedia, listMedia, uploadMedia } from '../api/media.js';
 
 // Cloudinary-backed media library. Everything goes through /api/admin-ui/media
 // (see admin/src/api/media.js) — the frontend never talks to Cloudinary
@@ -39,10 +38,7 @@ export default function MediaLibraryPage() {
     setError('');
     setNotice('');
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', folder);
-      await apiRequest('/media/upload', { method: 'POST', body: formData });
+      await uploadMedia(file, folder);
       if (fileInputRef.current) fileInputRef.current.value = '';
       setNotice('Tải ảnh lên thành công.');
       load(folder);
