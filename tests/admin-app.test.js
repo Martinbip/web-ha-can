@@ -47,3 +47,13 @@ test('admin resource config covers all full admin modules and field types', () =
   assert.match(listPage, /publishResource/, 'list supports publish actions');
   assert.match(editPage, /saveResource/, 'edit page saves resources');
 });
+
+test('admin media UI uploads through admin-ui and never stores Cloudinary secrets', () => {
+  const mediaPage = read('admin/src/pages/MediaLibraryPage.jsx');
+  const picker = read('admin/src/components/ImagePicker.jsx');
+
+  assert.match(mediaPage, /\/media\/upload/, 'media page uploads through backend endpoint');
+  assert.match(mediaPage, /FormData/, 'media upload uses multipart FormData');
+  assert.match(picker, /onSelect/, 'image picker returns selected media');
+  assert.doesNotMatch(mediaPage + picker, /CLOUDINARY_API_SECRET|api_secret|cloudinary\.config/, 'frontend has no Cloudinary secrets');
+});

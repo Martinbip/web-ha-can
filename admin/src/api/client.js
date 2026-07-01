@@ -8,7 +8,10 @@ export async function apiRequest(path, options = {}) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload?.error?.message || 'Có lỗi xảy ra.');
+    const error = new Error(payload?.error?.message || 'Có lỗi xảy ra.');
+    error.code = payload?.error?.code;
+    error.details = payload?.error?.details;
+    throw error;
   }
   return payload;
 }

@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import ResourceListPage from './pages/ResourceListPage.jsx';
 import ResourceEditPage from './pages/ResourceEditPage.jsx';
+import MediaLibraryPage from './pages/MediaLibraryPage.jsx';
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             }
           >
             <Route index element={<DashboardPage />} />
+            <Route path="/media" element={<MediaLibraryPage />} />
             <Route path="/resources/:type" element={<ResourceListPage />} />
             <Route path="/resources/:type/new" element={<ResourceEditPage mode="new" />} />
             <Route path="/resources/:type/:id" element={<ResourceEditPage />} />
