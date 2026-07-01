@@ -13,6 +13,7 @@ const PREVIEW_TYPE_MAP = {
 };
 
 module.exports = ({ env }) => ({
+  url: env('ADMIN_URL', '/strapi-admin'),
   auth: {
     secret: env('ADMIN_JWT_SECRET'),
   },

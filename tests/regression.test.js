@@ -115,3 +115,15 @@ test('project rendering prefers Cloudinary image URLs during media migration', (
   assert.match(appJs, /cloudinary_image_url/, 'frontend checks project Cloudinary image URL');
   assert.match(appJs, /getProjectImageUrl/, 'frontend uses one normalizer for project images');
 });
+
+test('custom admin deployment and Cloudinary setup are documented', () => {
+  const readme = read('README_CMS.md');
+  const rootPackage = schema('package.json');
+  const nginx = read('deploy/nginx.conf');
+
+  assert.match(readme, /\/admin/, 'README documents custom admin URL');
+  assert.match(readme, /CLOUDINARY_URL|CLOUDINARY_CLOUD_NAME/, 'README documents Cloudinary environment variables');
+  assert.match(readme, /ADMIN_UI_SESSION_SECRET/, 'README documents custom admin session secret');
+  assert.ok(rootPackage.scripts['admin:build'], 'root package has admin build script');
+  assert.match(nginx, /\/admin/, 'nginx config mentions admin route handling');
+});

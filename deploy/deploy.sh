@@ -42,9 +42,22 @@ rsync -a --delete \
     --exclude="deploy/" \
     --exclude="dha-cms/" \
     --exclude="design-system/" \
+    --exclude="admin/" \
     --exclude=".git/" \
     /var/www/web-ha-can/ \
     /var/www/smadesign.vn/
+
+# Chỉ build & sync admin khi thư mục admin/ thật sự có thay đổi
+if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^admin/'; then
+    echo "▸ Phát hiện thay đổi Admin → build & sync admin tĩnh..."
+    cd /var/www/web-ha-can/admin
+    npm ci
+    npm run build
+    rsync -a --delete /var/www/web-ha-can/admin/dist/ /var/www/smadesign.vn/admin/
+    cd /var/www/web-ha-can
+else
+    echo "▸ Admin không đổi → bỏ qua build admin (deploy nhanh)."
+fi
 
 # Chỉ đụng tới Strapi khi thư mục dha-cms/ thật sự có thay đổi
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^dha-cms/'; then
