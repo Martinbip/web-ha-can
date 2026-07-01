@@ -126,3 +126,20 @@ test('admin-ui resource responses use explicit read whitelists', () => {
   assert.match(configSource, /readFields:\s*\[[^\]]*email[^\]]*address[^\]]*message[^\]]*\]/, 'contact details are explicitly whitelisted');
   assert.match(configSource, /readFields:\s*\[[^\]]*product_uid[^\]]*email[^\]]*unit[^\]]*note[^\]]*\]/, 'order details are explicitly whitelisted');
 });
+
+test('admin-ui mutations require trusted origins and safe pagination defaults', () => {
+  const authSource = read('dha-cms/src/api/admin-ui/services/auth.js');
+  const resourceSource = read('dha-cms/src/api/admin-ui/services/resources.js');
+
+  assert.match(authSource, /function requireTrustedOrigin/, 'auth service exposes trusted origin guard');
+  assert.match(authSource, /ctx\.request\.headers\.origin/, 'origin header is checked');
+  assert.match(authSource, /ctx\.request\.headers\.referer/, 'referer header is checked as fallback');
+  assert.match(authSource, /CSRF_ORIGIN/, 'unsafe mutation origin returns a CSRF-style error');
+
+  for (const fn of ['create', 'update', 'remove', 'publish', 'unpublish']) {
+    assert.match(resourceSource, new RegExp(`async function ${fn}[\\s\\S]*auth\\.requireTrustedOrigin\\(ctx\\)`), `${fn} checks trusted origin before mutating`);
+  }
+
+  assert.match(resourceSource, /Number\.isFinite/, 'pagination rejects NaN query values');
+  assert.doesNotMatch(resourceSource, /Math\.max\(Number\(ctx\.query\.page/, 'pagination must not pass NaN through Math.max');
+});

@@ -18,9 +18,15 @@ function getService(config) {
   return strapi.documents(config.uid);
 }
 
+function getBoundedInteger(value, fallback, min, max) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(Math.floor(parsed), min), max);
+}
+
 function getPagination(ctx) {
-  const page = Math.max(Number(ctx.query.page || 1), 1);
-  const pageSize = Math.min(Math.max(Number(ctx.query.pageSize || 20), 1), 100);
+  const page = getBoundedInteger(ctx.query.page, 1, 1, Number.MAX_SAFE_INTEGER);
+  const pageSize = getBoundedInteger(ctx.query.pageSize, 20, 1, 100);
   return {
     page,
     pageSize,
@@ -153,6 +159,7 @@ async function get(ctx) {
 async function create(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
+  if (!auth.requireTrustedOrigin(ctx)) return;
   if (config.readOnlyCreate) return sendError(ctx, 403, 'READ_ONLY', 'Module này không cho tạo dữ liệu từ admin.');
   const data = await getService(config).create({ data: cleanData(config, ctx.request.body) });
   ctx.body = { data: normalizeEntry(data, config) };
@@ -161,6 +168,7 @@ async function create(ctx) {
 async function update(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
+  if (!auth.requireTrustedOrigin(ctx)) return;
   const data = await getService(config).update({ documentId: ctx.params.id, data: cleanData(config, ctx.request.body) });
   ctx.body = { data: normalizeEntry(data, config) };
 }
@@ -168,6 +176,7 @@ async function update(ctx) {
 async function remove(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
+  if (!auth.requireTrustedOrigin(ctx)) return;
   if (config.readOnlyCreate) return sendError(ctx, 403, 'READ_ONLY', 'Module này không cho xóa dữ liệu từ admin.');
   await getService(config).delete({ documentId: ctx.params.id });
   ctx.body = { ok: true };
@@ -176,6 +185,7 @@ async function remove(ctx) {
 async function publish(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
+  if (!auth.requireTrustedOrigin(ctx)) return;
   if (!config.draftAndPublish) return sendError(ctx, 400, 'PUBLISH_UNSUPPORTED', 'Module này không hỗ trợ xuất bản.');
   const data = await getService(config).publish({ documentId: ctx.params.id });
   ctx.body = { data: normalizeEntry(data, config) };
@@ -184,6 +194,7 @@ async function publish(ctx) {
 async function unpublish(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
+  if (!auth.requireTrustedOrigin(ctx)) return;
   if (!config.draftAndPublish) return sendError(ctx, 400, 'PUBLISH_UNSUPPORTED', 'Module này không hỗ trợ xuất bản.');
   const data = await getService(config).unpublish({ documentId: ctx.params.id });
   ctx.body = { data: normalizeEntry(data, config) };

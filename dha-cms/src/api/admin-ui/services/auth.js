@@ -5,6 +5,7 @@ const { sendError } = require('./errors');
 
 const COOKIE_NAME = 'ha_can_admin_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 8;
+const DEFAULT_ADMIN_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000'];
 
 function getSessionSecret() {
   const secret = process.env.ADMIN_UI_SESSION_SECRET || process.env.ADMIN_JWT_SECRET;
@@ -73,6 +74,42 @@ function clearSessionCookie(ctx) {
     maxAge: 0,
     path: '/',
   });
+}
+
+function toOrigin(value) {
+  if (!value) return null;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
+function getAllowedAdminOrigins() {
+  const configured = [
+    process.env.FRONTEND_URL,
+    process.env.PUBLIC_URL,
+    process.env.ADMIN_UI_ALLOWED_ORIGINS,
+  ]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(','))
+    .map((value) => toOrigin(value.trim()))
+    .filter(Boolean);
+
+  return new Set([...DEFAULT_ADMIN_ORIGINS, ...configured]);
+}
+
+function getRequestOrigin(ctx) {
+  return toOrigin(ctx.request.headers.origin) || toOrigin(ctx.request.headers.referer);
+}
+
+function requireTrustedOrigin(ctx) {
+  const requestOrigin = getRequestOrigin(ctx);
+  if (!requestOrigin || !getAllowedAdminOrigins().has(requestOrigin)) {
+    sendError(ctx, 403, 'CSRF_ORIGIN', 'Nguồn yêu cầu quản trị không hợp lệ.');
+    return false;
+  }
+  return true;
 }
 
 async function findAdminUser(strapi, email) {
@@ -155,4 +192,5 @@ module.exports = {
   me,
   logout,
   requireSession,
+  requireTrustedOrigin,
 };
