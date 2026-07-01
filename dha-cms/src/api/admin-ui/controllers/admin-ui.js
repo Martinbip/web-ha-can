@@ -1,6 +1,7 @@
 'use strict';
 
 const auth = require('../services/auth');
+const media = require('../services/media');
 const resources = require('../services/resources');
 
 module.exports = {
@@ -39,5 +40,14 @@ module.exports = {
   },
   async unpublishResource(ctx) {
     return resources.unpublish(ctx);
+  },
+  async listMedia(ctx) {
+    return media.list(ctx);
+  },
+  async uploadMedia(ctx) {
+    return media.upload(ctx);
+  },
+  async deleteMedia(ctx) {
+    return media.delete(ctx);
   },
 };

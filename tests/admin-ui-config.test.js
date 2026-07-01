@@ -143,3 +143,17 @@ test('admin-ui mutations require trusted origins and safe pagination defaults', 
   assert.match(resourceSource, /Number\.isFinite/, 'pagination rejects NaN query values');
   assert.doesNotMatch(resourceSource, /Math\.max\(Number\(ctx\.query\.page/, 'pagination must not pass NaN through Math.max');
 });
+
+test('admin-ui media service stores images in Cloudinary and checks references before delete', () => {
+  const source = read('dha-cms/src/api/admin-ui/services/media.js');
+  const packageJson = JSON.parse(read('dha-cms/package.json'));
+
+  assert.ok(packageJson.dependencies.cloudinary, 'Cloudinary SDK is installed');
+  assert.match(source, /require\(['"]cloudinary['"]\)\.v2/, 'Cloudinary v2 SDK is used');
+  assert.match(source, /CLOUDINARY_URL|CLOUDINARY_CLOUD_NAME/, 'Cloudinary env config is read server-side');
+  assert.match(source, /api\.resources/, 'media list uses Cloudinary resources API');
+  assert.match(source, /uploader\.upload/, 'upload uses Cloudinary uploader');
+  assert.match(source, /delete_resources/, 'delete uses Cloudinary delete resources');
+  assert.match(source, /findReferences/, 'delete checks known content references first');
+  assert.doesNotMatch(source, /ctx\.request\.body\.api_secret/, 'frontend cannot send Cloudinary secrets');
+});
