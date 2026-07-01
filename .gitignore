@@ -24,6 +24,15 @@ backups/
 .codex/
 .superpowers/
 
+# Node (root)
+node_modules/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.env.e2e
+
 # OS
 .DS_Store
 Thumbs.db

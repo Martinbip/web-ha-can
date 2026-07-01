@@ -84,3 +84,30 @@ Không đưa `CLOUDINARY_URL`, `CLOUDINARY_API_SECRET`, hoặc token Strapi vào
 *   Nginx proxy `/strapi-admin` sang Strapi built-in admin panel (`http://127.0.0.1:1337`), thay cho `/admin` trước đây.
 *   `deploy/deploy.sh` chỉ build & sync `admin/` khi phát hiện thay đổi trong thư mục đó (tương tự cơ chế đã áp dụng cho `dha-cms/`), giữ deploy nhanh khi không đổi gì ở admin.
 *   Scripts hữu ích ở root `package.json`: `npm run admin:install`, `npm run admin:dev`, `npm run admin:build`.
+
+## Test tự động (Playwright)
+
+`tests/e2e/` chứa test trình duyệt thật bằng Playwright, mặc định chạy nhắm vào production (`https://smadesign.vn`) — khác với `tests/*.test.js` ở root (chỉ kiểm tra bằng regex trên source code, không mở trình duyệt).
+
+Cài đặt (một lần):
+
+```bash
+npm install
+npx playwright install --with-deps chromium
+```
+
+Chạy test không cần đăng nhập (an toàn tuyệt đối, chỉ đọc — trang chủ, sản phẩm, dự án, tin tức, form liên hệ):
+
+```bash
+npm run test:e2e
+```
+
+Để chạy thêm các test cần đăng nhập admin (đăng nhập/đăng xuất, tạo-sửa-xóa một bài tin tức test, upload/xóa một ảnh test trong `ha-can/settings`):
+
+1.  Sao chép `.env.e2e.example` thành `.env.e2e` (đã gitignore, không commit).
+2.  Điền `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` bằng một tài khoản Strapi admin thật.
+3.  Chạy lại `npm run test:e2e`.
+
+Các test có ghi dữ liệu (tạo tin tức, upload ảnh) luôn tự xóa dữ liệu test ngay sau khi chạy — kể cả khi assertion phía trên bị fail — để không để lại rác `[E2E TEST] ...` hay ảnh test trên production. Muốn nhắm vào môi trường khác, đặt `E2E_BASE_URL` trong `.env.e2e`.
+
+Xem giao diện chạy test trực quan: `npm run test:e2e:ui`.
