@@ -54,7 +54,18 @@ function verify(token) {
   }
 }
 
+function trustProxySecureCookies(ctx) {
+  // Strapi terminates TLS at nginx and proxies plain HTTP internally.
+  // The `cookies` package refuses `secure: true` unless it perceives the
+  // connection itself as encrypted, which requires this explicit override
+  // when running behind a reverse proxy (see the `cookies` package docs).
+  if (process.env.NODE_ENV === 'production') {
+    ctx.cookies.secure = true;
+  }
+}
+
 function setSessionCookie(ctx, payload) {
+  trustProxySecureCookies(ctx);
   ctx.cookies.set(COOKIE_NAME, sign(payload), {
     httpOnly: true,
     sameSite: 'lax',
@@ -66,6 +77,7 @@ function setSessionCookie(ctx, payload) {
 }
 
 function clearSessionCookie(ctx) {
+  trustProxySecureCookies(ctx);
   ctx.cookies.set(COOKIE_NAME, null, {
     httpOnly: true,
     sameSite: 'lax',
