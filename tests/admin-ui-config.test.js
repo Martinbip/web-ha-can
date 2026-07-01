@@ -157,3 +157,17 @@ test('admin-ui media service stores images in Cloudinary and checks references b
   assert.match(source, /findReferences/, 'delete checks known content references first');
   assert.doesNotMatch(source, /ctx\.request\.body\.api_secret/, 'frontend cannot send Cloudinary secrets');
 });
+
+test('admin-ui media service scopes library access and validates uploads', () => {
+  const source = read('dha-cms/src/api/admin-ui/services/media.js');
+
+  assert.doesNotMatch(source, /publicationState/, 'media reference checks must not use Strapi v4 publicationState');
+  assert.match(source, /function getScopedPrefix/, 'media listing normalizes requested prefix');
+  assert.match(source, /prefix\.startsWith\(['"]ha-can\/['"]\)/, 'media listing is scoped to ha-can library');
+  assert.match(source, /function validateUploadFile/, 'upload validates files before Cloudinary');
+  assert.match(source, /MAX_UPLOAD_BYTES/, 'upload enforces a size limit');
+  assert.match(source, /image\/jpeg/, 'upload allows jpeg images explicitly');
+  assert.match(source, /image\/png/, 'upload allows png images explicitly');
+  assert.match(source, /image\/webp/, 'upload allows webp images explicitly');
+  assert.match(source, /INVALID_FILE_TYPE/, 'invalid upload type returns a clear error');
+});
