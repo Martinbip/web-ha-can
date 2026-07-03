@@ -9,6 +9,24 @@ const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
 
+// Cloudinary's Admin API (used by list()) is backed by a search index that
+// lags real deletion by anywhere from seconds to (observed in practice)
+// several minutes — deleting a resource makes it 404 on the CDN
+// immediately, but it can keep showing up in resources() results well
+// after that. Track recently-deleted public_ids here and filter them out
+// of every list() response for a generous window, so the media library
+// never shows an asset that's actually already gone, regardless of which
+// admin/session is looking or whether the page was freshly reloaded.
+const DELETED_TTL_MS = 30 * 60 * 1000;
+const recentlyDeleted = new Map();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [publicId, deletedAt] of recentlyDeleted) {
+    if (now - deletedAt > DELETED_TTL_MS) recentlyDeleted.delete(publicId);
+  }
+}, 5 * 60 * 1000);
+
 function configureCloudinary() {
   if (process.env.CLOUDINARY_URL) {
     cloudinary.config({ secure: true });
@@ -105,7 +123,9 @@ async function list(ctx) {
   });
 
   ctx.body = {
-    data: result.resources.map(normalizeAsset),
+    data: result.resources
+      .filter((asset) => !recentlyDeleted.has(asset.public_id))
+      .map(normalizeAsset),
     next_cursor: result.next_cursor || null,
   };
 }
@@ -184,6 +204,8 @@ async function remove(ctx) {
     resource_type: 'image',
     invalidate: true,
   });
+
+  recentlyDeleted.set(publicId, Date.now());
 
   ctx.body = { data: result.deleted || {} };
 }
