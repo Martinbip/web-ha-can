@@ -169,7 +169,22 @@ async function update(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
   if (!auth.requireTrustedOrigin(ctx)) return;
-  const data = await getService(config).update({ documentId: ctx.params.id, data: cleanData(config, ctx.request.body) });
+
+  const service = getService(config);
+  let data;
+
+  if (config.singleType && ctx.params.id === 'null') {
+    // If it's a single type and there is no existing record, create a new one instead of update
+    const existing = await service.findMany({ limit: 1 });
+    if (existing && existing.length > 0) {
+      data = await service.update({ documentId: existing[0].documentId, data: cleanData(config, ctx.request.body) });
+    } else {
+      data = await service.create({ data: cleanData(config, ctx.request.body) });
+    }
+  } else {
+    data = await service.update({ documentId: ctx.params.id, data: cleanData(config, ctx.request.body) });
+  }
+
   ctx.body = { data: normalizeEntry(data, config) };
 }
 

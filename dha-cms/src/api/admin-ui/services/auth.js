@@ -68,7 +68,7 @@ function setSessionCookie(ctx, payload) {
   trustProxySecureCookies(ctx);
   ctx.cookies.set(COOKIE_NAME, sign(payload), {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     secure: process.env.NODE_ENV === 'production',
     overwrite: true,
     maxAge: SESSION_TTL_MS,
@@ -80,7 +80,7 @@ function clearSessionCookie(ctx) {
   trustProxySecureCookies(ctx);
   ctx.cookies.set(COOKIE_NAME, null, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     secure: process.env.NODE_ENV === 'production',
     overwrite: true,
     maxAge: 0,
