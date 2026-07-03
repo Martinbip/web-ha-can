@@ -75,7 +75,10 @@ export default function MediaLibraryPage() {
     try {
       await deleteMedia(asset.public_id);
       setNotice('Đã xóa ảnh.');
-      load(folder);
+      // Cloudinary's Admin API (resources list) lags behind actual deletion
+      // by several seconds — re-fetching here can still show the just-deleted
+      // asset. Remove it from local state directly instead of trusting load().
+      setAssets((prev) => prev.filter((a) => a.public_id !== asset.public_id));
     } catch (err) {
       if (err.code === 'MEDIA_IN_USE') {
         const references = err.details?.references || [];
