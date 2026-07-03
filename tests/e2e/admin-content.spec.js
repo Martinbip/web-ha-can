@@ -32,7 +32,7 @@ test.describe('Admin — quản lý Tin tức (tạo/sửa/xóa)', () => {
       await expect(page).toHaveURL(/\/admin\/resources\/news$/);
       created = true;
 
-      await page.getByLabel('Tìm kiếm').fill(title);
+      await page.getByPlaceholder('Tìm kiếm...').fill(title);
       await page.getByRole('button', { name: 'Tìm' }).click();
 
       const row = page.locator('tr', { hasText: title });
@@ -49,8 +49,11 @@ test.describe('Admin — quản lý Tin tức (tạo/sửa/xóa)', () => {
         // survives the test. Swallowed on purpose: a cleanup failure here
         // must never replace/mask the real assertion error above.
         try {
+          // "news" only indexes title/summary/category for search — slug isn't
+          // searchable, so searching by slug here would silently find nothing
+          // and leave the test article behind on production.
           const search = await page.request.get(
-            `/api/admin-ui/resources/news?search=${encodeURIComponent(slug)}`
+            `/api/admin-ui/resources/news?search=${encodeURIComponent(title)}`
           );
           const { data } = await search.json();
           for (const article of data || []) {

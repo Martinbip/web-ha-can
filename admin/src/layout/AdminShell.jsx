@@ -30,7 +30,6 @@ export default function AdminShell() {
       </aside>
       <div className="workspace">
         <header className="topbar">
-          <input aria-label="Tìm kiếm" />
           <a href="/" target="_blank" rel="noreferrer">Xem website</a>
           <span>{user?.email}</span>
           <button type="button" onClick={logout}>Đăng xuất</button>

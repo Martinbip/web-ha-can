@@ -61,7 +61,7 @@ function getProjectImageUrl(project) {
 // ======================================================
 async function fetchFromCMS(endpoint, fallbackFile) {
     try {
-        const res = await fetch(`${CMS_API}/${endpoint}`, { signal: AbortSignal.timeout(5000) });
+        const res = await fetch(`${CMS_API}/${endpoint}`, { signal: AbortSignal.timeout(3000) });
         if (!res.ok) throw new Error(`CMS responded ${res.status}`);
         const json = await res.json();
         return (json.data || []).map(item => item.attributes || item);
@@ -80,7 +80,7 @@ async function fetchFromCMS(endpoint, fallbackFile) {
 
 async function fetchSingleFromCMS(endpoint, fallbackFile) {
     try {
-        const res = await fetch(`${CMS_API}/${endpoint}`, { signal: AbortSignal.timeout(5000) });
+        const res = await fetch(`${CMS_API}/${endpoint}`, { signal: AbortSignal.timeout(3000) });
         if (!res.ok) throw new Error(`CMS responded ${res.status}`);
         const json = await res.json();
         const d = json.data;
@@ -212,7 +212,7 @@ async function initHeroSlides() {
     const carousel = document.getElementById('hero-carousel');
     if (!carousel) return;
 
-    const slides = await fetchFromCMS('hero-slides?sort=sort_order:asc', 'data/hero_slides.json');
+    const slides = await fetchFromCMS('hero-slides?sort=sort_order:asc&pagination[limit]=100', 'data/hero_slides.json');
     if (!slides || slides.length === 0) {
         initHeroCarousel();
         return;
@@ -430,7 +430,7 @@ async function initServicesSection() {
     const grid = document.querySelector('.services-grid');
     if (!grid) return;
 
-    const services = await fetchFromCMS('services?sort=sort_order:asc', 'data/services.json');
+    const services = await fetchFromCMS('services?sort=sort_order:asc&pagination[limit]=100', 'data/services.json');
     if (!services || services.length === 0) return;
 
     grid.innerHTML = services.map(svc => {
@@ -461,7 +461,7 @@ async function initWorkflowSection() {
     const timeline = document.querySelector('.workflow-timeline');
     if (!timeline) return;
 
-    const steps = await fetchFromCMS('workflow-steps?sort=sort_order:asc', 'data/workflow_steps.json');
+    const steps = await fetchFromCMS('workflow-steps?sort=sort_order:asc&pagination[limit]=100', 'data/workflow_steps.json');
     if (!steps || steps.length === 0) return;
 
     timeline.innerHTML = steps.map(step => `
@@ -484,7 +484,7 @@ async function initMarketPrices() {
     if (!homePriceBody && !pricingPriceBody) return;
 
     try {
-        const prices = await fetchFromCMS('pricing-packages', 'data/pricing_packages.json');
+        const prices = await fetchFromCMS('pricing-packages?pagination[limit]=100', 'data/pricing_packages.json');
         if (!prices || prices.length === 0) return;
 
         const renderRow = (item, showDate) => {
@@ -521,7 +521,7 @@ async function initHomeNewsPreview() {
     if (!grid) return;
 
     try {
-        const news = await fetchFromCMS('news', 'data/news.json');
+        const news = await fetchFromCMS('news-articles?pagination[limit]=100&sort=date:desc', 'data/news.json');
         if (!news || news.length === 0) {
             grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;">Chưa có tin tức nào.</div>';
             return;
@@ -544,7 +544,7 @@ async function initHomeProducts() {
 
     let allProducts = [];
     try {
-        allProducts = await fetchFromCMS('products?sort=sort_order:asc', 'data/products.json');
+        allProducts = await fetchFromCMS('products?sort=sort_order:asc&pagination[limit]=500', 'data/products.json');
     } catch (e) {
         grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;"><p>Không thể tải danh mục sản phẩm.</p></div>';
         return;
@@ -637,7 +637,7 @@ async function initNewsPage() {
     if (!grid) return;
 
     try {
-        const news = await fetchFromCMS('news', 'data/news.json');
+        const news = await fetchFromCMS('news-articles?pagination[limit]=100&sort=date:desc', 'data/news.json');
         if (!news || news.length === 0) {
             grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;">Chưa có tin tức nào.</div>';
             return;
@@ -732,7 +732,7 @@ async function initProductsPage() {
     let allProducts = [];
 
     try {
-        allProducts = await fetchFromCMS('products?sort=sort_order:asc', 'data/products.json');
+        allProducts = await fetchFromCMS('products?sort=sort_order:asc&pagination[limit]=500', 'data/products.json');
     } catch (e) {
         container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;"><p>Không thể tải danh mục sản phẩm.</p></div>';
         return;
@@ -829,7 +829,7 @@ async function initProductDetailPage() {
     }
 
     try {
-        const products = await fetchFromCMS('products', 'data/products.json');
+        const products = await fetchFromCMS('products?pagination[limit]=500', 'data/products.json');
         const product = products.find(p => p.uid === productId);
 
         if (!product) {
@@ -1060,8 +1060,8 @@ async function initEstimator() {
     const oreSelect = document.getElementById('est-ore');
 
     const [ores, analyses] = await Promise.all([
-        fetchFromCMS('ores?sort=name:asc', 'data/products.json'),
-        fetchFromCMS('pricing-analyses', 'data/pricing_analysis.json'),
+        fetchFromCMS('ores?sort=name:asc&pagination[limit]=100', 'data/products.json'),
+        fetchFromCMS('pricing-analyses?pagination[limit]=100', 'data/pricing_analysis.json'),
     ]);
 
     const oreByGroup = {};
@@ -1188,7 +1188,7 @@ async function initProjectsPage() {
     if (!container) return;
 
     try {
-        const projects = await fetchFromCMS('projects', 'data/projects.json');
+        const projects = await fetchFromCMS('projects?sort=publishedAt:desc&pagination[limit]=100', 'data/projects.json');
         if (!projects || projects.length === 0) {
             container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;"><p>Chưa có dự án nào.</p></div>';
             return;
