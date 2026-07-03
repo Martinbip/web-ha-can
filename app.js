@@ -413,6 +413,7 @@ function initScrollTopButton() {
 // ======================================================
 function initDynamicContent() {
     initMarketPrices();
+    initSurveyPricing();
     initHomeNewsPreview();
     initHomeProducts();
     initServicesSection();
@@ -510,6 +511,33 @@ async function initMarketPrices() {
         }
     } catch (e) {
         console.error('[Prices] Error:', e);
+    }
+}
+
+// ======================================================
+// PRICING — SURVEY FEES
+// ======================================================
+async function initSurveyPricing() {
+    const body = document.getElementById('survey-pricing-table-body');
+    if (!body) return;
+
+    try {
+        const surveys = await fetchFromCMS('pricing-surveys?pagination[limit]=100', 'data/pricing_survey.json');
+        if (!surveys || surveys.length === 0) {
+            body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;">Chưa có biểu phí nào.</td></tr>';
+            return;
+        }
+
+        body.innerHTML = surveys.map(item => `
+            <tr>
+                <td><strong>${escapeHtml(item.name)}</strong></td>
+                <td>${escapeHtml(item.price)}</td>
+                <td>${escapeHtml(item.description)}</td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('[Survey Pricing] Error:', e);
+        body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;">Không thể tải biểu phí.</td></tr>';
     }
 }
 
