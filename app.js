@@ -27,6 +27,27 @@ const GROUP_CSS = {
     'quang':  'group-quang',
 };
 
+// Quặng gộp chung group 'quang' nhưng thuộc 2 danh mục khác nhau
+// (kim loại màu vs kim loại đen) nên cần badge riêng để phân biệt.
+function getProductBadge(product) {
+    const uid  = (product.uid || '').toLowerCase();
+    const name = (product.name || '').toLowerCase();
+
+    if (product.group === 'quang') {
+        const isBlackMetal = uid.includes('sat') || name.includes('sắt');
+        return isBlackMetal
+            ? { label: 'Quặng Sắt', css: 'group-quang-sat' }
+            : { label: 'Quặng Màu', css: 'group-quang-mau' };
+    }
+    if (product.group === 'rare-earth' || uid.includes('dat-hiem') || name.includes('đất hiếm')) {
+        return { label: 'Đất Hiếm', css: 'group-rare-earth' };
+    }
+    return {
+        label: GROUP_LABEL[product.group] || escapeHtml(product.group),
+        css: GROUP_CSS[product.group] || '',
+    };
+}
+
 // ── HTML Escape (XSS prevention) ──
 function escapeHtml(str) {
     if (str == null) return '';
@@ -706,8 +727,7 @@ function buildNewsCard(item, fullWidth) {
 // ======================================================
 function buildProductCard(product) {
     const inStock     = product.in_stock !== false;
-    const groupLabel  = GROUP_LABEL[product.group] || escapeHtml(product.group);
-    const groupCss    = GROUP_CSS[product.group] || '';
+    const { label: groupLabel, css: groupCss } = getProductBadge(product);
     const imgSrc      = escapeHtml(product.image || 'assets/phong_thi_nghiem_dha.png');
     const imgAlt      = escapeHtml(product.name || 'Sản phẩm');
 
@@ -869,8 +889,7 @@ async function initProductDetailPage() {
         const breadcrumb = document.getElementById('detail-breadcrumb');
         if (breadcrumb) breadcrumb.textContent = product.name;
 
-        const groupLabel = GROUP_LABEL[product.group] || escapeHtml(product.group);
-        const groupCss   = GROUP_CSS[product.group] || '';
+        const { label: groupLabel, css: groupCss } = getProductBadge(product);
         const imgSrc = escapeHtml(product.image || 'assets/phong_thi_nghiem_dha.png');
         const inStock = product.in_stock !== false;
         const settings = window.__siteSettings;

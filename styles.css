@@ -1340,23 +1340,32 @@ textarea.input {
 }
 
 .product-badge.group-dong {
-    background-color: #B87333;
+    background-color: #A85D22;
     color: #FFFFFF;
 }
 .product-badge.group-nhom {
-    background-color: #607D8B;
+    background-color: #5B6B7A;
     color: #FFFFFF;
 }
 .product-badge.group-chi {
-    background-color: #475569;
+    background-color: #334155;
     color: #FFFFFF;
 }
 .product-badge.group-thiec {
-    background-color: #78716c;
+    background-color: #6B5D52;
     color: #FFFFFF;
 }
-.product-badge.group-quang {
-    background-color: #C5A059;
+.product-badge.group-quang,
+.product-badge.group-quang-mau {
+    background-color: #B8924A;
+    color: #FFFFFF;
+}
+.product-badge.group-quang-sat {
+    background-color: #1E293B;
+    color: #FFFFFF;
+}
+.product-badge.group-rare-earth {
+    background-color: #6D28D9;
     color: #FFFFFF;
 }
 
