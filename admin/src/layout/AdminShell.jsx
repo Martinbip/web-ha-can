@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.jsx';
 
 const NAV_ITEMS = [
@@ -18,8 +18,15 @@ const NAV_ITEMS = [
 
 export default function AdminShell() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
   return (
-    <div className="admin-shell">
+    <div className={`admin-shell${menuOpen ? ' menu-open' : ''}`}>
       <aside className="sidebar">
         <div className="brand">Hà Cần</div>
         <nav>
@@ -28,8 +35,18 @@ export default function AdminShell() {
           ))}
         </nav>
       </aside>
+      {menuOpen ? <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} /> : null}
       <div className="workspace">
         <header className="topbar">
+          <button
+            type="button"
+            className="menu-toggle"
+            aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            ☰
+          </button>
           <a href="/" target="_blank" rel="noreferrer">Xem website</a>
           <span>{user?.email}</span>
           <button type="button" onClick={logout}>Đăng xuất</button>
