@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/regression.test.js tests/admin-ui-config.test.js tests/admin-app.test.js",
+    "test": "node --test tests/regression.test.js tests/admin-ui-config.test.js tests/admin-app.test.js tests/admin-dashboard.test.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "admin:install": "npm install --prefix admin",
