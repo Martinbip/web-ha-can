@@ -314,6 +314,11 @@ textarea:focus-visible {
     flex: 1;
 }
 
+/* Tiêu đề sidebar chỉ dùng cho menu mobile */
+.sidebar-header {
+    display: none;
+}
+
 .nav-links {
     display: flex;
     flex-wrap: wrap;
