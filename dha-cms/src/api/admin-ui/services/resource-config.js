@@ -29,7 +29,7 @@ const RESOURCE_CONFIG = {
         ],
       },
       date: { label: 'Ngày đăng', type: 'date', required: true },
-      image: { label: 'Ảnh đại diện', type: 'cloudinary-image', folder: 'ha-can/news' },
+      image: { label: 'Ảnh đại diện', type: 'cloudinary-image', folder: 'dha/news' },
     },
   },
   'products': {
@@ -62,7 +62,7 @@ const RESOURCE_CONFIG = {
       price: { label: 'Giá', type: 'number', min: 0 },
       description: { label: 'Mô tả', type: 'textarea', maxLength: 5000 },
       specs: { label: 'Thông số', type: 'key-value-table' },
-      image: { label: 'Ảnh sản phẩm', type: 'cloudinary-image', folder: 'ha-can/products' },
+      image: { label: 'Ảnh sản phẩm', type: 'cloudinary-image', folder: 'dha/products' },
       featured: { label: 'Nổi bật', type: 'boolean' },
       in_stock: { label: 'Còn hàng', type: 'boolean' },
       sort_order: { label: 'Thứ tự', type: 'number', default: 0 },
@@ -84,7 +84,7 @@ const RESOURCE_CONFIG = {
       scale: { label: 'Quy mô', type: 'text', maxLength: 200 },
       method: { label: 'Phương pháp', type: 'text', maxLength: 200 },
       value: { label: 'Giá trị', type: 'text', maxLength: 200 },
-      image: { label: 'Ảnh dự án', type: 'cloudinary-image', folder: 'ha-can/projects' },
+      image: { label: 'Ảnh dự án', type: 'cloudinary-image', folder: 'dha/projects' },
     },
   },
   'services': {
@@ -120,7 +120,7 @@ const RESOURCE_CONFIG = {
     fields: {
       subtitle: { label: 'Dòng phụ', type: 'text', required: true, maxLength: 200 },
       title: { label: 'Tiêu đề', type: 'text', required: true, maxLength: 200 },
-      image_url: { label: 'Ảnh slide', type: 'cloudinary-image', required: true, folder: 'ha-can/hero' },
+      image_url: { label: 'Ảnh slide', type: 'cloudinary-image', required: true, folder: 'dha/hero' },
       image_alt: { label: 'Mô tả ảnh', type: 'textarea', maxLength: 500 },
       sort_order: { label: 'Thứ tự', type: 'number', default: 0 },
     },

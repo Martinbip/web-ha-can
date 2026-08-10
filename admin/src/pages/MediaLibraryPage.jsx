@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { MEDIA_FOLDERS, deleteMedia, listMedia, uploadMedia } from '../api/media.js';
+import { LEGACY_MEDIA_FOLDER, MEDIA_FOLDERS, deleteMedia, listMedia, uploadMedia } from '../api/media.js';
+
+const BROWSE_FOLDERS = [...MEDIA_FOLDERS, LEGACY_MEDIA_FOLDER];
 
 // Cloudinary-backed media library. Everything goes through /api/admin-ui/media
 // (see admin/src/api/media.js) — the frontend never talks to Cloudinary
@@ -13,6 +15,7 @@ export default function MediaLibraryPage() {
   const [notice, setNotice] = useState('');
   const [busyId, setBusyId] = useState(null);
   const fileInputRef = useRef(null);
+  const isLegacyFolder = folder === LEGACY_MEDIA_FOLDER;
 
   const load = useCallback((prefix) => {
     setLoading(true);
@@ -29,6 +32,10 @@ export default function MediaLibraryPage() {
 
   async function handleUpload(event) {
     event.preventDefault();
+    if (isLegacyFolder) {
+      setError('Thư mục ảnh cũ chỉ để xem và xóa. Hãy chọn một thư mục dha/ để tải ảnh mới.');
+      return;
+    }
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
       setError('Vui lòng chọn ảnh để tải lên.');
@@ -105,18 +112,18 @@ export default function MediaLibraryPage() {
         <label>
           Thư mục
           <select value={folder} onChange={(event) => setFolder(event.target.value)}>
-            {MEDIA_FOLDERS.map((option) => (
+            {BROWSE_FOLDERS.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {option === LEGACY_MEDIA_FOLDER ? `${option} (ảnh cũ, chỉ xem)` : option}
               </option>
             ))}
           </select>
         </label>
         <label>
           Chọn ảnh
-          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={isLegacyFolder} />
         </label>
-        <button type="submit" className="btn-primary" disabled={uploading}>
+        <button type="submit" className="btn-primary" disabled={uploading || isLegacyFolder}>
           {uploading ? 'Đang tải lên...' : 'Tải ảnh lên'}
         </button>
       </form>
