@@ -3,6 +3,14 @@
 const { getResourceConfig, listResourceConfigs } = require('./resource-config');
 const { sendError } = require('./errors');
 const auth = require('./auth');
+const { buildDateBuckets, countRecordsByDay, toContactLead, toOrderLead } = require('./dashboard-metrics');
+
+const DASHBOARD_TREND_DAYS = 14;
+const DASHBOARD_PENDING_LIMIT = 5;
+const DASHBOARD_TREND_QUERY_LIMIT = 1000;
+const CONTACT_UID = 'api::contact-inquiry.contact-inquiry';
+const ORDER_UID = 'api::order-request.order-request';
+const PRODUCT_UID = 'api::product.product';
 
 function cleanData(config, body) {
   const input = body && body.data ? body.data : body || {};
@@ -111,16 +119,93 @@ async function meta(ctx) {
   };
 }
 
-async function dashboard(ctx) {
-  const user = await auth.requireSession(ctx);
-  if (!user) return;
+async function buildDashboardCards() {
   const cards = [];
   for (const config of listResourceConfigs()) {
     if (config.singleType) continue;
     const count = await strapi.documents(config.uid).count({});
     cards.push({ type: config.type, label: config.pluralLabel, count });
   }
-  ctx.body = { cards };
+  return cards;
+}
+
+async function dashboard(ctx) {
+  const user = await auth.requireSession(ctx);
+  if (!user) return;
+
+  const now = new Date();
+  const buckets = buildDateBuckets(now, DASHBOARD_TREND_DAYS);
+  const trendStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - (DASHBOARD_TREND_DAYS - 1),
+  );
+
+  const draftConfigs = listResourceConfigs().filter(
+    (config) => config.draftAndPublish && !config.singleType,
+  );
+
+  const [
+    cards,
+    contactCount,
+    contactRecent,
+    orderCount,
+    orderRecent,
+    contactTrend,
+    orderTrend,
+    outOfStockProducts,
+    draftCounts,
+  ] = await Promise.all([
+    buildDashboardCards(),
+    strapi.documents(CONTACT_UID).count({ filters: { status: 'new' } }),
+    strapi.documents(CONTACT_UID).findMany({
+      filters: { status: 'new' },
+      sort: { createdAt: 'desc' },
+      fields: ['name', 'service', 'createdAt'],
+      limit: DASHBOARD_PENDING_LIMIT,
+    }),
+    strapi.documents(ORDER_UID).count({ filters: { status: 'new' } }),
+    strapi.documents(ORDER_UID).findMany({
+      filters: { status: 'new' },
+      sort: { createdAt: 'desc' },
+      fields: ['customer_name', 'product_name', 'quantity', 'createdAt'],
+      limit: DASHBOARD_PENDING_LIMIT,
+    }),
+    strapi.documents(CONTACT_UID).findMany({
+      filters: { createdAt: { $gte: trendStart } },
+      fields: ['createdAt'],
+      limit: DASHBOARD_TREND_QUERY_LIMIT,
+    }),
+    strapi.documents(ORDER_UID).findMany({
+      filters: { createdAt: { $gte: trendStart } },
+      fields: ['createdAt'],
+      limit: DASHBOARD_TREND_QUERY_LIMIT,
+    }),
+    strapi.documents(PRODUCT_UID).count({ filters: { in_stock: false } }),
+    Promise.all(
+      draftConfigs.map((config) =>
+        strapi.documents(config.uid).count({ filters: { publishedAt: { $null: true } } }),
+      ),
+    ),
+  ]);
+
+  const draftItems = draftConfigs
+    .map((config, i) => ({ type: config.type, label: config.pluralLabel, count: draftCounts[i] }))
+    .filter((item) => item.count > 0);
+
+  ctx.body = {
+    cards,
+    pending: {
+      contactInquiries: { count: contactCount, recent: contactRecent.map(toContactLead) },
+      orderRequests: { count: orderCount, recent: orderRecent.map(toOrderLead) },
+    },
+    trends: {
+      days: buckets.map((bucket) => bucket.label),
+      contactInquiries: countRecordsByDay(contactTrend, buckets),
+      orderRequests: countRecordsByDay(orderTrend, buckets),
+    },
+    contentHealth: { outOfStockProducts, draftItems },
+  };
 }
 
 async function list(ctx) {

@@ -77,3 +77,30 @@ test('toOrderLead strips sensitive fields and maps snake_case', () => {
     assert.ok(!(leaked in lead), `${leaked} must not leak`);
   }
 });
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+function readSource(file) {
+  return fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+}
+
+test('dashboard endpoint aggregates pending, trends and content health', () => {
+  const src = readSource('dha-cms/src/api/admin-ui/services/resources.js');
+  assert.match(src, /require\(['"]\.\/dashboard-metrics['"]\)/, 'imports metric helpers');
+  assert.match(src, /pending:/, 'returns pending block');
+  assert.match(src, /trends:/, 'returns trends block');
+  assert.match(src, /contentHealth:/, 'returns contentHealth block');
+  assert.match(src, /status:\s*['"]new['"]/, 'filters pending by new status');
+  assert.match(src, /in_stock:\s*false/, 'counts out-of-stock products');
+  assert.match(src, /publishedAt:\s*\{\s*\$null:\s*true\s*\}/, 'counts unpublished drafts');
+  assert.match(src, /toContactLead/, 'shapes contact leads through helper');
+  assert.match(src, /toOrderLead/, 'shapes order leads through helper');
+});
+
+test('dashboard endpoint never selects sensitive lead fields in queries', () => {
+  const src = readSource('dha-cms/src/api/admin-ui/services/resources.js');
+  const dashboardBody = src.slice(src.indexOf('async function dashboard'), src.indexOf('async function list'));
+  assert.doesNotMatch(dashboardBody, /['"]message['"]/, 'does not query message');
+  assert.doesNotMatch(dashboardBody, /['"]address['"]/, 'does not query address');
+});
