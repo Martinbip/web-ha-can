@@ -28,7 +28,7 @@ export default function AdminShell() {
   return (
     <div className={`admin-shell${menuOpen ? ' menu-open' : ''}`}>
       <aside className="sidebar">
-        <div className="brand">Hà Cần</div>
+        <div className="brand">DHA</div>
         <nav>
           {NAV_ITEMS.map(([href, label]) => (
             <Link key={href} to={href}>{label}</Link>

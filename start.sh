@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================
-#  Đá Hà Cần - Development Server Startup
+#  DHA - Development Server Startup
 # ============================================
 
 RED='\033[0;31m'
