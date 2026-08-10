@@ -165,7 +165,8 @@ test('admin-ui media service scopes library access and validates uploads', () =>
 
   assert.doesNotMatch(source, /publicationState/, 'media reference checks must not use Strapi v4 publicationState');
   assert.match(source, /function getScopedPrefix/, 'media listing normalizes requested prefix');
-  assert.match(source, /prefix\.startsWith\(['"]ha-can\/['"]\)/, 'media listing is scoped to ha-can library');
+  assert.match(source, /MEDIA_NAMESPACES = \[['"]dha['"], ['"]ha-can['"]\]/, 'media library is scoped to the dha namespace plus the legacy ha-can one');
+  assert.match(source, /DEFAULT_MEDIA_PREFIX = ['"]dha\/['"]/, 'new uploads default to the dha namespace');
   assert.match(source, /function validateUploadFile/, 'upload validates files before Cloudinary');
   assert.match(source, /MAX_UPLOAD_BYTES/, 'upload enforces a size limit');
   assert.match(source, /image\/jpeg/, 'upload allows jpeg images explicitly');
@@ -175,15 +176,24 @@ test('admin-ui media service scopes library access and validates uploads', () =>
 });
 
 test('getScopedPrefix resolves path segments and rejects traversal at runtime', () => {
-  assert.equal(getScopedPrefix(undefined), 'ha-can/', 'no value falls back to default prefix');
-  assert.equal(getScopedPrefix(undefined, 'ha-can/uploads'), 'ha-can/uploads', 'no value falls back to custom fallback');
-  assert.equal(getScopedPrefix('ha-can/products'), 'ha-can/products', 'valid subfolder is preserved unchanged');
-  assert.equal(getScopedPrefix('something-else/'), 'ha-can/', 'value outside ha-can namespace falls back');
+  assert.equal(getScopedPrefix(undefined), 'dha/', 'no value falls back to default prefix');
+  assert.equal(getScopedPrefix(undefined, 'dha/uploads'), 'dha/uploads', 'no value falls back to custom fallback');
+  assert.equal(getScopedPrefix('dha/products'), 'dha/products', 'valid subfolder is preserved unchanged');
+  assert.equal(getScopedPrefix('something-else/'), 'dha/', 'value outside the media namespaces falls back');
 
-  const traversalResult = getScopedPrefix('ha-can/../../other-tenant-prefix');
-  assert.ok(traversalResult.startsWith('ha-can/'), 'traversal input still resolves inside ha-can/ namespace');
+  const traversalResult = getScopedPrefix('dha/../../other-tenant-prefix');
+  assert.ok(traversalResult.startsWith('dha/'), 'traversal input still resolves inside dha/ namespace');
   assert.ok(!traversalResult.includes('..'), 'traversal segments are stripped from the resolved prefix');
-  assert.equal(traversalResult, 'ha-can/other-tenant-prefix', 'traversal segments collapse to a safe in-namespace prefix');
+  assert.equal(traversalResult, 'dha/other-tenant-prefix', 'traversal segments collapse to a safe in-namespace prefix');
+});
+
+test('getScopedPrefix still serves the legacy ha-can namespace', () => {
+  // Images uploaded before the DHA rebrand keep their ha-can/ public_ids —
+  // renaming them would break every URL already stored in the CMS — so the
+  // library must stay readable (and deletable) under the old prefix.
+  assert.equal(getScopedPrefix('ha-can/products'), 'ha-can/products', 'legacy subfolder is browsable');
+  assert.equal(getScopedPrefix('ha-can/'), 'ha-can/', 'legacy namespace root is browsable');
+  assert.equal(getScopedPrefix('ha-can/../evil'), 'ha-can/evil', 'traversal out of the legacy namespace is stripped');
 });
 
 test('admin-ui list resolves publishedAt from the published version', () => {

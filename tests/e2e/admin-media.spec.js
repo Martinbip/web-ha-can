@@ -11,15 +11,15 @@ const { test, expect } = require('@playwright/test');
 const { loginAsAdmin, skipIfNoAdminCredentials } = require('./helpers/admin');
 
 test.describe('Admin — Thư viện ảnh (upload/xóa)', () => {
-  test('upload ảnh test vào thư mục ha-can/settings rồi xóa lại đúng ảnh đó', async ({ page }) => {
+  test('upload ảnh test vào thư mục dha/settings rồi xóa lại đúng ảnh đó', async ({ page }) => {
     skipIfNoAdminCredentials(test);
 
     await loginAsAdmin(page);
     await page.goto('/admin/media');
     await expect(page.getByRole('heading', { name: 'Thư viện ảnh' })).toBeVisible();
 
-    // ha-can/settings is the least likely folder to hold real content images.
-    await page.locator('select').selectOption('ha-can/settings');
+    // dha/settings is the least likely folder to hold real content images.
+    await page.locator('select').selectOption('dha/settings');
 
     const fixture = path.join(__dirname, 'fixtures', 'test-image.png');
     await page.getByLabel('Chọn ảnh').setInputFiles(fixture);

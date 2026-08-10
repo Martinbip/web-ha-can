@@ -1,16 +1,21 @@
 import { apiRequest } from './client.js';
 
-// Folders editors are allowed to upload/browse into. Kept in sync with the
-// backend's ha-can/ namespace scoping (see getScopedPrefix in
+// Folders editors are allowed to upload into. Kept in sync with the backend's
+// dha/ namespace scoping (see getScopedPrefix in
 // dha-cms/src/api/admin-ui/services/media.js).
 export const MEDIA_FOLDERS = [
-  'ha-can/news',
-  'ha-can/products',
-  'ha-can/projects',
-  'ha-can/hero',
-  'ha-can/services',
-  'ha-can/settings',
+  'dha/news',
+  'dha/products',
+  'dha/projects',
+  'dha/hero',
+  'dha/services',
+  'dha/settings',
 ];
+
+// Images uploaded before the DHA rebrand still live under ha-can/ — their
+// public_ids (and the URLs stored in the CMS) were never rewritten. Browsing
+// and deleting them stays possible; uploading new ones there does not.
+export const LEGACY_MEDIA_FOLDER = 'ha-can/';
 
 export function listMedia(params = {}) {
   const query = new URLSearchParams(params).toString();

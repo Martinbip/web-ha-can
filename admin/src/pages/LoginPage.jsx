@@ -23,7 +23,7 @@ export default function LoginPage() {
   return (
     <main className="login-page">
       <form className="login-panel" onSubmit={handleSubmit}>
-        <p className="eyebrow">Hà Cần Admin</p>
+        <p className="eyebrow">DHA Admin</p>
         <h1>Đăng nhập quản trị</h1>
         <label>
           Email
