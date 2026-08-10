@@ -8,6 +8,7 @@ const {
   getResourceConfig,
 } = require('../dha-cms/src/api/admin-ui/services/resource-config');
 const { getScopedPrefix } = require('../dha-cms/src/api/admin-ui/services/media');
+const { mergePublishedAt } = require('../dha-cms/src/api/admin-ui/services/resources');
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), 'utf8');
@@ -183,4 +184,31 @@ test('getScopedPrefix resolves path segments and rejects traversal at runtime', 
   assert.ok(traversalResult.startsWith('ha-can/'), 'traversal input still resolves inside ha-can/ namespace');
   assert.ok(!traversalResult.includes('..'), 'traversal segments are stripped from the resolved prefix');
   assert.equal(traversalResult, 'ha-can/other-tenant-prefix', 'traversal segments collapse to a safe in-namespace prefix');
+});
+
+test('admin-ui list resolves publishedAt from the published version', () => {
+  const source = read('dha-cms/src/api/admin-ui/services/resources.js');
+
+  assert.match(source, /status: 'published'/, "list must query the published version, since Document Service defaults to draft");
+  assert.match(source, /attachPublishedAt\(config, service, data\)/, 'list rows go through publishedAt resolution before normalizing');
+});
+
+test('mergePublishedAt maps the published timestamp onto draft rows', () => {
+  const drafts = [
+    { documentId: 'aaa', title: 'Slide 1', publishedAt: null },
+    { documentId: 'bbb', title: 'Slide 2', publishedAt: null },
+  ];
+  const published = [{ documentId: 'aaa', publishedAt: '2026-07-03T02:30:09.453Z' }];
+
+  const rows = mergePublishedAt(drafts, published);
+  assert.equal(rows[0].publishedAt, '2026-07-03T02:30:09.453Z', 'document with a published version gets its timestamp');
+  assert.equal(rows[1].publishedAt, null, 'draft-only document stays unpublished');
+  assert.equal(rows[0].title, 'Slide 1', 'other draft fields are preserved');
+  assert.equal(drafts[0].publishedAt, null, 'input rows are not mutated');
+});
+
+test('mergePublishedAt tolerates an empty published set', () => {
+  const drafts = [{ documentId: 'aaa', publishedAt: null }];
+  assert.equal(mergePublishedAt(drafts, [])[0].publishedAt, null);
+  assert.equal(mergePublishedAt(drafts, undefined)[0].publishedAt, null);
 });

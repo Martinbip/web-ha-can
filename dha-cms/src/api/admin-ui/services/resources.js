@@ -98,6 +98,28 @@ function getDocumentFields(config) {
   return getReadableFields(config).filter((field) => !['id', 'documentId'].includes(field));
 }
 
+// Document Service trả bản draft mặc định, mà draft luôn có publishedAt = null.
+// Mốc xuất bản thật nằm ở bản published cùng documentId.
+function mergePublishedAt(entries, publishedEntries) {
+  const publishedAtByDocument = new Map(
+    (publishedEntries || []).map((entry) => [entry.documentId, entry.publishedAt || null]),
+  );
+  return entries.map((entry) => ({
+    ...entry,
+    publishedAt: publishedAtByDocument.get(entry.documentId) || null,
+  }));
+}
+
+async function attachPublishedAt(config, service, entries) {
+  if (!config.draftAndPublish || !entries.length) return entries;
+  const published = await service.findMany({
+    status: 'published',
+    filters: { documentId: { $in: entries.map((entry) => entry.documentId) } },
+    limit: entries.length,
+  });
+  return mergePublishedAt(entries, published);
+}
+
 function normalizeEntry(entry, config) {
   if (!entry) return entry;
   if (Array.isArray(entry)) return entry.map((item) => normalizeEntry(item, config));
@@ -227,8 +249,10 @@ async function list(ctx) {
     service.count({ filters }),
   ]);
 
+  const rows = await attachPublishedAt(config, service, data);
+
   ctx.body = {
-    data: data.map((entry) => normalizeEntry(entry, config)),
+    data: rows.map((entry) => normalizeEntry(entry, config)),
     meta: { page: pagination.page, pageSize: pagination.pageSize, total },
   };
 }
@@ -312,4 +336,5 @@ module.exports = {
   unpublish,
   getReadableFields,
   normalizeEntry,
+  mergePublishedAt,
 };
