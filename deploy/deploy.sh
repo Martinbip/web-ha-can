@@ -9,7 +9,7 @@ set -e
 VPS_USER="root"
 VPS_HOST="183.81.39.14"
 VPS_PORT="22"
-FRONTEND_DIR="/var/www/smadesign.vn"
+FRONTEND_DIR="/var/www/dhakimloaimau.vn"
 CMS_DIR="/var/www/dha-cms"
 # ──────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ rsync -a --delete \
     --exclude="admin/" \
     --exclude=".git/" \
     /var/www/web-ha-can/ \
-    /var/www/smadesign.vn/
+    /var/www/dhakimloaimau.vn/
 
 # Chỉ build & sync admin khi thư mục admin/ thật sự có thay đổi
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^admin/'; then
@@ -53,7 +53,7 @@ if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^admin/'; then
     cd /var/www/web-ha-can/admin
     npm ci
     npm run build
-    rsync -a --delete /var/www/web-ha-can/admin/dist/ /var/www/smadesign.vn/admin/
+    rsync -a --delete /var/www/web-ha-can/admin/dist/ /var/www/dhakimloaimau.vn/admin/
     cd /var/www/web-ha-can
 else
     echo "▸ Admin không đổi → bỏ qua build admin (deploy nhanh)."
@@ -87,10 +87,10 @@ fi
 cd /var/www/web-ha-can
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^deploy/nginx.conf'; then
     echo "⚠️  deploy/nginx.conf đã thay đổi — cần cập nhật thủ công trên server:"
-    echo "   Xem diff: diff /var/www/web-ha-can/deploy/nginx.conf /etc/nginx/sites-available/smadesign.vn"
+    echo "   Xem diff: diff /var/www/web-ha-can/deploy/nginx.conf /etc/nginx/sites-available/dhakimloaimau.vn"
 fi
 REMOTE
 
 echo ""
 echo "✅ Deploy hoàn tất!"
-echo "   https://smadesign.vn"
+echo "   https://dhakimloaimau.vn"

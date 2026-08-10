@@ -1,4 +1,4 @@
-const FRONTEND_URL = 'https://smadesign.vn';
+const FRONTEND_URL = 'https://dhakimloaimau.vn';
 
 const PREVIEW_TYPE_MAP = {
   'api::hero-slide.hero-slide': 'hero-slide',

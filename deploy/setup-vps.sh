@@ -7,10 +7,10 @@
 set -e
 
 GITHUB_REPO="${1}"
-DOMAIN="smadesign.vn"
+DOMAIN="dhakimloaimau.vn"
 APP_USER="deploy"
 REPO_DIR="/var/www/web-ha-can"
-FRONTEND_DIR="/var/www/smadesign.vn"
+FRONTEND_DIR="/var/www/dhakimloaimau.vn"
 CMS_DIR="/var/www/dha-cms"
 
 if [ -z "$GITHUB_REPO" ]; then
@@ -58,8 +58,8 @@ cp -r "$REPO_DIR/dha-cms/." "$CMS_DIR/"
 chown -R "$APP_USER":"$APP_USER" "$FRONTEND_DIR" "$CMS_DIR"
 
 echo "==> [7/8] Cấu hình Nginx..."
-cp "$REPO_DIR/deploy/nginx.conf" /etc/nginx/sites-available/smadesign.vn
-ln -sf /etc/nginx/sites-available/smadesign.vn /etc/nginx/sites-enabled/smadesign.vn
+cp "$REPO_DIR/deploy/nginx.conf" /etc/nginx/sites-available/dhakimloaimau.vn
+ln -sf /etc/nginx/sites-available/dhakimloaimau.vn /etc/nginx/sites-enabled/dhakimloaimau.vn
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 

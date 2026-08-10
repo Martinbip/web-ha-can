@@ -2,7 +2,7 @@ const { defineConfig, devices } = require('@playwright/test');
 
 require('dotenv').config({ path: require('path').join(__dirname, '.env.e2e') });
 
-const BASE_URL = process.env.E2E_BASE_URL || 'https://smadesign.vn';
+const BASE_URL = process.env.E2E_BASE_URL || 'https://dhakimloaimau.vn';
 
 module.exports = defineConfig({
   testDir: './tests/e2e',

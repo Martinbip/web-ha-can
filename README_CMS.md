@@ -80,14 +80,14 @@ Không đưa `CLOUDINARY_URL`, `CLOUDINARY_API_SECRET`, hoặc token Strapi vào
 
 ### Triển khai (Production)
 
-*   Nginx phục vụ `/admin` như static site (`try_files $uri $uri/ /admin/index.html;`), trỏ vào thư mục `admin/dist` đã build, được rsync vào `/var/www/smadesign.vn/admin/`.
+*   Nginx phục vụ `/admin` như static site (`try_files $uri $uri/ /admin/index.html;`), trỏ vào thư mục `admin/dist` đã build, được rsync vào `/var/www/dhakimloaimau.vn/admin/`.
 *   Nginx proxy `/strapi-admin` sang Strapi built-in admin panel (`http://127.0.0.1:1337`), thay cho `/admin` trước đây.
 *   `deploy/deploy.sh` chỉ build & sync `admin/` khi phát hiện thay đổi trong thư mục đó (tương tự cơ chế đã áp dụng cho `dha-cms/`), giữ deploy nhanh khi không đổi gì ở admin.
 *   Scripts hữu ích ở root `package.json`: `npm run admin:install`, `npm run admin:dev`, `npm run admin:build`.
 
 ## Test tự động (Playwright)
 
-`tests/e2e/` chứa test trình duyệt thật bằng Playwright, mặc định chạy nhắm vào production (`https://smadesign.vn`) — khác với `tests/*.test.js` ở root (chỉ kiểm tra bằng regex trên source code, không mở trình duyệt).
+`tests/e2e/` chứa test trình duyệt thật bằng Playwright, mặc định chạy nhắm vào production (`https://dhakimloaimau.vn`) — khác với `tests/*.test.js` ở root (chỉ kiểm tra bằng regex trên source code, không mở trình duyệt).
 
 Cài đặt (một lần):
 
