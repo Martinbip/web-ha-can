@@ -17,6 +17,15 @@ export const MEDIA_FOLDERS = [
 // and deleting them stays possible; uploading new ones there does not.
 export const LEGACY_MEDIA_FOLDER = 'ha-can/';
 
+// dha/hero -> ha-can/hero: the rebrand kept the sub-folder names, so the old
+// copy of a folder is the same path under the ha-can/ namespace. Returns null
+// for anything that isn't a dha/ folder, so callers can skip the extra fetch.
+export function getLegacyFolder(folder) {
+  const value = String(folder || '');
+  if (!value.startsWith('dha/')) return null;
+  return `${LEGACY_MEDIA_FOLDER}${value.slice('dha/'.length)}`;
+}
+
 export function listMedia(params = {}) {
   const query = new URLSearchParams(params).toString();
   return apiRequest(`/media${query ? `?${query}` : ''}`);

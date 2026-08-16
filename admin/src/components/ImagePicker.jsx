@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { MEDIA_FOLDERS, listMedia, uploadMedia } from '../api/media.js';
+import { MEDIA_FOLDERS, getLegacyFolder, listMedia, uploadMedia } from '../api/media.js';
 
 // Real Cloudinary-backed picker: shows the current image, and an inline
 // expandable panel to browse existing media or upload a new one. Keeps the
@@ -16,12 +16,32 @@ export default function ImagePicker({ id, value, onChange, onSelect, folder }) {
   const fileInputRef = useRef(null);
   const activeFolder = folder || MEDIA_FOLDERS[0];
 
+  // Images uploaded before the rebrand still live under ha-can/, including the
+  // ones the current content points at — list that folder alongside the dha/
+  // one so an existing image can be picked again, not just re-uploaded. One
+  // folder failing (or simply being empty) must not blank out the other, so
+  // each request settles on its own.
   const load = useCallback(() => {
     setLoading(true);
     setError('');
-    listMedia({ prefix: activeFolder })
-      .then((payload) => setAssets(Array.isArray(payload.data) ? payload.data : []))
-      .catch((err) => setError(err.message || 'Không tải được thư viện ảnh.'))
+
+    const folders = [activeFolder, getLegacyFolder(activeFolder)].filter(Boolean);
+
+    Promise.all(
+      folders.map((prefix) =>
+        listMedia({ prefix })
+          .then((payload) => (Array.isArray(payload.data) ? payload.data : []))
+          .catch(() => null),
+      ),
+    )
+      .then((results) => {
+        if (results.every((result) => result === null)) {
+          setError('Không tải được thư viện ảnh.');
+          setAssets([]);
+          return;
+        }
+        setAssets(results.filter(Boolean).flat());
+      })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFolder]);
@@ -65,36 +85,37 @@ export default function ImagePicker({ id, value, onChange, onSelect, folder }) {
         <p className="image-picker-hint">Chưa chọn ảnh.</p>
       )}
 
+      {/* Uploading is the common case, so it stays visible instead of hiding
+          behind the library toggle. Deliberately a plain div, not a form: this
+          picker renders inside the edit page's own form element, and nested
+          forms are invalid HTML — the browser drops the inner one, so a submit
+          button here would submit the edit form and reload the page instead of
+          uploading. */}
+      <div className="image-picker-upload">
+        <input ref={fileInputRef} id={id} type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+        <button type="button" className="btn-primary" disabled={uploading} onClick={handleUpload}>
+          {uploading ? 'Đang tải lên...' : 'Tải ảnh lên'}
+        </button>
+      </div>
+
       <div className="image-picker-actions">
         <button type="button" className="btn-secondary" onClick={() => setOpen((prev) => !prev)}>
-          {open ? 'Đóng thư viện ảnh' : 'Chọn ảnh từ thư viện'}
+          {open ? 'Đóng thư viện ảnh' : 'Chọn ảnh có sẵn'}
         </button>
       </div>
 
       {folder ? <p className="image-picker-hint">Thư mục: {folder}</p> : null}
 
+      {error ? <p className="form-error">{error}</p> : null}
+
       {open ? (
         <div className="image-picker-panel">
-          {/* Deliberately a plain div, not a form: this picker renders inside
-              the edit page's own form element, and nested forms are invalid
-              HTML — the browser drops the inner one, so a submit button here
-              would submit the edit form and reload the page instead of
-              uploading. */}
-          <div className="image-picker-upload">
-            <input ref={fileInputRef} id={id} type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-            <button type="button" className="btn-primary" disabled={uploading} onClick={handleUpload}>
-              {uploading ? 'Đang tải lên...' : 'Tải lên & chọn'}
-            </button>
-          </div>
-
-          {error ? <p className="form-error">{error}</p> : null}
-
           {loading ? (
             <p>Đang tải...</p>
           ) : (
             <div className="image-picker-grid">
               {assets.length === 0 ? (
-                <p>Chưa có ảnh nào trong thư mục này.</p>
+                <p>Chưa có ảnh nào để chọn. Hãy tải ảnh mới lên.</p>
               ) : (
                 assets.map((asset) => (
                   <button
