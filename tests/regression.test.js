@@ -147,3 +147,21 @@ test('hero slides come from the CMS, not from hardcoded markup', () => {
     'hero slides do not fall back to a stale local copy',
   );
 });
+
+// Strapi 5's Document Service writes to the draft version only. Content types
+// with draftAndPublish (hero slides, news, products…) therefore kept serving
+// the old published version to the website after an editor pressed Lưu — the
+// admin showed the new image, the site showed the old one.
+test('saving in the custom admin republishes so the website matches', () => {
+  const resources = read('dha-cms/src/api/admin-ui/services/resources.js');
+
+  assert.match(resources, /async function publishAfterWrite/, 'writes go through a republish helper');
+  const helper = resources.split('async function publishAfterWrite')[1].split('\n}')[0];
+  assert.match(helper, /draftAndPublish/, 'helper only republishes draft-and-publish types');
+  assert.match(helper, /\.publish\(/, 'helper publishes the document');
+
+  for (const fn of ['async function create', 'async function update']) {
+    const body = resources.split(fn)[1].split('\n}\n')[0];
+    assert.match(body, /publishAfterWrite/, `${fn.replace('async function ', '')} republishes after writing`);
+  }
+});

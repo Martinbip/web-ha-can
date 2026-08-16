@@ -265,12 +265,32 @@ async function get(ctx) {
   ctx.body = { data: normalizeEntry(data, config) };
 }
 
+// Document Service chỉ ghi vào bản nháp. Với content type bật draftAndPublish,
+// website đọc bản đã xuất bản, nên nếu không xuất bản lại thì admin hiện nội
+// dung mới còn website vẫn giữ nội dung cũ — đúng thứ người dùng thấy là "sửa
+// rồi mà web không đổi". Admin này không có khái niệm nháp cho biên tập viên:
+// bấm Lưu nghĩa là muốn nội dung lên web ngay.
+//
+// Ngoại lệ: bản ghi đã bị gỡ xuất bản có chủ đích thì giữ nguyên trạng thái gỡ,
+// không tự đưa trở lại web.
+async function publishAfterWrite(config, documentId, { wasPublished = true } = {}) {
+  if (!config.draftAndPublish || !documentId || !wasPublished) return;
+  await getService(config).publish({ documentId });
+}
+
+async function isPublished(config, documentId) {
+  if (!config.draftAndPublish || !documentId) return false;
+  const published = await getService(config).findOne({ documentId, status: 'published', fields: ['id'] });
+  return Boolean(published);
+}
+
 async function create(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
   if (!auth.requireTrustedOrigin(ctx)) return;
   if (config.readOnlyCreate) return sendError(ctx, 403, 'READ_ONLY', 'Module này không cho tạo dữ liệu từ admin.');
   const data = await getService(config).create({ data: cleanData(config, ctx.request.body) });
+  await publishAfterWrite(config, data?.documentId);
   ctx.body = { data: normalizeEntry(data, config) };
 }
 
@@ -281,18 +301,23 @@ async function update(ctx) {
 
   const service = getService(config);
   let data;
+  let wasPublished = true;
 
   if (config.singleType && ctx.params.id === 'null') {
     // If it's a single type and there is no existing record, create a new one instead of update
     const existing = await service.findMany({ limit: 1 });
     if (existing && existing.length > 0) {
+      wasPublished = await isPublished(config, existing[0].documentId);
       data = await service.update({ documentId: existing[0].documentId, data: cleanData(config, ctx.request.body) });
     } else {
       data = await service.create({ data: cleanData(config, ctx.request.body) });
     }
   } else {
+    wasPublished = await isPublished(config, ctx.params.id);
     data = await service.update({ documentId: ctx.params.id, data: cleanData(config, ctx.request.body) });
   }
+
+  await publishAfterWrite(config, data?.documentId, { wasPublished });
 
   ctx.body = { data: normalizeEntry(data, config) };
 }
