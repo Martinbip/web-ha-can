@@ -126,6 +126,24 @@ async function fetchSingleFromCMS(endpoint, fallbackFile) {
     }
 }
 
+// Một số collection chưa được nhập nội dung trong CMS (dịch vụ, quy trình).
+// Với chúng, bản mẫu trong data/ đóng vai trò nội dung khởi tạo: chỉ dùng khi
+// CMS chưa có gì, và bị CMS thay thế ngay khi quản trị nhập bản ghi đầu tiên.
+// Khác với fallback lỗi mạng, ở đây không có gì trong admin để mà lệch.
+async function fetchWithSeedContent(endpoint, seedFile) {
+    const items = await fetchFromCMS(endpoint, seedFile);
+    if (items && items.length > 0) return items;
+
+    try {
+        const res = await fetch(seedFile);
+        if (!res.ok) throw new Error(`Seed ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.error(`[CMS] ${endpoint} rỗng và không đọc được ${seedFile}:`, err);
+        return [];
+    }
+}
+
 // ======================================================
 // DOMContentLoaded — MAIN ENTRY
 // ======================================================
@@ -475,7 +493,7 @@ async function initServicesSection() {
     const grid = document.querySelector('.services-grid');
     if (!grid) return;
 
-    const services = await fetchFromCMS('services?sort=sort_order:asc&pagination[limit]=100', 'data/services.json');
+    const services = await fetchWithSeedContent('services?sort=sort_order:asc&pagination[limit]=100', 'data/services.json');
     if (!services || services.length === 0) return;
 
     grid.innerHTML = services.map(svc => {
@@ -506,7 +524,7 @@ async function initWorkflowSection() {
     const timeline = document.querySelector('.workflow-timeline');
     if (!timeline) return;
 
-    const steps = await fetchFromCMS('workflow-steps?sort=sort_order:asc&pagination[limit]=100', 'data/workflow_steps.json');
+    const steps = await fetchWithSeedContent('workflow-steps?sort=sort_order:asc&pagination[limit]=100', 'data/workflow_steps.json');
     if (!steps || steps.length === 0) return;
 
     timeline.innerHTML = steps.map(step => `
