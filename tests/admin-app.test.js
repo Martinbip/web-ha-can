@@ -105,6 +105,22 @@ test('admin media UI uploads through admin-ui and never stores Cloudinary secret
   );
 });
 
+// ImagePicker is rendered by FieldRenderer inside the <form className="edit-form">
+// of ResourceEditPage/HomePageEditor/SettingsPage. Nested <form> elements are
+// invalid HTML — the browser drops the inner one, which makes any type="submit"
+// button inside the picker submit the *outer* edit form: the page reloads and
+// the upload never fires. The picker must therefore drive its upload from a
+// plain button click, not from a form submit.
+test('image picker uploads without a nested form that would submit the edit form', () => {
+  const picker = read('admin/src/components/ImagePicker.jsx');
+  const editPage = read('admin/src/pages/ResourceEditPage.jsx');
+
+  assert.match(editPage, /<form className="edit-form"/, 'edit page wraps fields in a form');
+  assert.doesNotMatch(picker, /<form/, 'image picker renders no nested form');
+  assert.doesNotMatch(picker, /type="submit"/, 'image picker upload button never submits a form');
+  assert.match(picker, /onClick={handleUpload}/, 'image picker uploads on click');
+});
+
 test('admin has grouped homepage pricing and settings screens', () => {
   const app = read('admin/src/App.jsx');
   const home = read('admin/src/pages/HomePageEditor.jsx');

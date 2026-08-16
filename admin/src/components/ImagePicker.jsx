@@ -36,8 +36,7 @@ export default function ImagePicker({ id, value, onChange, onSelect, folder }) {
     setOpen(false);
   }
 
-  async function handleUpload(event) {
-    event.preventDefault();
+  async function handleUpload() {
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
       setError('Vui lòng chọn ảnh để tải lên.');
@@ -76,12 +75,17 @@ export default function ImagePicker({ id, value, onChange, onSelect, folder }) {
 
       {open ? (
         <div className="image-picker-panel">
-          <form className="image-picker-upload" onSubmit={handleUpload}>
+          {/* Deliberately a plain div, not a form: this picker renders inside
+              the edit page's own form element, and nested forms are invalid
+              HTML — the browser drops the inner one, so a submit button here
+              would submit the edit form and reload the page instead of
+              uploading. */}
+          <div className="image-picker-upload">
             <input ref={fileInputRef} id={id} type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-            <button type="submit" className="btn-primary" disabled={uploading}>
+            <button type="button" className="btn-primary" disabled={uploading} onClick={handleUpload}>
               {uploading ? 'Đang tải lên...' : 'Tải lên & chọn'}
             </button>
-          </form>
+          </div>
 
           {error ? <p className="form-error">{error}</p> : null}
 
