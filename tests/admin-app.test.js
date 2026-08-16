@@ -121,6 +121,20 @@ test('image picker uploads without a nested form that would submit the edit form
   assert.match(picker, /onClick={handleUpload}/, 'image picker uploads on click');
 });
 
+test('image picker offers upload upfront and can reuse pre-rebrand images', () => {
+  const picker = read('admin/src/components/ImagePicker.jsx');
+  const mediaApi = read('admin/src/api/media.js');
+
+  // The upload row sits outside the collapsible library panel, so editors can
+  // add an image without opening the library first.
+  const panel = picker.split('{open ?')[1] || '';
+  assert.match(picker, /image-picker-upload/, 'upload row exists');
+  assert.doesNotMatch(panel, /image-picker-upload/, 'upload row is not hidden inside the library panel');
+
+  assert.match(mediaApi, /export function getLegacyFolder/, 'legacy folder mapping is shared from the media api');
+  assert.match(picker, /getLegacyFolder/, 'picker also lists the pre-rebrand folder');
+});
+
 test('admin has grouped homepage pricing and settings screens', () => {
   const app = read('admin/src/App.jsx');
   const home = read('admin/src/pages/HomePageEditor.jsx');
