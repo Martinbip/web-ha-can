@@ -231,3 +231,15 @@ test('social links are hidden when the CMS has no address for them', () => {
   assert.match(body, /hidden = true/, 'links without an address are hidden');
   assert.match(body, /zalo\.me\/\$\{hotlineClean\}/, 'Zalo falls back to the hotline number');
 });
+
+// Bỏ markup mẫu khỏi HTML làm lộ ra việc CMS chưa có bản ghi dịch vụ và bước
+// quy trình nào: hai khối trên trang chủ trống trơn. Bản mẫu trong data/ đóng
+// vai trò nội dung khởi tạo cho tới khi quản trị nhập bản ghi đầu tiên.
+test('services and workflow fall back to seed content only while the CMS is empty', () => {
+  const appJs = read('app.js');
+  const helper = appJs.split('async function fetchWithSeedContent')[1].split('\n}\n')[0];
+
+  assert.match(helper, /items\.length > 0/, 'CMS content wins whenever it exists');
+  assert.match(appJs, /fetchWithSeedContent\('services/, 'services use seed content');
+  assert.match(appJs, /fetchWithSeedContent\('workflow-steps/, 'workflow steps use seed content');
+});
