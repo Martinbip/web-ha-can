@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1.1.1">
+    <link rel="stylesheet" href="styles.css?v=1.1.2">
 </head>
 <body>
 
@@ -140,46 +140,14 @@
 
                 <!-- RIGHT: Carousel -->
                 <div class="hero-visual">
-                    <div class="hero-image-card" id="hero-carousel">
-
-                        <div class="carousel-slide active" data-slide="0">
-                            <img src="assets/mo_quang_ha_nam.png"
-                                 alt="Mỏ quặng lộ thiên Hà Nam — khảo sát địa chất thực địa">
-                            <div class="hero-image-overlay">
-                                <span class="overlay-subtitle">Địa Điểm Khai Thác</span>
-                                <span class="overlay-title">Mỏ Lộ Thiên — Hà Nam</span>
-                            </div>
-                        </div>
-
-                        <div class="carousel-slide" data-slide="1">
-                            <img src="assets/phong_thi_nghiem_dha.png"
-                                 alt="Phòng thí nghiệm phân tích XRF/ICP-MS của DHA"
-                                 loading="lazy">
-                            <div class="hero-image-overlay">
-                                <span class="overlay-subtitle">Cơ Sở Phân Tích</span>
-                                <span class="overlay-title">Phòng Thí Nghiệm DHA</span>
-                            </div>
-                        </div>
-
-                        <div class="carousel-slide" data-slide="2">
-                            <img src="assets/quang_mau_dong.png"
-                                 alt="Quặng đồng chalcopyrite mẫu tiêu chuẩn Cu >28%"
-                                 loading="lazy">
-                            <div class="hero-image-overlay">
-                                <span class="overlay-subtitle">Mẫu Tiêu Chuẩn</span>
-                                <span class="overlay-title">Chalcopyrite — Cu &gt;28%</span>
-                            </div>
-                        </div>
+                    <!-- Slide và chấm điều hướng do initHeroSlides() dựng từ
+                         CMS (hero-slides). Không đặt ảnh cứng ở đây: ảnh cứng
+                         sẽ hiện sai mỗi khi quản trị đổi ảnh trong admin. -->
+                    <div class="hero-image-card is-loading" id="hero-carousel">
 
                         <div class="hero-spec-badge">
                             <span class="spec-badge-label">CHỨNG CHỈ</span>
                             <span class="spec-badge-value">XRF · ICP-MS</span>
-                        </div>
-
-                        <div class="carousel-dots" role="tablist" aria-label="Chọn ảnh">
-                            <button class="carousel-dot active" data-dot="0" aria-label="Ảnh 1" aria-selected="true"></button>
-                            <button class="carousel-dot" data-dot="1" aria-label="Ảnh 2" aria-selected="false"></button>
-                            <button class="carousel-dot" data-dot="2" aria-label="Ảnh 3" aria-selected="false"></button>
                         </div>
                     </div>
                 </div>
@@ -502,6 +470,6 @@
     </button>
 
     <script>window.__STRAPI_URL=location.origin;</script>
-    <script src="app.js?v=1.0"></script>
+    <script src="app.js?v=1.1"></script>
 </body>
 </html>

@@ -127,3 +127,23 @@ test('custom admin deployment and Cloudinary setup are documented', () => {
   assert.ok(rootPackage.scripts['admin:build'], 'root package has admin build script');
   assert.match(nginx, /\/admin/, 'nginx config mentions admin route handling');
 });
+
+// The hero carousel used to ship three hardcoded slides in the markup, which
+// the CMS render then replaced. Whenever the CMS was slow or unreachable the
+// homepage showed those stale images instead of what the admin had set, so the
+// slides now come from the CMS only.
+test('hero slides come from the CMS, not from hardcoded markup', () => {
+  const html = read('index.html');
+  const appJs = read('app.js');
+
+  const carousel = html.split('id="hero-carousel"')[1].split('</section>')[0];
+  assert.doesNotMatch(carousel, /class="carousel-slide/, 'no hardcoded hero slide markup');
+  assert.doesNotMatch(carousel, /assets\/[a-z_]+\.png/, 'no hardcoded hero image files');
+
+  assert.match(appJs, /initHeroSlides/, 'hero slides are rendered from the CMS');
+  assert.doesNotMatch(
+    appJs.split('async function initHeroSlides')[1].split('\n}')[0],
+    /hero_slides\.json/,
+    'hero slides do not fall back to a stale local copy',
+  );
+});
