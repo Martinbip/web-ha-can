@@ -165,3 +165,69 @@ test('saving in the custom admin republishes so the website matches', () => {
     assert.match(body, /publishAfterWrite/, `${fn.replace('async function ', '')} republishes after writing`);
   }
 });
+
+// Cùng loại lỗi với hero slides: các khối do CMS quản lý được nhúng sẵn nội
+// dung mẫu trong HTML rồi mới bị JS ghi đè, nên trang hiện dữ liệu cũ mỗi lần
+// tải và đứng luôn ở đó nếu CMS lỗi.
+test('CMS-managed lists ship empty markup instead of sample content', () => {
+  const home = read('index.html');
+  const pricing = read('pricing.html');
+
+  const block = (html, anchor, closing) => {
+    const i = html.indexOf(anchor);
+    assert.ok(i >= 0, `${anchor} exists`);
+    return html.slice(i, html.indexOf(closing, i));
+  };
+
+  assert.doesNotMatch(block(home, 'services-grid', '</section>'), /service-card/, 'no sample service cards');
+  assert.doesNotMatch(block(home, 'workflow-timeline', '</section>'), /timeline-item/, 'no sample workflow steps');
+
+  // Bảng giá chỉ được chứa dòng "Đang tải", không phải giá mẫu.
+  for (const [html, id] of [[home, 'market-price-body'], [pricing, 'pricing-table-body']]) {
+    const rows = block(html, id, '</tbody>').match(/<tr/g) || [];
+    assert.equal(rows.length, 1, `${id} holds only a loading row`);
+    assert.match(block(html, id, '</tbody>'), /Đang tải/, `${id} loading row is a placeholder`);
+  }
+});
+
+// Giá kim loại đổi hằng ngày; phục vụ một bản sao tĩnh cũ còn tệ hơn không
+// hiện bảng giá nào.
+test('market prices are never served from a stale local copy', () => {
+  const appJs = read('app.js');
+  const body = appJs.split('async function initMarketPrices')[1].split('\n}\n')[0];
+
+  assert.doesNotMatch(body, /pricing_packages\.json/, 'market prices have no static fallback');
+});
+
+// Số hotline, email, mã số thuế nhúng cứng vẫn cần cho SEO và cho người tắt
+// JS, nhưng phải khớp dữ liệu thật, nếu không chúng phát tán thông tin sai.
+test('hardcoded contact details match the seeded site settings', () => {
+  const settings = schema('data/site_setting.json');
+  const digits = (value) => String(value).replace(/[^0-9]/g, '');
+
+  for (const file of ['index.html', 'contact.html', 'news.html', 'pricing.html', 'products.html', 'projects.html', 'estimator.html']) {
+    const html = read(file);
+    const phones = [...html.matchAll(/href="tel:([0-9.\s]+)"/g)].map((m) => digits(m[1]));
+    for (const phone of phones) {
+      assert.equal(phone, digits(settings.hotline), `${file} hotline matches site settings`);
+    }
+    const emails = [...html.matchAll(/href="mailto:([^"]+)"/g)].map((m) => m[1]);
+    for (const email of emails) {
+      assert.equal(email, settings.email, `${file} email matches site settings`);
+    }
+    if (html.includes('MST:')) {
+      assert.match(html, new RegExp(`MST: ${settings.tax_code}`), `${file} tax code matches site settings`);
+    }
+  }
+});
+
+// Markup để sẵn link mạng xã hội mẫu và chỉ ghi đè khi CMS có dữ liệu, nên khi
+// quản trị bỏ trống thì trang dẫn khách tới tài khoản không tồn tại.
+test('social links are hidden when the CMS has no address for them', () => {
+  const appJs = read('app.js');
+  const body = appJs.split('async function initSiteSettings')[1].split('\n}\n')[0];
+
+  assert.match(body, /SOCIAL_LINKS/, 'social links go through one list');
+  assert.match(body, /hidden = true/, 'links without an address are hidden');
+  assert.match(body, /zalo\.me\/\$\{hotlineClean\}/, 'Zalo falls back to the hotline number');
+});
