@@ -515,6 +515,12 @@ textarea:focus-visible {
     border: 1px solid #DDDDDD;
 }
 
+/* Slide đến từ CMS nên khung rỗng trong lúc chờ tải; nền xám giữ chỗ để
+   layout không nhảy và không phải nhìn khoảng trắng. */
+.hero-image-card.is-loading {
+    background: #EFEFEF;
+}
+
 .carousel-slide {
     position: absolute;
     inset: 0;

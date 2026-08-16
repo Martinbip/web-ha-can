@@ -86,7 +86,14 @@ async function fetchFromCMS(endpoint, fallbackFile) {
         if (!res.ok) throw new Error(`CMS responded ${res.status}`);
         const json = await res.json();
         return (json.data || []).map(item => item.attributes || item);
-    } catch {
+    } catch (err) {
+        // Nội dung mà quản trị thay đổi thường xuyên (ví dụ hero slides) gọi
+        // hàm này không kèm fallbackFile: thà không hiển thị còn hơn hiển thị
+        // một bản sao cũ khác với những gì đang có trong admin.
+        if (!fallbackFile) {
+            console.error(`[CMS] ${endpoint} failed and has no fallback:`, err);
+            return [];
+        }
         console.warn(`[CMS] Fallback to ${fallbackFile}`);
         try {
             const res = await fetch(fallbackFile);
@@ -233,11 +240,15 @@ async function initHeroSlides() {
     const carousel = document.getElementById('hero-carousel');
     if (!carousel) return;
 
-    const slides = await fetchFromCMS('hero-slides?sort=sort_order:asc&pagination[limit]=100', 'data/hero_slides.json');
+    // Cố tình không truyền fallback tĩnh: bản sao trong data/ chỉ dùng để seed
+    // CMS, nó không đổi theo khi quản trị thay ảnh nên dùng làm dự phòng sẽ
+    // hiển thị ảnh khác với admin. Không có dữ liệu thì ẩn hẳn khung ảnh.
+    const slides = await fetchFromCMS('hero-slides?sort=sort_order:asc&pagination[limit]=100');
     if (!slides || slides.length === 0) {
-        initHeroCarousel();
+        carousel.hidden = true;
         return;
     }
+    carousel.classList.remove('is-loading');
 
     const slidesContainer = carousel.querySelectorAll('.carousel-slide');
     const dotsContainer = carousel.querySelector('.carousel-dots');
