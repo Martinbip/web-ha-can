@@ -182,16 +182,28 @@ async function initSiteSettings() {
         el.textContent = settings.brand_bio || '';
     });
 
-    if (settings.facebook_url) {
-        document.querySelectorAll('a[aria-label="Facebook"]').forEach(el => {
-            el.href = settings.facebook_url;
+    // Link mạng xã hội chỉ hiện khi quản trị đã nhập địa chỉ thật. Trước đây
+    // markup để sẵn các link mẫu (facebook.com/kimloaimaudha...) và chỉ ghi đè
+    // khi CMS có dữ liệu, nên khi bỏ trống thì trang vẫn dẫn khách tới những
+    // tài khoản không tồn tại.
+    const SOCIAL_LINKS = [
+        ['Facebook', settings.facebook_url],
+        ['YouTube', settings.youtube_url],
+        ['Twitter/X', settings.twitter_url],
+        // Zalo dùng chính số hotline khi quản trị chưa nhập link riêng — đây là
+        // kênh liên hệ chính ở VN, suy ra được thì không nên ẩn đi.
+        ['Zalo', settings.zalo_url || (hotlineClean ? `https://zalo.me/${hotlineClean}` : '')],
+    ];
+    SOCIAL_LINKS.forEach(([label, url]) => {
+        document.querySelectorAll(`a[aria-label="${label}"]`).forEach(el => {
+            if (url) {
+                el.href = url;
+                el.hidden = false;
+            } else {
+                el.hidden = true;
+            }
         });
-    }
-    if (settings.zalo_url) {
-        document.querySelectorAll('a[aria-label="Zalo"]').forEach(el => {
-            el.href = settings.zalo_url;
-        });
-    }
+    });
 
     initHeroContent(settings);
     initHeroSlides();
@@ -517,7 +529,9 @@ async function initMarketPrices() {
     if (!homePriceBody && !pricingPriceBody) return;
 
     try {
-        const prices = await fetchFromCMS('pricing-packages?pagination[limit]=100', 'data/pricing_packages.json');
+        // Không dùng bản sao tĩnh: giá kim loại đổi hằng ngày, hiển thị giá cũ
+        // còn tệ hơn không hiển thị bảng giá nào.
+        const prices = await fetchFromCMS('pricing-packages?pagination[limit]=100');
         if (!prices || prices.length === 0) return;
 
         const renderRow = (item, showDate) => {
