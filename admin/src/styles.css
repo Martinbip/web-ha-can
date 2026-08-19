@@ -337,9 +337,140 @@ button:hover {
   margin-top: 24px;
 }
 
-.richtext-field {
+.richtext {
+  display: grid;
+  gap: 8px;
+}
+
+.richtext-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px 8px 0 0;
+  background: var(--bg);
+}
+
+.richtext-toolbar-btn {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  /* Nút chung của admin là nền xanh chữ trắng; thanh công cụ cần ngược lại,
+     nên màu chữ phải khai báo tường minh kẻo chữ trắng nằm trên nền trắng. */
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.richtext-toolbar-btn:hover {
+  background: var(--bg);
+}
+
+.richtext-toolbar-btn.is-active {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+}
+
+.richtext-content .ProseMirror {
+  min-height: 320px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 0 0 8px 8px;
+  background: #fff;
+  line-height: 1.7;
+  outline: none;
+}
+
+.richtext-content .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.richtext-content .ProseMirror blockquote {
+  margin: 12px 0;
+  padding-left: 14px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+
+.richtext-image-panel {
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.richtext-image-hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.slug-field {
+  display: grid;
+  gap: 8px;
+}
+
+.slug-field-preview {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.slug-field-input {
   width: 100%;
   font-family: ui-monospace, monospace;
+}
+
+.slug-field-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.slug-field-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-pill.is-published {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-pill.is-draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.table-select-cell {
+  width: 36px;
+  text-align: center;
+}
+
+.data-table tbody tr.is-selected {
+  background: #fff7ed;
 }
 
 .image-picker {

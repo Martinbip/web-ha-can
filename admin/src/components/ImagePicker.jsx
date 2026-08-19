@@ -7,7 +7,7 @@ import { MEDIA_FOLDERS, getLegacyFolder, listMedia, uploadMedia } from '../api/m
 // stored secure_url string, onChange(url) updates the field), and additionally
 // calls onSelect(asset) with the full Cloudinary asset when one is chosen, so
 // callers that need more than the URL (e.g. public_id) can use it too.
-export default function ImagePicker({ id, value, onChange, onSelect, folder }) {
+export default function ImagePicker({ id, value, onChange, onSelect, folder, showPreview = true }) {
   const [open, setOpen] = useState(false);
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -77,13 +77,17 @@ export default function ImagePicker({ id, value, onChange, onSelect, folder }) {
 
   return (
     <div className="image-picker">
-      {value ? (
-        <div className="image-picker-preview">
-          <img src={value} alt="" />
-        </div>
-      ) : (
-        <p className="image-picker-hint">Chưa chọn ảnh.</p>
-      )}
+      {/* Khi picker được dùng để chèn ảnh vào giữa bài viết thì không có "ảnh
+          hiện tại" nào để xem trước — ảnh đi thẳng vào nội dung. */}
+      {showPreview ? (
+        value ? (
+          <div className="image-picker-preview">
+            <img src={value} alt="" />
+          </div>
+        ) : (
+          <p className="image-picker-hint">Chưa chọn ảnh.</p>
+        )
+      ) : null}
 
       {/* Uploading is the common case, so it stays visible instead of hiding
           behind the library toggle. Deliberately a plain div, not a form: this

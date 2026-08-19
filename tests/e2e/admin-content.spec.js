@@ -11,6 +11,7 @@ test.describe('Admin — quản lý Tin tức (tạo/sửa/xóa)', () => {
 
     const stamp = Date.now();
     const title = `[E2E TEST] ${stamp}`;
+    // Slug do admin tự sinh từ tiêu đề, test chỉ kiểm tra lại kết quả mong đợi.
     const slug = `e2e-test-${stamp}`;
 
     await loginAsAdmin(page);
@@ -22,9 +23,14 @@ test.describe('Admin — quản lý Tin tức (tạo/sửa/xóa)', () => {
       await expect(page.getByRole('heading', { name: /Thêm Tin tức/ })).toBeVisible();
 
       await page.getByLabel('Tiêu đề').fill(title);
-      await page.getByLabel('Đường dẫn').fill(slug);
       await page.getByLabel('Tóm tắt').fill('Bài viết test tự động — sẽ bị xóa ngay sau khi test chạy xong.');
-      await page.getByLabel('Nội dung').fill('<p>Nội dung test tự động bởi Playwright.</p>');
+
+      // Đường dẫn không còn nhập tay: hệ thống tự sinh từ tiêu đề, đúng thứ
+      // biên tập viên trông đợi khi họ chỉ gõ tiêu đề rồi bấm Lưu.
+      await expect(page.locator('.slug-field-preview')).toContainText(slug);
+
+      await page.locator('.richtext-content .ProseMirror').click();
+      await page.keyboard.type('Nội dung test tự động bởi Playwright.');
       await page.getByLabel('Danh mục').selectOption({ index: 1 });
       await page.getByLabel('Ngày đăng').fill(new Date().toISOString().slice(0, 10));
 

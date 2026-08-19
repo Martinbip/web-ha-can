@@ -96,7 +96,13 @@ test('deployment scripts avoid accidental commits and destructive port kills', (
   assert.doesNotMatch(start, /kill -9/, 'dev startup should not force kill unrelated processes');
   assert.match(backup, /dha-cms\/\.tmp\/data\.db/, 'backup script includes Strapi sqlite database');
   assert.match(backup, /public\/uploads/, 'backup script includes Strapi uploads');
-  assert.equal(rootPackage.scripts.test, 'node --test tests/regression.test.js tests/admin-ui-config.test.js tests/admin-app.test.js');
+  // Chốt cứng cả chuỗi lệnh khiến test này đỏ mỗi lần thêm một file test mới.
+  // Điều thực sự cần bảo vệ là: không có file test nào bị bỏ quên ngoài `npm test`.
+  const testScript = rootPackage.scripts.test;
+  assert.match(testScript, /^node --test /, 'npm test runs the node test runner');
+  for (const file of fs.readdirSync(path.join(root, 'tests')).filter((name) => name.endsWith('.test.js'))) {
+    assert.ok(testScript.includes(`tests/${file}`), `${file} is part of npm test`);
+  }
 });
 
 test('keyboard focus remains visible on interactive inputs', () => {
