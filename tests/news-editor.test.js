@@ -74,7 +74,8 @@ test('bài viết có trang chi tiết riêng và nội dung được lọc trư
   assert.match(detailHtml, /id="news-detail-content"/, 'trang chi tiết có vùng nội dung');
   assert.match(detailHtml, /og:image/, 'trang chi tiết khai báo thẻ chia sẻ mạng xã hội');
   assert.match(appJs, /initNewsDetailPage/, 'app.js dựng trang chi tiết');
-  assert.match(appJs, /\/news-detail\?slug=/, 'thẻ tin tức dẫn sang bài viết theo slug');
+  assert.match(appJs, /`\/tin-tuc\/\$\{encodeURIComponent\(slug\)\}`/, 'bài viết có địa chỉ sạch /tin-tuc/<slug>');
+  assert.match(detailHtml, /rel="canonical"/, 'trang chi tiết khai báo địa chỉ chính thức');
   assert.match(
     appJs,
     /sanitizeArticleHtml\(articleContentToHtml\(article\.content\)\)/,
@@ -94,4 +95,24 @@ test('slug trùng nhau được thêm hậu tố thay vì báo lỗi unique củ
     /entry\.documentId !== documentId/,
     'bài đang sửa không tự coi mình là bản trùng',
   );
+});
+
+test('địa chỉ bài viết dùng đường dẫn sạch và link cũ được chuyển hướng', () => {
+  const nginx = read('deploy/nginx.conf');
+  const appJs = read('app.js');
+
+  assert.match(nginx, /location \/tin-tuc\/ \{\s*\n\s*try_files \$uri \/news-detail\.html;/, '/tin-tuc/ được phục vụ bởi trang chi tiết');
+  assert.match(nginx, /return 301 \/tin-tuc\/\$arg_slug;/, 'link cũ ?slug= chuyển vĩnh viễn sang địa chỉ mới');
+  assert.match(appJs, /pathname\.match\(\/\^\\\/tin-tuc/, 'slug được đọc từ đường dẫn');
+  assert.match(appJs, /URLSearchParams\(window\.location\.search\)\.get\('slug'\)/, 'vẫn đọc được link cũ dạng ?slug=');
+});
+
+test('sitemap được sinh lại từ CMS mỗi lần deploy', () => {
+  const generator = read('scripts/generate-sitemap.js');
+  const deploy = read('deploy/deploy.sh');
+
+  assert.match(generator, /news-articles/, 'sitemap lấy danh sách bài từ CMS');
+  assert.match(generator, /\/tin-tuc\/\$\{encodeURIComponent\(article\.slug\)\}/, 'bài viết vào sitemap bằng địa chỉ sạch');
+  assert.match(deploy, /generate-sitemap\.js \/var\/www\/dhakimloaimau\.vn\/sitemap\.xml/, 'deploy ghi sitemap vào thư mục nginx phục vụ');
+  assert.doesNotMatch(deploy, /generate-sitemap\.js\s*$/m, 'không ghi sitemap vào repo trên VPS');
 });
