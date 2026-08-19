@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getResourceConfig } from '../config/resources.js';
 import { createResource, getResource, saveResource } from '../api/resources.js';
 import FieldRenderer from '../components/FieldRenderer.jsx';
+import { slugify } from '../lib/slug.js';
 
 export default function ResourceEditPage({ mode }) {
   const { type, id } = useParams();
@@ -51,10 +52,11 @@ export default function ResourceEditPage({ mode }) {
     setSaving(true);
     setError('');
     try {
+      const payload = withGeneratedSlugs(config, values);
       if (isNew) {
-        await createResource(type, values);
+        await createResource(type, payload);
       } else {
-        await saveResource(type, id, values);
+        await saveResource(type, id, payload);
       }
       navigate(`/resources/${type}`);
     } catch (err) {
@@ -84,6 +86,7 @@ export default function ResourceEditPage({ mode }) {
                 name={name}
                 field={field}
                 value={values[name]}
+                values={values}
                 onChange={(value) => handleChange(name, value)}
                 setField={setField}
               />
@@ -101,4 +104,16 @@ export default function ResourceEditPage({ mode }) {
       )}
     </main>
   );
+}
+
+// Lưới an toàn cho trường đường dẫn: nếu vì lý do nào đó slug vẫn rỗng (ví dụ
+// tiêu đề được dán vào trước khi trường slug kịp đồng bộ), sinh lại từ tiêu đề
+// thay vì để Strapi trả về lỗi bắt buộc mà biên tập viên không hiểu.
+export function withGeneratedSlugs(config, values) {
+  const entries = Object.entries(config.fields || {});
+  return entries.reduce((data, [name, field]) => {
+    if (field.type !== 'slug' || data[name]) return data;
+    const generated = slugify(data[field.sourceField]);
+    return generated ? { ...data, [name]: generated } : data;
+  }, values);
 }

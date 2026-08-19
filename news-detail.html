@@ -3,34 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tin Tức Thị Trường Kim Loại - Kim Loại Màu DHA</title>
-    <meta name="description" content="Cập nhật tin tức thị trường kim loại màu trong nước và quốc tế: giá cả, chính sách, xu hướng ngành khoáng sản.">
-
-    <!-- Favicon -->
+    <title id="page-title">Chi Tiết Tin Tức - DHA Minerals</title>
+    <meta name="description" id="page-desc" content="Tin tức thị trường kim loại màu, phân tích giá và cập nhật ngành khoáng sản từ DHA Minerals.">
+    <meta property="og:type" content="article">
+    <meta property="og:title" id="og-title" content="Chi Tiết Tin Tức - DHA Minerals">
+    <meta property="og:description" id="og-desc" content="Tin tức thị trường kim loại màu từ DHA Minerals.">
+    <meta property="og:image" id="og-image" content="">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="icon" type="image/png" href="assets/phong_thi_nghiem_dha.png">
-
-    <!-- Open Graph / Facebook / Zalo -->
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="vi_VN">
-    <meta property="og:site_name" content="Kim Loại Màu DHA">
-    <meta property="og:url" content="https://dhakimloaimau.vn/news">
-    <meta property="og:title" content="Tin Tức Thị Trường Kim Loại - Kim Loại Màu DHA">
-    <meta property="og:description" content="Cập nhật tin tức thị trường kim loại màu trong nước và quốc tế: giá cả, chính sách, xu hướng ngành khoáng sản.">
-    <meta property="og:image" content="https://dhakimloaimau.vn/assets/phong_thi_nghiem_dha.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Tin Tức Thị Trường Kim Loại - Kim Loại Màu DHA">
-    <meta name="twitter:description" content="Cập nhật tin tức thị trường kim loại màu trong nước và quốc tế.">
-    <meta name="twitter:image" content="https://dhakimloaimau.vn/assets/phong_thi_nghiem_dha.png">
-
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css?v=1.1.4">
 </head>
 <body>
@@ -97,14 +79,14 @@
     <main>
         <section class="section-padding">
             <div class="container">
-                <h1 class="heading text-center">Tin Tức Thị Trường</h1>
-                <p class="section-desc text-center">Cập nhật tin tức giá cả kim loại, chính sách thương mại và xu hướng thị trường.</p>
-
-                <div class="news-full-grid" id="news-full-grid">
-                    <div style="grid-column:1/-1;text-align:center;padding:30px 0;color:#666;">
-                        Đang tải tin tức...
-                    </div>
-                </div>
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/news">Tin Tức</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current" id="detail-breadcrumb">Đang tải...</span>
+                </nav>
+                <article class="article-detail" id="news-detail-content">
+                    <p style="text-align:center; padding:30px 0; color:#666;">Đang tải bài viết...</p>
+                </article>
             </div>
         </section>
     </main>

@@ -12,6 +12,8 @@ export default function ResourceListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const load = useCallback(
     (page = 1) => {
@@ -24,6 +26,7 @@ export default function ResourceListPage() {
         .then((payload) => {
           const data = Array.isArray(payload.data) ? payload.data : payload.data ? [payload.data] : [];
           setRows(data);
+          setSelectedIds([]);
           setMeta(payload.meta || { page: 1, pageSize: data.length, total: data.length });
         })
         .catch((err) => setError(err.message || 'Không tải được dữ liệu.'))
@@ -67,6 +70,37 @@ export default function ResourceListPage() {
     }
   }
 
+  function toggleSelected(id) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => (prev.length === rows.length ? [] : rows.map((row) => row.documentId ?? row.id)));
+  }
+
+  // Xoá từng dòng một khi dọn nhiều bản nháp trùng nhau là việc rất mệt, nên
+  // danh sách cho chọn nhiều rồi xoá một lượt. Backend không có endpoint xoá
+  // hàng loạt, nên gọi tuần tự và dừng lại ở lỗi đầu tiên để người dùng biết
+  // chính xác mục nào chưa xoá được.
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Xóa ${selectedIds.length} mục đã chọn? Hành động này không thể hoàn tác.`)) return;
+    setBulkDeleting(true);
+    setError('');
+    try {
+      for (const id of selectedIds) {
+        await deleteResource(type, id);
+      }
+      setSelectedIds([]);
+      load(1);
+    } catch (err) {
+      setError(err.message || 'Không xóa được một số mục đã chọn.');
+      load(1);
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
   async function handlePublishToggle(row) {
     const id = row.documentId ?? row.id;
     setBusyId(id);
@@ -101,6 +135,11 @@ export default function ResourceListPage() {
             />
             <button type="submit">Tìm</button>
           </form>
+          {!config.readOnlyCreate && selectedIds.length > 0 ? (
+            <button type="button" className="btn-danger" disabled={bulkDeleting} onClick={handleBulkDelete}>
+              {bulkDeleting ? 'Đang xóa...' : `Xóa ${selectedIds.length} mục đã chọn`}
+            </button>
+          ) : null}
           {!config.readOnlyCreate ? (
             <Link className="btn-primary" to={`/resources/${type}/new`}>
               + Thêm mới
@@ -118,25 +157,55 @@ export default function ResourceListPage() {
           <table className="data-table">
             <thead>
               <tr>
+                {!config.readOnlyCreate ? (
+                  <th className="table-select-cell">
+                    <input
+                      type="checkbox"
+                      aria-label="Chọn tất cả"
+                      checked={rows.length > 0 && selectedIds.length === rows.length}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                ) : null}
                 {listFields.map((field) => (
                   <th key={field}>{config.fields?.[field]?.label || field}</th>
                 ))}
+                {config.draftAndPublish ? <th>Trạng thái</th> : null}
                 <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={listFields.length + 1}>Chưa có dữ liệu.</td>
+                  <td colSpan={listFields.length + 1 + (config.draftAndPublish ? 1 : 0) + (config.readOnlyCreate ? 0 : 1)}>
+                    Chưa có dữ liệu.
+                  </td>
                 </tr>
               ) : (
                 rows.map((row) => {
                   const id = row.documentId ?? row.id;
                   return (
-                    <tr key={id}>
+                    <tr key={id} className={selectedIds.includes(id) ? 'is-selected' : undefined}>
+                      {!config.readOnlyCreate ? (
+                        <td className="table-select-cell">
+                          <input
+                            type="checkbox"
+                            aria-label="Chọn mục này"
+                            checked={selectedIds.includes(id)}
+                            onChange={() => toggleSelected(id)}
+                          />
+                        </td>
+                      ) : null}
                       {listFields.map((field) => (
                         <td key={field}>{formatCell(row[field])}</td>
                       ))}
+                      {config.draftAndPublish ? (
+                        <td>
+                          <span className={`status-pill ${row.publishedAt ? 'is-published' : 'is-draft'}`}>
+                            {row.publishedAt ? 'Đã đăng' : 'Bản nháp'}
+                          </span>
+                        </td>
+                      ) : null}
                       <td className="table-actions">
                         <Link to={`/resources/${type}/${id}`}>Sửa</Link>
                         {config.draftAndPublish ? (

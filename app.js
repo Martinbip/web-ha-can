@@ -483,6 +483,7 @@ function initDynamicContent() {
     initProductsPage();
     initProductDetailPage();
     initNewsPage();
+    initNewsDetailPage();
     initProjectsPage();
 }
 
@@ -750,18 +751,30 @@ function buildNewsCard(item, fullWidth) {
     const catLabel = categoryLabels[item.category] || escapeHtml(item.category) || '';
     const dateStr = item.date ? new Date(item.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
+    // Bài chưa có đường dẫn (dữ liệu cũ) vẫn hiển thị được, chỉ là không bấm vào
+    // đọc tiếp được — thà thế còn hơn dẫn tới một trang chi tiết trống.
+    const href = item.slug ? `/news-detail?slug=${encodeURIComponent(item.slug)}` : '';
+    const body = `
+        <div class="news-card-img-box">
+            <img src="${escapeHtml(item.image || 'assets/mo_quang_ha_nam.png')}" alt="${escapeHtml(item.title)}" class="news-card-img" loading="lazy">
+            ${catLabel ? `<span class="news-card-badge">${escapeHtml(catLabel)}</span>` : ''}
+        </div>
+        <div class="news-card-body">
+            <span class="news-card-date">${escapeHtml(dateStr)}</span>
+            <h3 class="news-card-title">${escapeHtml(item.title)}</h3>
+            <p class="news-card-summary">${escapeHtml(item.summary)}</p>
+            ${href ? '<span class="news-card-more">Đọc tiếp →</span>' : ''}
+        </div>
+    `;
+
+    if (!href) {
+        return `<article class="news-card card ${fullWidth ? 'news-card-full' : ''}">${body}</article>`;
+    }
+
     return `
-        <article class="news-card card ${fullWidth ? 'news-card-full' : ''}">
-            <div class="news-card-img-box">
-                <img src="${escapeHtml(item.image || 'assets/mo_quang_ha_nam.png')}" alt="${escapeHtml(item.title)}" class="news-card-img" loading="lazy">
-                ${catLabel ? `<span class="news-card-badge">${escapeHtml(catLabel)}</span>` : ''}
-            </div>
-            <div class="news-card-body">
-                <span class="news-card-date">${escapeHtml(dateStr)}</span>
-                <h3 class="news-card-title">${escapeHtml(item.title)}</h3>
-                <p class="news-card-summary">${escapeHtml(item.summary)}</p>
-            </div>
-        </article>
+        <a href="${escapeHtml(href)}" class="news-card card ${fullWidth ? 'news-card-full' : ''}">
+            ${body}
+        </a>
     `;
 }
 
