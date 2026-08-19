@@ -428,17 +428,6 @@ button:hover {
   word-break: break-all;
 }
 
-.slug-field-input {
-  width: 100%;
-  font-family: ui-monospace, monospace;
-}
-
-.slug-field-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .slug-field-hint {
   margin: 0;
   font-size: 13px;

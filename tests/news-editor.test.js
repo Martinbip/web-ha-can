@@ -12,10 +12,8 @@ function read(file) {
   return fs.readFileSync(path.join(root, file), 'utf8');
 }
 
-test('đường dẫn bài viết được sinh tự động và chịu được cả khi người dùng dán nguyên URL', async () => {
-  const { slugify, normalizeSlugInput } = await import(
-    `file://${path.join(root, 'admin/src/lib/slug.js')}`
-  );
+test('đường dẫn bài viết được sinh tự động từ tiêu đề', async () => {
+  const { slugify } = await import(`file://${path.join(root, 'admin/src/lib/slug.js')}`);
 
   assert.equal(
     slugify('Bước ngoặt lịch sử: Việt Nam lần đầu sản xuất nhôm thỏi'),
@@ -25,20 +23,13 @@ test('đường dẫn bài viết được sinh tự động và chịu được
   assert.equal(slugify('Đồng thỏi sập giá'), 'dong-thoi-sap-gia', 'đ được chuyển thành d');
   assert.equal(slugify('   '), '', 'tiêu đề rỗng cho slug rỗng chứ không phải gạch ngang');
 
-  // Đúng thao tác đã làm khách gặp lỗi "ký tự lạ": dán link trang web vào ô đường dẫn.
-  assert.equal(
-    normalizeSlugInput('https://dhakimloaimau.vn/tin-tuc/gia-dong-lme.html?utm=fb'),
-    'gia-dong-lme',
-    'URL đầy đủ được rút về phần cuối đường dẫn',
-  );
-  assert.equal(normalizeSlugInput('dhakimloaimau.vn'), 'dhakimloaimau-vn', 'tên miền vẫn cho ra slug hợp lệ');
-
-  for (const value of ['https://dhakimloaimau.vn/tin-tuc/Bài Viết Mới', 'Tiêu đề có dấu!', '///']) {
-    assert.match(normalizeSlugInput(value), /^[a-z0-9-]*$/, `"${value}" chỉ còn ký tự Strapi chấp nhận`);
+  // Mọi tiêu đề, kể cả tiêu đề toàn ký tự lạ, phải cho ra slug mà Strapi chấp nhận.
+  for (const title of ['Tiêu đề có dấu!', '@@@ ### ***', 'Giá đồng 2026 — dự báo Q3']) {
+    assert.match(slugify(title), /^[a-z0-9-]*$/, `"${title}" chỉ còn ký tự Strapi chấp nhận`);
   }
 });
 
-test('form tin tức không bắt biên tập viên tự gõ đường dẫn', () => {
+test('form tin tức không có ô nhập đường dẫn — địa chỉ bài viết luôn bám theo tiêu đề', () => {
   const config = read('admin/src/config/resources.js');
   const fieldRenderer = read('admin/src/components/FieldRenderer.jsx');
   const slugField = read('admin/src/components/SlugField.jsx');
@@ -48,7 +39,8 @@ test('form tin tức không bắt biên tập viên tự gõ đường dẫn', (
   assert.match(config, /slug:\s*{[^}]*sourceField:\s*'title'/s, 'slug lấy nguồn từ tiêu đề');
   assert.match(fieldRenderer, /case 'slug':/, 'FieldRenderer xử lý kiểu slug');
   assert.match(slugField, /slugify\(sourceValue\)/, 'slug được sinh từ tiêu đề');
-  assert.match(slugField, /normalizeSlugInput/, 'giá trị nhập tay vẫn được chuẩn hoá');
+  assert.doesNotMatch(slugField, /<input/, 'không còn ô nhập để gõ sai vào');
+  assert.doesNotMatch(slugField, /<button/, 'không còn nút nào phải bấm');
   assert.match(editPage, /withGeneratedSlugs\(config, values\)/, 'slug rỗng được sinh lại trước khi lưu');
 });
 
@@ -90,4 +82,16 @@ test('bài viết có trang chi tiết riêng và nội dung được lọc trư
   );
   assert.match(appJs, /ARTICLE_DROPPED_TAGS[\s\S]*'SCRIPT'/, 'thẻ script bị loại bỏ hoàn toàn');
   assert.match(styles, /\.article-body img/, 'ảnh chèn giữa bài có kiểu hiển thị riêng');
+});
+
+test('slug trùng nhau được thêm hậu tố thay vì báo lỗi unique của Strapi', () => {
+  const service = read('dha-cms/src/api/admin-ui/services/resources.js');
+
+  assert.match(service, /ensureUniqueSlugs/, 'có bước bảo đảm slug duy nhất');
+  assert.match(service, /\$\{base\}-\$\{suffix\}/, 'slug trùng được thêm hậu tố số');
+  assert.match(
+    service,
+    /entry\.documentId !== documentId/,
+    'bài đang sửa không tự coi mình là bản trùng',
+  );
 });

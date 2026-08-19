@@ -284,12 +284,48 @@ async function isPublished(config, documentId) {
   return Boolean(published);
 }
 
+// Đường dẫn bài viết do admin tự sinh từ tiêu đề, nên hai bài trùng tiêu đề sẽ
+// cho ra cùng một slug và Strapi từ chối với lỗi "must be unique" — thứ biên
+// tập viên không sửa được vì họ không hề nhập trường này. Thêm hậu tố số để bài
+// thứ hai vẫn lưu được.
+async function ensureUniqueSlugs(config, data, documentId) {
+  const slugFields = Object.entries(config.fields || {})
+    .filter(([, field]) => field && field.type === 'slug')
+    .map(([name]) => name);
+  if (!slugFields.length) return data;
+
+  const service = getService(config);
+  const result = { ...data };
+
+  for (const field of slugFields) {
+    const base = String(result[field] || '').trim();
+    if (!base) continue;
+
+    let candidate = base;
+    let suffix = 2;
+    // eslint-disable-next-line no-await-in-loop
+    while (await isSlugTaken(service, field, candidate, documentId)) {
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+    result[field] = candidate;
+  }
+
+  return result;
+}
+
+async function isSlugTaken(service, field, value, documentId) {
+  const matches = await service.findMany({ filters: { [field]: { $eq: value } }, limit: 5 });
+  return matches.some((entry) => entry.documentId !== documentId);
+}
+
 async function create(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
   if (!auth.requireTrustedOrigin(ctx)) return;
   if (config.readOnlyCreate) return sendError(ctx, 403, 'READ_ONLY', 'Module này không cho tạo dữ liệu từ admin.');
-  const data = await getService(config).create({ data: cleanData(config, ctx.request.body) });
+  const payload = await ensureUniqueSlugs(config, cleanData(config, ctx.request.body));
+  const data = await getService(config).create({ data: payload });
   await publishAfterWrite(config, data?.documentId);
   ctx.body = { data: normalizeEntry(data, config) };
 }
@@ -308,13 +344,19 @@ async function update(ctx) {
     const existing = await service.findMany({ limit: 1 });
     if (existing && existing.length > 0) {
       wasPublished = await isPublished(config, existing[0].documentId);
-      data = await service.update({ documentId: existing[0].documentId, data: cleanData(config, ctx.request.body) });
+      data = await service.update({
+        documentId: existing[0].documentId,
+        data: await ensureUniqueSlugs(config, cleanData(config, ctx.request.body), existing[0].documentId),
+      });
     } else {
       data = await service.create({ data: cleanData(config, ctx.request.body) });
     }
   } else {
     wasPublished = await isPublished(config, ctx.params.id);
-    data = await service.update({ documentId: ctx.params.id, data: cleanData(config, ctx.request.body) });
+    data = await service.update({
+      documentId: ctx.params.id,
+      data: await ensureUniqueSlugs(config, cleanData(config, ctx.request.body), ctx.params.id),
+    });
   }
 
   await publishAfterWrite(config, data?.documentId, { wasPublished });
