@@ -70,6 +70,16 @@ function getOrePrice(ore) {
     return Number(ore?.price ?? ore?.base_price ?? 0) || 0;
 }
 
+// Ảnh trong CMS là URL Cloudinary tuyệt đối, nhưng dữ liệu dự phòng trong data/
+// lại ghi kiểu "assets/anh.png". Đường dẫn tương đối như vậy gãy ở những trang
+// nằm sâu như /tin-tuc/<duong-dan>, nên chuẩn hoá về gốc site.
+function toSiteAssetUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('/') || raw.startsWith('data:')) return raw;
+    return `/${raw}`;
+}
+
 function getProjectImageUrl(project) {
     if (project?.cloudinary_image_url) return project.cloudinary_image_url;
     if (project?.image?.url) return `${CMS_BASE}${project.image.url}`;
@@ -161,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // SITE SETTINGS — Dynamic header, footer, contact info
 // ======================================================
 async function initSiteSettings() {
-    const settings = await fetchSingleFromCMS('site-setting', 'data/site_setting.json');
+    const settings = await fetchSingleFromCMS('site-setting', '/data/site_setting.json');
     if (!settings) return;
 
     window.__siteSettings = settings;
@@ -494,7 +504,7 @@ async function initServicesSection() {
     const grid = document.querySelector('.services-grid');
     if (!grid) return;
 
-    const services = await fetchWithSeedContent('services?sort=sort_order:asc&pagination[limit]=100', 'data/services.json');
+    const services = await fetchWithSeedContent('services?sort=sort_order:asc&pagination[limit]=100', '/data/services.json');
     if (!services || services.length === 0) return;
 
     grid.innerHTML = services.map(svc => {
@@ -525,7 +535,7 @@ async function initWorkflowSection() {
     const timeline = document.querySelector('.workflow-timeline');
     if (!timeline) return;
 
-    const steps = await fetchWithSeedContent('workflow-steps?sort=sort_order:asc&pagination[limit]=100', 'data/workflow_steps.json');
+    const steps = await fetchWithSeedContent('workflow-steps?sort=sort_order:asc&pagination[limit]=100', '/data/workflow_steps.json');
     if (!steps || steps.length === 0) return;
 
     timeline.innerHTML = steps.map(step => `
@@ -587,7 +597,7 @@ async function initSurveyPricing() {
     if (!body) return;
 
     try {
-        const surveys = await fetchFromCMS('pricing-surveys?pagination[limit]=100', 'data/pricing_survey.json');
+        const surveys = await fetchFromCMS('pricing-surveys?pagination[limit]=100', '/data/pricing_survey.json');
         if (!surveys || surveys.length === 0) {
             body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;">Chưa có biểu phí nào.</td></tr>';
             return;
@@ -614,7 +624,7 @@ async function initHomeNewsPreview() {
     if (!grid) return;
 
     try {
-        const news = await fetchFromCMS('news-articles?pagination[limit]=100&sort=date:desc', 'data/news.json');
+        const news = await fetchFromCMS('news-articles?pagination[limit]=100&sort=date:desc', '/data/news.json');
         if (!news || news.length === 0) {
             grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;">Chưa có tin tức nào.</div>';
             return;
@@ -637,7 +647,7 @@ async function initHomeProducts() {
 
     let allProducts = [];
     try {
-        allProducts = await fetchFromCMS('products?sort=sort_order:asc&pagination[limit]=500', 'data/products.json');
+        allProducts = await fetchFromCMS('products?sort=sort_order:asc&pagination[limit]=500', '/data/products.json');
     } catch (e) {
         grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;"><p>Không thể tải danh mục sản phẩm.</p></div>';
         return;
@@ -730,7 +740,7 @@ async function initNewsPage() {
     if (!grid) return;
 
     try {
-        const news = await fetchFromCMS('news-articles?pagination[limit]=100&sort=date:desc', 'data/news.json');
+        const news = await fetchFromCMS('news-articles?pagination[limit]=100&sort=date:desc', '/data/news.json');
         if (!news || news.length === 0) {
             grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;">Chưa có tin tức nào.</div>';
             return;
@@ -846,11 +856,24 @@ function setMetaContent(id, value) {
     if (el && value) el.setAttribute('content', value);
 }
 
+// Địa chỉ chính thức là /tin-tuc/<duong-dan>. Dạng cũ /news-detail?slug=... vẫn
+// được chấp nhận cho những link đã chia sẻ trước khi đổi (nginx cũng chuyển
+// hướng 301, nhưng đọc được cả hai thì trang không phụ thuộc vào cấu hình đó).
+function getArticleSlugFromLocation() {
+    const match = window.location.pathname.match(/^\/tin-tuc\/(.+?)\/?$/);
+    if (match) return decodeURIComponent(match[1]);
+    return new URLSearchParams(window.location.search).get('slug');
+}
+
+function getArticleUrl(slug) {
+    return `/tin-tuc/${encodeURIComponent(slug)}`;
+}
+
 async function initNewsDetailPage() {
     const contentEl = document.getElementById('news-detail-content');
     if (!contentEl) return;
 
-    const slug = new URLSearchParams(window.location.search).get('slug');
+    const slug = getArticleSlugFromLocation();
     const notFound = '<p style="text-align:center;padding:40px 0;">Không tìm thấy bài viết. <a href="/news">Quay lại trang tin tức</a>.</p>';
 
     if (!slug) {
@@ -859,7 +882,7 @@ async function initNewsDetailPage() {
     }
 
     try {
-        const news = await fetchFromCMS('news-articles?pagination[limit]=200&sort=date:desc', 'data/news.json');
+        const news = await fetchFromCMS('news-articles?pagination[limit]=200&sort=date:desc', '/data/news.json');
         const article = (news || []).find(item => item.slug === slug);
 
         if (!article) {
@@ -872,14 +895,21 @@ async function initNewsDetailPage() {
         setMetaContent('og-title', article.title);
         setMetaContent('og-desc', article.summary);
         setMetaContent('og-image', article.image);
+        setMetaContent('og-url', `${window.location.origin}${getArticleUrl(article.slug)}`);
+
+        // Hai địa chỉ cùng trỏ về một bài (dạng cũ và dạng mới), nên phải nói rõ
+        // với công cụ tìm kiếm đâu là địa chỉ chính thức.
+        const canonical = document.getElementById('canonical-url');
+        if (canonical) canonical.href = `${window.location.origin}${getArticleUrl(article.slug)}`;
 
         const breadcrumb = document.getElementById('detail-breadcrumb');
         if (breadcrumb) breadcrumb.textContent = article.title;
 
         const catLabel = ARTICLE_CATEGORY_LABELS[article.category] || article.category || '';
-        const cover = article.image ? `
+        const coverUrl = toSiteAssetUrl(article.image);
+        const cover = coverUrl ? `
             <figure class="article-cover">
-                <img src="${escapeHtml(article.image)}" alt="${escapeHtml(article.title)}">
+                <img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(article.title)}">
             </figure>` : '';
 
         contentEl.innerHTML = `
@@ -907,10 +937,10 @@ function buildNewsCard(item, fullWidth) {
 
     // Bài chưa có đường dẫn (dữ liệu cũ) vẫn hiển thị được, chỉ là không bấm vào
     // đọc tiếp được — thà thế còn hơn dẫn tới một trang chi tiết trống.
-    const href = item.slug ? `/news-detail?slug=${encodeURIComponent(item.slug)}` : '';
+    const href = item.slug ? getArticleUrl(item.slug) : '';
     const body = `
         <div class="news-card-img-box">
-            <img src="${escapeHtml(item.image || 'assets/mo_quang_ha_nam.png')}" alt="${escapeHtml(item.title)}" class="news-card-img" loading="lazy">
+            <img src="${escapeHtml(toSiteAssetUrl(item.image) || '/assets/mo_quang_ha_nam.png')}" alt="${escapeHtml(item.title)}" class="news-card-img" loading="lazy">
             ${catLabel ? `<span class="news-card-badge">${escapeHtml(catLabel)}</span>` : ''}
         </div>
         <div class="news-card-body">
@@ -938,7 +968,7 @@ function buildNewsCard(item, fullWidth) {
 function buildProductCard(product) {
     const inStock     = product.in_stock !== false;
     const { label: groupLabel, css: groupCss } = getProductBadge(product);
-    const imgSrc      = escapeHtml(product.image || 'assets/phong_thi_nghiem_dha.png');
+    const imgSrc      = escapeHtml(product.image || '/assets/phong_thi_nghiem_dha.png');
     const imgAlt      = escapeHtml(product.name || 'Sản phẩm');
 
     return `
@@ -990,7 +1020,7 @@ async function initProductsPage() {
     let allProducts = [];
 
     try {
-        allProducts = await fetchFromCMS('products?sort=sort_order:asc&pagination[limit]=500', 'data/products.json');
+        allProducts = await fetchFromCMS('products?sort=sort_order:asc&pagination[limit]=500', '/data/products.json');
     } catch (e) {
         container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;"><p>Không thể tải danh mục sản phẩm.</p></div>';
         return;
@@ -1087,7 +1117,7 @@ async function initProductDetailPage() {
     }
 
     try {
-        const products = await fetchFromCMS('products?pagination[limit]=500', 'data/products.json');
+        const products = await fetchFromCMS('products?pagination[limit]=500', '/data/products.json');
         const product = products.find(p => p.uid === productId);
 
         if (!product) {
@@ -1100,7 +1130,7 @@ async function initProductDetailPage() {
         if (breadcrumb) breadcrumb.textContent = product.name;
 
         const { label: groupLabel, css: groupCss } = getProductBadge(product);
-        const imgSrc = escapeHtml(product.image || 'assets/phong_thi_nghiem_dha.png');
+        const imgSrc = escapeHtml(product.image || '/assets/phong_thi_nghiem_dha.png');
         const inStock = product.in_stock !== false;
         const settings = window.__siteSettings;
         const hotline = settings?.hotline ? settings.hotline.replace(/[.\s\-()]/g, '') : '0981234567';
@@ -1317,8 +1347,8 @@ async function initEstimator() {
     const oreSelect = document.getElementById('est-ore');
 
     const [ores, analyses] = await Promise.all([
-        fetchFromCMS('ores?sort=name:asc&pagination[limit]=100', 'data/products.json'),
-        fetchFromCMS('pricing-analyses?pagination[limit]=100', 'data/pricing_analysis.json'),
+        fetchFromCMS('ores?sort=name:asc&pagination[limit]=100', '/data/products.json'),
+        fetchFromCMS('pricing-analyses?pagination[limit]=100', '/data/pricing_analysis.json'),
     ]);
 
     const oreByGroup = {};
@@ -1445,14 +1475,14 @@ async function initProjectsPage() {
     if (!container) return;
 
     try {
-        const projects = await fetchFromCMS('projects?sort=publishedAt:desc&pagination[limit]=100', 'data/projects.json');
+        const projects = await fetchFromCMS('projects?sort=publishedAt:desc&pagination[limit]=100', '/data/projects.json');
         if (!projects || projects.length === 0) {
             container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;"><p>Chưa có dự án nào.</p></div>';
             return;
         }
 
         container.innerHTML = projects.map(item => {
-            const imageUrl = getProjectImageUrl(item) || 'assets/mo_quang_ha_nam.png';
+            const imageUrl = getProjectImageUrl(item) || '/assets/mo_quang_ha_nam.png';
             return `
             <div class="portfolio-item card">
                 <div class="portfolio-img-wrap">

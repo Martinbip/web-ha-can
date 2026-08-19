@@ -47,6 +47,13 @@ rsync -a --delete \
     /var/www/web-ha-can/ \
     /var/www/dhakimloaimau.vn/
 
+# Sitemap phải liệt kê từng bài viết thì Google mới tìm được chúng, mà danh sách
+# bài thì nằm trong CMS chứ không nằm trong repo — nên sinh lại sau mỗi lần sync.
+# Ghi thẳng vào thư mục nginx phục vụ, không ghi vào repo (tránh làm bẩn git tree).
+echo "▸ Sinh sitemap từ CMS..."
+node /var/www/web-ha-can/scripts/generate-sitemap.js /var/www/dhakimloaimau.vn/sitemap.xml \
+    || echo "⚠️  Không sinh được sitemap — giữ nguyên bản cũ."
+
 # Chỉ build & sync admin khi thư mục admin/ thật sự có thay đổi
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^admin/'; then
     echo "▸ Phát hiện thay đổi Admin → build & sync admin tĩnh..."

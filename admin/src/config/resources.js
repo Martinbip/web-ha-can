@@ -10,7 +10,7 @@ export const RESOURCE_CONFIG = {
         label: 'Đường dẫn bài viết',
         type: 'slug',
         sourceField: 'title',
-        previewBase: 'https://dhakimloaimau.vn/news-detail?slug=',
+        previewBase: 'https://dhakimloaimau.vn/tin-tuc/',
         required: true,
       },
       summary: { label: 'Tóm tắt', type: 'textarea', required: true },
