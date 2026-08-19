@@ -101,7 +101,7 @@ export default function RichTextField({ id, value, onChange, imageFolder = 'dha/
       {imagePanelOpen ? (
         <div className="richtext-image-panel">
           <p className="richtext-image-hint">Tải ảnh mới hoặc chọn ảnh có sẵn — ảnh sẽ được chèn tại vị trí con trỏ.</p>
-          <ImagePicker id={`${id}-image`} value="" onChange={insertImage} folder={imageFolder} />
+          <ImagePicker id={`${id}-image`} value="" onChange={insertImage} folder={imageFolder} showPreview={false} />
         </div>
       ) : null}
 

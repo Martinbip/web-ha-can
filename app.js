@@ -742,13 +742,167 @@ async function initNewsPage() {
     }
 }
 
+// ======================================================
+// NEWS DETAIL PAGE
+// ======================================================
+const ARTICLE_CATEGORY_LABELS = {
+    'gia-ca': 'Giá Cả',
+    'quoc-te': 'Quốc Tế',
+    'noi-dia': 'Nội Địa',
+    'phan-tich': 'Phân Tích',
+    'cong-nghe': 'Công Nghệ',
+};
+
+// Thẻ và thuộc tính mà trình soạn thảo trong admin có thể sinh ra. Mọi thứ khác
+// bị loại bỏ: nội dung tuy do người nhà nhập, nhưng nó đi qua CMS rồi mới được
+// gắn vào trang bằng innerHTML, nên vẫn phải lọc trước khi hiển thị.
+const ARTICLE_ALLOWED_TAGS = new Set([
+    'P', 'BR', 'HR', 'STRONG', 'B', 'EM', 'I', 'U', 'S', 'CODE', 'PRE',
+    'H2', 'H3', 'H4', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'A', 'IMG',
+    'FIGURE', 'FIGCAPTION', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD',
+]);
+// Những thẻ này bị xoá cả phần bên trong: giữ lại chữ trong <script>/<style>
+// chỉ tạo ra một đống mã lộ thiên giữa bài viết.
+const ARTICLE_DROPPED_TAGS = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'NOSCRIPT']);
+const ARTICLE_ALLOWED_ATTRS = {
+    A: ['href', 'title'],
+    IMG: ['src', 'alt', 'title'],
+};
+
+function isSafeArticleUrl(value, { allowRelative = true } = {}) {
+    const raw = String(value || '').trim();
+    if (!raw) return false;
+    if (raw.startsWith('/') || raw.startsWith('#')) return allowRelative;
+    return /^(https?:|mailto:|tel:)/i.test(raw);
+}
+
+// Bài viết cũ được lưu dưới dạng văn bản thuần với dấu xuống dòng (và có bài
+// dùng gạch đầu dòng "- "). Hiển thị thẳng sẽ dồn thành một khối chữ liền, nên
+// tách đoạn trước khi lọc HTML.
+function articleContentToHtml(content) {
+    const text = String(content ?? '').trim();
+    if (!text) return '';
+    if (/<[a-z][\s\S]*>/i.test(text)) return text;
+
+    return text
+        .split(/\n{2,}/)
+        .map(block => `<p>${escapeHtml(block).replace(/\n/g, '<br>')}</p>`)
+        .join('');
+}
+
+function sanitizeArticleHtml(html) {
+    const doc = new DOMParser().parseFromString(`<div id="root">${html || ''}</div>`, 'text/html');
+    const root = doc.getElementById('root');
+
+    root.querySelectorAll('*').forEach(el => {
+        if (ARTICLE_DROPPED_TAGS.has(el.tagName)) {
+            el.remove();
+            return;
+        }
+
+        if (!ARTICLE_ALLOWED_TAGS.has(el.tagName)) {
+            // Giữ lại phần chữ bên trong thẻ bị loại, để không mất nội dung khi
+            // bài viết được dán từ nơi khác vào với thẻ lạ bọc ngoài.
+            el.replaceWith(...el.childNodes);
+            return;
+        }
+
+        const allowed = ARTICLE_ALLOWED_ATTRS[el.tagName] || [];
+        [...el.attributes].forEach(attr => {
+            if (!allowed.includes(attr.name.toLowerCase())) {
+                el.removeAttribute(attr.name);
+            }
+        });
+
+        if (el.tagName === 'A') {
+            if (!isSafeArticleUrl(el.getAttribute('href'))) {
+                el.removeAttribute('href');
+            } else {
+                el.setAttribute('target', '_blank');
+                el.setAttribute('rel', 'noopener nofollow');
+            }
+        }
+
+        if (el.tagName === 'IMG') {
+            if (!isSafeArticleUrl(el.getAttribute('src'), { allowRelative: false })) {
+                el.remove();
+                return;
+            }
+            el.setAttribute('loading', 'lazy');
+            el.classList.add('article-image');
+        }
+    });
+
+    return root.innerHTML;
+}
+
+function formatArticleDate(value) {
+    if (!value) return '';
+    return new Date(value).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function setMetaContent(id, value) {
+    const el = document.getElementById(id);
+    if (el && value) el.setAttribute('content', value);
+}
+
+async function initNewsDetailPage() {
+    const contentEl = document.getElementById('news-detail-content');
+    if (!contentEl) return;
+
+    const slug = new URLSearchParams(window.location.search).get('slug');
+    const notFound = '<p style="text-align:center;padding:40px 0;">Không tìm thấy bài viết. <a href="/news">Quay lại trang tin tức</a>.</p>';
+
+    if (!slug) {
+        contentEl.innerHTML = notFound;
+        return;
+    }
+
+    try {
+        const news = await fetchFromCMS('news-articles?pagination[limit]=200&sort=date:desc', 'data/news.json');
+        const article = (news || []).find(item => item.slug === slug);
+
+        if (!article) {
+            contentEl.innerHTML = notFound;
+            return;
+        }
+
+        document.title = `${article.title} - DHA Minerals`;
+        setMetaContent('page-desc', article.summary);
+        setMetaContent('og-title', article.title);
+        setMetaContent('og-desc', article.summary);
+        setMetaContent('og-image', article.image);
+
+        const breadcrumb = document.getElementById('detail-breadcrumb');
+        if (breadcrumb) breadcrumb.textContent = article.title;
+
+        const catLabel = ARTICLE_CATEGORY_LABELS[article.category] || article.category || '';
+        const cover = article.image ? `
+            <figure class="article-cover">
+                <img src="${escapeHtml(article.image)}" alt="${escapeHtml(article.title)}">
+            </figure>` : '';
+
+        contentEl.innerHTML = `
+            <header class="article-header">
+                ${catLabel ? `<span class="article-category">${escapeHtml(catLabel)}</span>` : ''}
+                <h1 class="article-title">${escapeHtml(article.title)}</h1>
+                <p class="article-meta">
+                    <time datetime="${escapeHtml(article.date || '')}">${escapeHtml(formatArticleDate(article.date))}</time>
+                </p>
+                ${article.summary ? `<p class="article-summary">${escapeHtml(article.summary)}</p>` : ''}
+            </header>
+            ${cover}
+            <div class="article-body">${sanitizeArticleHtml(articleContentToHtml(article.content))}</div>
+            <p class="article-back"><a href="/news">← Xem tất cả tin tức</a></p>
+        `;
+    } catch (e) {
+        console.error('[News Detail]', e);
+        contentEl.innerHTML = '<p style="text-align:center;padding:40px 0;">Không thể tải bài viết. <a href="/news">Quay lại trang tin tức</a>.</p>';
+    }
+}
+
 function buildNewsCard(item, fullWidth) {
-    const categoryLabels = {
-        'gia-ca': 'Giá Cả',
-        'quoc-te': 'Quốc Tế',
-        'noi-dia': 'Nội Địa',
-    };
-    const catLabel = categoryLabels[item.category] || escapeHtml(item.category) || '';
+    const catLabel = ARTICLE_CATEGORY_LABELS[item.category] || escapeHtml(item.category) || '';
     const dateStr = item.date ? new Date(item.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
     // Bài chưa có đường dẫn (dữ liệu cũ) vẫn hiển thị được, chỉ là không bấm vào

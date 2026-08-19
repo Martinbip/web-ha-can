@@ -356,15 +356,24 @@ button:hover {
   padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
+  /* Nút chung của admin là nền xanh chữ trắng; thanh công cụ cần ngược lại,
+     nên màu chữ phải khai báo tường minh kẻo chữ trắng nằm trên nền trắng. */
   background: #fff;
+  color: var(--text);
   font-size: 13px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
 }
 
+.richtext-toolbar-btn:hover {
+  background: var(--bg);
+}
+
 .richtext-toolbar-btn.is-active {
-  border-color: var(--brand, #b45309);
-  background: #fff7ed;
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
 }
 
 .richtext-content .ProseMirror {
