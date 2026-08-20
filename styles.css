@@ -1500,7 +1500,20 @@ textarea.input {
     border-top: 1px solid #DDDDDD;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.product-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2C3E50;
+}
+
+.product-price.is-contact {
+    font-size: 13px;
+    font-weight: 700;
+    color: #C5A059;
 }
 
 .product-cta-link {
@@ -1573,6 +1586,24 @@ a.product-card {
     color: #C5A059;
     font-weight: 700;
     margin-bottom: 8px;
+}
+
+.detail-price {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 18px;
+    color: #2C3E50;
+    margin-bottom: 8px;
+}
+
+.detail-price-label {
+    font-size: 14px;
+    color: #666666;
+}
+
+.detail-price.is-contact strong {
+    color: #C5A059;
 }
 
 .detail-origin {

@@ -20,6 +20,7 @@ export default function FieldRenderer({ name, field, value, onChange, setField, 
         </label>
       ) : null}
       {renderInput({ id, field, value, onChange, setField, values })}
+      {field.hint ? <p className="field-hint">{field.hint}</p> : null}
     </div>
   );
 }
@@ -84,10 +85,11 @@ function renderInput({ id, field, value, onChange, setField, values }) {
           id={id}
           type="number"
           value={value ?? ''}
+          placeholder={field.placeholder}
           required={field.required}
           readOnly={field.readOnly}
           disabled={field.readOnly}
-          onChange={(event) => onChange(event.target.value === '' ? '' : Number(event.target.value))}
+          onChange={(event) => onChange(event.target.value === '' ? null : Number(event.target.value))}
         />
       );
 

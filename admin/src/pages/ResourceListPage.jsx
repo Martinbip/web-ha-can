@@ -197,7 +197,7 @@ export default function ResourceListPage() {
                         </td>
                       ) : null}
                       {listFields.map((field) => (
-                        <td key={field}>{formatCell(row[field])}</td>
+                        <td key={field}>{formatCell(row[field], config.fields?.[field])}</td>
                       ))}
                       {config.draftAndPublish ? (
                         <td>
@@ -255,8 +255,8 @@ export default function ResourceListPage() {
   );
 }
 
-function formatCell(value) {
-  if (value === null || value === undefined) return '';
+function formatCell(value, fieldConfig) {
+  if (value === null || value === undefined || value === '') return fieldConfig?.emptyText || '';
   if (typeof value === 'boolean') return value ? 'Có' : 'Không';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);

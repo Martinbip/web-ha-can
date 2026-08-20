@@ -70,6 +70,19 @@ function getOrePrice(ore) {
     return Number(ore?.price ?? ore?.base_price ?? 0) || 0;
 }
 
+// Sản phẩm để trống trường giá nghĩa là báo giá theo từng đơn hàng. Đơn vị và
+// chữ thay thế đều lấy từ CMS để quản trị viên tự đổi được, chỉ khi bỏ trống
+// mới rơi về mặc định "đ/kg" và "Liên hệ".
+function getProductPriceLabel(product) {
+    const price = Number(product?.price);
+    if (!Number.isFinite(price) || price <= 0) {
+        const label = String(product?.price_label || '').trim() || 'Liên hệ';
+        return { text: label, isContact: true };
+    }
+    const unit = String(product?.price_unit || '').trim() || 'đ/kg';
+    return { text: `${price.toLocaleString('vi-VN')}${unit}`, isContact: false };
+}
+
 // Ảnh trong CMS là URL Cloudinary tuyệt đối, nhưng dữ liệu dự phòng trong data/
 // lại ghi kiểu "assets/anh.png". Đường dẫn tương đối như vậy gãy ở những trang
 // nằm sâu như /tin-tuc/<duong-dan>, nên chuẩn hoá về gốc site.
@@ -1092,6 +1105,7 @@ function buildProductCard(product) {
     const { label: groupLabel, css: groupCss } = getProductBadge(product);
     const imgSrc      = escapeHtml(product.image || '/assets/phong_thi_nghiem_dha.png');
     const imgAlt      = escapeHtml(product.name || 'Sản phẩm');
+    const priceLabel  = getProductPriceLabel(product);
 
     return `
         <a href="/product-detail?id=${encodeURIComponent(product.uid)}" class="product-card card"
@@ -1125,6 +1139,7 @@ function buildProductCard(product) {
                     ${escapeHtml(product.origin)}
                 </div>` : ''}
                 <div class="product-footer">
+                    <span class="product-price ${priceLabel.isContact ? 'is-contact' : ''}">${escapeHtml(priceLabel.text)}</span>
                     <span class="product-cta-link">Xem chi tiết →</span>
                 </div>
             </div>
@@ -1254,6 +1269,7 @@ async function initProductDetailPage() {
         const { label: groupLabel, css: groupCss } = getProductBadge(product);
         const imgSrc = escapeHtml(product.image || '/assets/phong_thi_nghiem_dha.png');
         const inStock = product.in_stock !== false;
+        const priceLabel = getProductPriceLabel(product);
         const settings = window.__siteSettings;
         const hotline = settings?.hotline ? settings.hotline.replace(/[.\s\-()]/g, '') : '0981234567';
 
@@ -1278,6 +1294,10 @@ async function initProductDetailPage() {
             <div class="detail-info">
                 <h1 class="detail-title">${escapeHtml(product.name)}</h1>
                 ${product.grade ? `<div class="detail-grade"><strong>Hàm lượng:</strong> ${escapeHtml(product.grade)}</div>` : ''}
+                <div class="detail-price ${priceLabel.isContact ? 'is-contact' : ''}">
+                    <span class="detail-price-label">${priceLabel.isContact ? 'Giá:' : 'Giá tham khảo:'}</span>
+                    <strong>${escapeHtml(priceLabel.text)}</strong>
+                </div>
                 ${product.origin ? `<div class="detail-origin"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg> ${escapeHtml(product.origin)}</div>` : ''}
                 <p class="detail-desc">${escapeHtml(product.description || '')}</p>
                 ${specsHtml ? `
