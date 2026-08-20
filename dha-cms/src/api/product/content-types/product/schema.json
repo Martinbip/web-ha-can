@@ -39,6 +39,15 @@
       "type": "integer",
       "min": 0
     },
+    "price_unit": {
+      "type": "string",
+      "default": "đ/kg",
+      "maxLength": 20
+    },
+    "price_label": {
+      "type": "string",
+      "maxLength": 50
+    },
     "description": {
       "type": "text",
       "maxLength": 5000
