@@ -2,6 +2,7 @@
 
 const { sendError } = require('./errors');
 const auth = require('./auth');
+const { getDefaultNavItems } = require('../../navigation/default-items');
 
 const NAV_UID = 'api::navigation.navigation';
 
@@ -120,7 +121,10 @@ async function get(ctx) {
   if (!user) return;
 
   const record = await readRecord();
-  ctx.body = { data: { items: readItems(record) } };
+  const items = readItems(record);
+  // Bản ghi chưa tồn tại (CMS mới dựng, seed chưa chạy) thì vẫn cho quản trị
+  // sửa từ menu mặc định thay vì nhìn một danh sách rỗng.
+  ctx.body = { data: { items: items.length ? items : getDefaultNavItems() } };
 }
 
 async function update(ctx) {

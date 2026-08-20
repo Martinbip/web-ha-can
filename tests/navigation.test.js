@@ -196,13 +196,32 @@ test('menu tĩnh trong HTML vẫn là bản dự phòng khi CMS lỗi', () => {
 test('thanh menu được seed và đọc công khai từ CMS', () => {
   const bootstrap = read('dha-cms/src/index.js');
   const schema = JSON.parse(read('dha-cms/src/api/navigation/content-types/navigation/schema.json'));
-  const seed = JSON.parse(read('data/navigation.json'));
+  const { DEFAULT_NAV_ITEMS } = require('../dha-cms/src/api/navigation/default-items');
 
   assert.equal(schema.kind, 'singleType');
   assert.equal(schema.attributes.items.type, 'json');
-  assert.match(bootstrap, /api::navigation\.navigation.*navigation\.json/s, 'menu được seed lúc bootstrap');
+  assert.match(bootstrap, /getDefaultNavItems/, 'menu được seed lúc bootstrap');
   assert.match(bootstrap, /'api::navigation\.navigation\.find'/, 'menu đọc được công khai');
-  assert.equal(seed.items.length, 8, 'seed giữ đúng 8 mục hiện có');
+  assert.equal(DEFAULT_NAV_ITEMS.length, 8, 'menu mặc định giữ đúng 8 mục hiện có');
+});
+
+// Deploy chỉ rsync thư mục dha-cms/ sang máy chủ Strapi, nên seed đọc file ở
+// gốc repo sẽ luôn thất bại trên production.
+test('menu mặc định nằm trong dha-cms chứ không đọc file ngoài', () => {
+  const bootstrap = read('dha-cms/src/index.js');
+  const defaults = read('dha-cms/src/api/navigation/default-items.js');
+
+  assert.doesNotMatch(bootstrap, /navigation\.json/, 'không seed menu từ data/ ở gốc repo');
+  assert.ok(!fs.existsSync(path.join(root, 'data/navigation.json')), 'file seed cũ đã bị bỏ');
+
+  for (const label of ['Trang Chủ', 'Sản Phẩm', 'Liên Hệ']) {
+    assert.match(defaults, new RegExp(label), `${label} có trong menu mặc định`);
+  }
+});
+
+test('admin thấy menu mặc định khi CMS chưa có bản ghi nào', () => {
+  const service = read('dha-cms/src/api/admin-ui/services/navigation.js');
+  assert.match(service, /items\.length \? items : getDefaultNavItems\(\)/, 'GET trả menu mặc định khi rỗng');
 });
 
 test('admin có trang sửa thanh menu và gọi đúng endpoint', () => {
