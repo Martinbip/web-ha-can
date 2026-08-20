@@ -339,6 +339,42 @@ textarea:focus-visible {
     color: #FFFFFF;
 }
 
+/* ── Menu con (2 cấp) — desktop ── */
+.nav-links li.has-submenu {
+    position: relative;
+}
+
+.nav-submenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 220px;
+    background-color: #1A1A1A;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+    z-index: 900;
+}
+
+.nav-links li.has-submenu:hover .nav-submenu,
+.nav-links li.has-submenu:focus-within .nav-submenu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.nav-submenu .nav-link {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    white-space: nowrap;
+}
+
+.nav-submenu-toggle {
+    display: none;
+}
+
 .nav-actions {
     display: flex;
     align-items: center;
@@ -2499,6 +2535,61 @@ a.product-card {
     .nav-link.active {
         background-color: #2C3E50;
         color: #FFFFFF;
+    }
+
+    /* Menu con dạng accordion trong sidebar */
+    .nav-links li.has-submenu {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+    }
+
+    .nav-links li.has-submenu > .nav-link {
+        flex: 1;
+        width: auto;
+    }
+
+    .nav-submenu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        background: none;
+        border: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #DDDDDD;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+
+    .nav-submenu-toggle svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .has-submenu.submenu-open .nav-submenu-toggle svg {
+        transform: rotate(180deg);
+    }
+
+    .nav-submenu {
+        position: static;
+        width: 100%;
+        min-width: 0;
+        box-shadow: none;
+        background-color: rgba(255, 255, 255, 0.03);
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        display: none;
+    }
+
+    .has-submenu.submenu-open .nav-submenu {
+        display: block;
+    }
+
+    .nav-submenu .nav-link {
+        padding-left: 36px;
+        font-size: 14px;
     }
 
     /* Dynamic Menu Backdrop Overlay */

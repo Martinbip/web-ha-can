@@ -159,6 +159,7 @@ async function fetchWithSeedContent(endpoint, seedFile) {
 // ======================================================
 document.addEventListener('DOMContentLoaded', () => {
     initNavbar();
+    initNavigationMenu();
     initScrollTopButton();
     initSiteSettings();
     initDynamicContent();
@@ -452,8 +453,12 @@ function initNavbar() {
 
         backdrop.addEventListener('click', closeMenu);
 
-        wrapper.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', closeMenu);
+        // Menu có thể được dựng lại từ CMS sau khi initNavbar chạy, nên bắt sự
+        // kiện ở thùng chứa thay vì gắn vào từng link đang có.
+        wrapper.addEventListener('click', (e) => {
+            if (e.target.closest('.nav-link') && !e.target.closest('.nav-submenu-toggle')) {
+                closeMenu();
+            }
         });
 
         document.addEventListener('keydown', (e) => {
@@ -461,6 +466,123 @@ function initNavbar() {
                 closeMenu();
             }
         });
+    }
+}
+
+// ======================================================
+// THANH MENU ĐỘNG
+// ======================================================
+
+// Menu tĩnh trong HTML là bản dự phòng: chỉ thay thế khi CMS trả về dữ liệu
+// dùng được, nên website không bao giờ mất điều hướng nếu CMS chết.
+async function initNavigationMenu() {
+    const list = document.querySelector('.nav-links');
+    if (!list) return;
+
+    let items = [];
+    try {
+        const res = await fetch(`${CMS_API}/navigation`, { signal: AbortSignal.timeout(3000) });
+        if (!res.ok) throw new Error(`CMS responded ${res.status}`);
+        const json = await res.json();
+        const record = json.data?.attributes || json.data;
+        const raw = record?.items;
+        items = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
+    } catch (err) {
+        console.warn('[CMS] Giữ menu tĩnh trong HTML:', err.message);
+        markActiveNavLink();
+        return;
+    }
+
+    const html = renderNavItems(items);
+    if (html) list.innerHTML = html;
+
+    initNavSubmenus(list);
+    markActiveNavLink();
+}
+
+function safeNavUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (raw.startsWith('/') || raw.startsWith('#')) return raw;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return '';
+}
+
+function renderNavItems(items) {
+    if (!Array.isArray(items)) return '';
+
+    const html = items
+        .filter(item => item && item.visible !== false && item.label && safeNavUrl(item.url))
+        .map(item => {
+            const children = (Array.isArray(item.children) ? item.children : [])
+                .filter(child => child && child.visible !== false && child.label && safeNavUrl(child.url));
+
+            const link = `<a href="${escapeHtml(safeNavUrl(item.url))}" class="nav-link">${escapeHtml(item.label)}</a>`;
+            if (!children.length) return `<li>${link}</li>`;
+
+            const submenu = children
+                .map(child => `<li><a href="${escapeHtml(safeNavUrl(child.url))}" class="nav-link nav-sublink">${escapeHtml(child.label)}</a></li>`)
+                .join('');
+
+            return `<li class="has-submenu">${link}` +
+                `<button type="button" class="nav-submenu-toggle" aria-expanded="false" aria-label="Mở menu con ${escapeHtml(item.label)}">` +
+                `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>` +
+                `</button>` +
+                `<ul class="nav-submenu">${submenu}</ul></li>`;
+        })
+        .join('');
+
+    return html;
+}
+
+// Trên desktop menu con mở bằng hover (CSS); trên mobile cần bấm vào mũi tên.
+function initNavSubmenus(list) {
+    list.querySelectorAll('.nav-submenu-toggle').forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const parent = toggle.closest('.has-submenu');
+            const isOpen = parent.classList.toggle('submenu-open');
+            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+    });
+}
+
+function normalizeNavPath(path) {
+    return String(path || '').replace(/\.html$/, '').replace(/\/+$/, '') || '/';
+}
+
+// Trạng thái "đang xem" tính từ URL hiện tại thay vì các id cứng trong HTML,
+// vì các mục menu giờ do quản trị đặt.
+function markActiveNavLink() {
+    const links = Array.from(document.querySelectorAll('.nav-links .nav-link'));
+    if (!links.length) return;
+
+    const currentPath = normalizeNavPath(window.location.pathname);
+    const currentHash = window.location.hash || '';
+
+    const candidates = links.map(link => {
+        const href = link.getAttribute('href') || '';
+        if (/^https?:\/\//i.test(href)) return { link, score: 0 };
+
+        const [rawPath, rawHash] = href.split('#');
+        const linkPath = rawPath ? normalizeNavPath(rawPath) : currentPath;
+        const linkHash = rawHash ? `#${rawHash}` : '';
+
+        if (linkPath === currentPath && linkHash && linkHash === currentHash) return { link, score: 4 };
+        if (linkPath === currentPath && !linkHash && !currentHash) return { link, score: 3 };
+        if (linkPath === currentPath && !linkHash) return { link, score: 2 };
+        if (linkPath !== '/' && currentPath.startsWith(`${linkPath}/`)) return { link, score: 1 };
+        return { link, score: 0 };
+    });
+
+    const best = candidates.reduce((a, b) => (b.score > a.score ? b : a));
+
+    links.forEach(link => link.classList.remove('active'));
+    if (best.score > 0) {
+        best.link.classList.add('active');
+        const parentItem = best.link.closest('.has-submenu');
+        if (parentItem) parentItem.querySelector('.nav-link')?.classList.add('active');
     }
 }
 

@@ -548,6 +548,35 @@ export interface ApiHeroSlideHeroSlide extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiNavigationNavigation extends Struct.SingleTypeSchema {
+  collectionName: 'navigations';
+  info: {
+    description: 'C\u00E1c m\u1EE5c tr\u00EAn thanh \u0111i\u1EC1u h\u01B0\u1EDBng ch\u00EDnh c\u1EE7a website';
+    displayName: 'Thanh Menu';
+    pluralName: 'navigations';
+    singularName: 'navigation';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    items: Schema.Attribute.JSON;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::navigation.navigation'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiNewsNews extends Struct.CollectionTypeSchema {
   collectionName: 'news_articles';
   info: {
@@ -1717,6 +1746,7 @@ declare module '@strapi/strapi' {
       'admin::user': AdminUser;
       'api::contact-inquiry.contact-inquiry': ApiContactInquiryContactInquiry;
       'api::hero-slide.hero-slide': ApiHeroSlideHeroSlide;
+      'api::navigation.navigation': ApiNavigationNavigation;
       'api::news.news': ApiNewsNews;
       'api::order-request.order-request': ApiOrderRequestOrderRequest;
       'api::ore.ore': ApiOreOre;

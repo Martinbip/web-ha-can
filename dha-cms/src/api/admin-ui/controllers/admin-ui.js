@@ -3,6 +3,7 @@
 const auth = require('../services/auth');
 const media = require('../services/media');
 const resources = require('../services/resources');
+const navigation = require('../services/navigation');
 
 module.exports = {
   async login(ctx) {
@@ -40,6 +41,12 @@ module.exports = {
   },
   async unpublishResource(ctx) {
     return resources.unpublish(ctx);
+  },
+  async getNavigation(ctx) {
+    return navigation.get(ctx);
+  },
+  async updateNavigation(ctx) {
+    return navigation.update(ctx);
   },
   async listMedia(ctx) {
     return media.list(ctx);

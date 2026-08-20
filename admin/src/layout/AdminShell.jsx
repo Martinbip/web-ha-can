@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   ['/resources/contact-inquiries', 'Liên hệ'],
   ['/resources/order-requests', 'Đơn đặt mẫu'],
   ['/media', 'Thư viện ảnh'],
+  ['/menu', 'Thanh menu'],
   ['/settings', 'Cài đặt website'],
 ];
 

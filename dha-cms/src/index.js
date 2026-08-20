@@ -155,6 +155,7 @@ module.exports = {
     }));
 
     await seedSingleType('api::site-setting.site-setting', 'site_setting.json');
+    await seedSingleType('api::navigation.navigation', 'navigation.json');
 
     try {
       const publicRole = await strapi.db.query('plugin::users-permissions.role').findOne({
@@ -174,6 +175,7 @@ module.exports = {
           'api::pricing-survey.pricing-survey.find',
           'api::pricing-survey.pricing-survey.findOne',
           'api::site-setting.site-setting.find',
+          'api::navigation.navigation.find',
           'api::product.product.find',
           'api::product.product.findOne',
           'api::ore.ore.find',
