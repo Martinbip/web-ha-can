@@ -78,6 +78,22 @@ FRONTEND_URL=http://localhost:3000
 
 Không đưa `CLOUDINARY_URL`, `CLOUDINARY_API_SECRET`, hoặc token Strapi vào frontend.
 
+### Thanh menu động
+
+Mục **Thanh menu** trong admin (`/admin/menu`) quản lý thanh điều hướng chính của
+website: sửa tên hiển thị và đường dẫn, kéo thả để sắp xếp, ẩn/hiện, thêm hoặc
+xoá mục, và tạo menu con hai cấp (nút `→` biến một mục thành mục con của mục ngay
+trên nó, nút `←` đưa nó trở lại cấp 1).
+
+Dữ liệu nằm trong single type `navigation` (`items` kiểu JSON), đọc công khai qua
+`GET /api/navigation` và ghi qua `GET|PUT /api/admin-ui/navigation`. Backend chỉ
+chấp nhận đường dẫn nội bộ (`/...`, `#...`) hoặc `http(s)://...`, tối đa 2 cấp.
+
+Menu 8 mục viết sẵn trong các file HTML vẫn giữ nguyên và đóng vai trò dự phòng:
+`app.js` chỉ thay thế khi đọc được dữ liệu từ CMS, nên website không mất điều
+hướng nếu CMS lỗi. Đổi đường dẫn của một mục **không** tạo trang mới — trỏ tới
+địa chỉ chưa tồn tại thì người xem sẽ gặp 404, admin có cảnh báo cho trường hợp này.
+
 ### Triển khai (Production)
 
 *   Nginx phục vụ `/admin` như static site (`try_files $uri $uri/ /admin/index.html;`), trỏ vào thư mục `admin/dist` đã build, được rsync vào `/var/www/dhakimloaimau.vn/admin/`.

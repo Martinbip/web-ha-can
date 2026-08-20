@@ -23,6 +23,8 @@ module.exports = {
     { method: 'GET', path: '/admin-ui/media', handler: 'admin-ui.listMedia', config: { auth: false } },
     { method: 'POST', path: '/admin-ui/media/upload', handler: 'admin-ui.uploadMedia', config: { auth: false } },
     { method: 'DELETE', path: '/admin-ui/media/:publicId', handler: 'admin-ui.deleteMedia', config: { auth: false } },
+    { method: 'GET', path: '/admin-ui/navigation', handler: 'admin-ui.getNavigation', config: { auth: false } },
+    { method: 'PUT', path: '/admin-ui/navigation', handler: 'admin-ui.updateNavigation', config: { auth: false } },
     { method: 'GET', path: '/admin-ui/resources/:type', handler: 'admin-ui.listResources', config: { auth: false } },
     { method: 'POST', path: '/admin-ui/resources/:type', handler: 'admin-ui.createResource', config: { auth: false } },
     { method: 'GET', path: '/admin-ui/resources/:type/:id', handler: 'admin-ui.getResource', config: { auth: false } },

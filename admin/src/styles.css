@@ -638,6 +638,86 @@ button:hover {
   gap: 8px;
 }
 
+/* ── Trình sửa thanh menu ── */
+.menu-editor {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menu-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.menu-row.is-child {
+  margin-left: 32px;
+  border-left: 3px solid #cbd5e1;
+}
+
+.menu-row.is-hidden {
+  opacity: 0.55;
+}
+
+.menu-drag {
+  cursor: grab;
+  padding-top: 22px;
+  color: #94a3b8;
+  font-size: 18px;
+  user-select: none;
+}
+
+.menu-fields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 12px;
+}
+
+.menu-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.menu-fields input {
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.menu-warning {
+  color: #b45309;
+  font-size: 12px;
+}
+
+.menu-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 18px;
+  flex-wrap: wrap;
+}
+
+.menu-visible {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #475569;
+}
+
 @media (max-width: 760px) {
   .admin-shell {
     grid-template-columns: 1fr;
@@ -675,5 +755,22 @@ button:hover {
     height: auto;
     flex-wrap: wrap;
     padding: 12px;
+  }
+
+  .menu-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .menu-row {
+    flex-wrap: wrap;
+  }
+
+  .menu-row-actions {
+    padding-top: 0;
+    width: 100%;
+  }
+
+  .menu-row.is-child {
+    margin-left: 16px;
   }
 }

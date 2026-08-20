@@ -1,0 +1,12 @@
+{
+  "items": [
+    { "id": "home",      "label": "Trang Chủ",       "url": "/",          "visible": true, "children": [] },
+    { "id": "services",  "label": "Dịch Vụ",         "url": "/#services", "visible": true, "children": [] },
+    { "id": "products",  "label": "Sản Phẩm",        "url": "/products",  "visible": true, "children": [] },
+    { "id": "estimator", "label": "Dự Tính Chi Phí", "url": "/estimator", "visible": true, "children": [] },
+    { "id": "pricing",   "label": "Báo Giá",         "url": "/pricing",   "visible": true, "children": [] },
+    { "id": "workflow",  "label": "Quy Trình",       "url": "/#workflow", "visible": true, "children": [] },
+    { "id": "projects",  "label": "Dự Án",           "url": "/projects",  "visible": true, "children": [] },
+    { "id": "contact",   "label": "Liên Hệ",         "url": "/contact",   "visible": true, "children": [] }
+  ]
+}
