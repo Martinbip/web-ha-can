@@ -86,7 +86,10 @@ xoá mục, và tạo menu con hai cấp (nút `→` biến một mục thành m
 trên nó, nút `←` đưa nó trở lại cấp 1).
 
 Dữ liệu nằm trong single type `navigation` (`items` kiểu JSON), đọc công khai qua
-`GET /api/navigation` và ghi qua `GET|PUT /api/admin-ui/navigation`. Backend chỉ
+`GET /api/navigation` và ghi qua `GET|PUT /api/admin-ui/navigation`. Menu mặc định
+nằm trong `dha-cms/src/api/navigation/default-items.js` chứ không nằm ở `data/`:
+deploy chỉ rsync thư mục `dha-cms/` sang máy chủ Strapi nên seed đọc file ở gốc
+repo sẽ không tìm thấy gì. Backend chỉ
 chấp nhận đường dẫn nội bộ (`/...`, `#...`) hoặc `http(s)://...`, tối đa 2 cấp.
 
 Menu 8 mục viết sẵn trong các file HTML vẫn giữ nguyên và đóng vai trò dự phòng:

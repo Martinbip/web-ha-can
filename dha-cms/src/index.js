@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const { getDefaultNavItems } = require('./api/navigation/default-items');
 
 function loadJsonFile(filename) {
   const filePath = path.join(__dirname, '..', '..', 'data', filename);
@@ -155,7 +156,19 @@ module.exports = {
     }));
 
     await seedSingleType('api::site-setting.site-setting', 'site_setting.json');
-    await seedSingleType('api::navigation.navigation', 'navigation.json');
+    // Menu mặc định đến từ code (xem default-items.js) vì thư mục data/ ở gốc
+    // repo không được deploy sang máy chủ Strapi.
+    try {
+      const existingNav = await strapi.db.query('api::navigation.navigation').findOne({});
+      if (!existingNav) {
+        console.log('Seeding single type: api::navigation.navigation');
+        await strapi.db.query('api::navigation.navigation').create({
+          data: { items: getDefaultNavItems() },
+        });
+      }
+    } catch (err) {
+      console.error('Error seeding single type api::navigation.navigation:', err.message);
+    }
 
     try {
       const publicRole = await strapi.db.query('plugin::users-permissions.role').findOne({
