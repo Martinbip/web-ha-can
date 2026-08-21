@@ -84,6 +84,18 @@ select {
   background: #fff;
 }
 
+/* Checkbox/radio không được kéo rộng 100% — nếu không ô tick sẽ trôi ra giữa hàng. */
+input[type='checkbox'],
+input[type='radio'] {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
 button {
   border: 0;
   border-radius: 6px;
@@ -568,6 +580,34 @@ button:hover {
 
 .field-row label {
   margin-bottom: 6px;
+}
+
+.field-row-check label {
+  margin-bottom: 0;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.check-row:hover {
+  border-color: var(--brand);
+}
+
+.check-row span {
+  font-weight: inherit;
+}
+
+.field-hint-check {
+  margin-left: 2px;
 }
 
 .field-required {
