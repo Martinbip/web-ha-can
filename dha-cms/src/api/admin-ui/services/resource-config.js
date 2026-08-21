@@ -40,7 +40,7 @@ const RESOURCE_CONFIG = {
     titleField: 'name',
     defaultSort: { sort_order: 'asc' },
     searchableFields: ['name', 'uid', 'grade', 'origin'],
-    editableFields: ['uid', 'name', 'group', 'grade', 'origin', 'price', 'price_unit', 'price_label', 'description', 'specs', 'image', 'featured', 'in_stock', 'sort_order'],
+    editableFields: ['uid', 'name', 'group', 'grade', 'origin', 'price_on_request', 'price', 'price_unit', 'price_label', 'description', 'specs', 'image', 'featured', 'in_stock', 'sort_order'],
     listFields: ['name', 'group', 'price', 'featured', 'in_stock'],
     fields: {
       uid: { label: 'Mã/đường dẫn', type: 'slug', required: true, from: 'name' },
@@ -59,6 +59,7 @@ const RESOURCE_CONFIG = {
       },
       grade: { label: 'Hàm lượng/grade', type: 'text', maxLength: 100 },
       origin: { label: 'Nguồn gốc', type: 'text', maxLength: 200 },
+      price_on_request: { label: 'Giá liên hệ', type: 'boolean' },
       price: { label: 'Giá', type: 'number', min: 0 },
       price_unit: { label: 'Đơn vị giá', type: 'text', maxLength: 20, default: 'đ/kg' },
       price_label: { label: 'Chữ hiển thị khi không có giá', type: 'text', maxLength: 50 },

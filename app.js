@@ -70,12 +70,14 @@ function getOrePrice(ore) {
     return Number(ore?.price ?? ore?.base_price ?? 0) || 0;
 }
 
-// Sản phẩm để trống trường giá nghĩa là báo giá theo từng đơn hàng. Đơn vị và
-// chữ thay thế đều lấy từ CMS để quản trị viên tự đổi được, chỉ khi bỏ trống
-// mới rơi về mặc định "đ/kg" và "Liên hệ".
+// Công tắc "Giá liên hệ" trong CMS là ý định rõ ràng của quản trị viên; sản phẩm
+// chưa kịp điền giá cũng rơi về cùng cách hiển thị đó. Đơn vị và chữ thay thế
+// đều lấy từ CMS, chỉ khi bỏ trống mới về mặc định "đ/kg" và "Liên hệ".
 function getProductPriceLabel(product) {
     const price = Number(product?.price);
-    if (!Number.isFinite(price) || price <= 0) {
+    const hasPrice = Number.isFinite(price) && price > 0;
+
+    if (product?.price_on_request || !hasPrice) {
         const label = String(product?.price_label || '').trim() || 'Liên hệ';
         return { text: label, isContact: true };
     }
