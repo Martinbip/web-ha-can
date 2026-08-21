@@ -10,6 +10,22 @@ export default function FieldRenderer({ name, field, value, onChange, setField, 
   const id = `field-${name}`;
   const label = field.label || name;
 
+  // Checkbox đọc ngược so với các field khác: ô tick đứng trước, nhãn nằm cùng hàng.
+  if (field.type === 'boolean') {
+    return (
+      <div className="field-row field-row-check" key={name}>
+        <label className="check-row" htmlFor={id}>
+          {renderInput({ id, field, value, onChange, setField, values })}
+          <span>
+            {label}
+            {field.required ? <span className="field-required"> *</span> : null}
+          </span>
+        </label>
+        {field.hint ? <p className="field-hint field-hint-check">{field.hint}</p> : null}
+      </div>
+    );
+  }
+
   return (
     <div className="field-row" key={name}>
       {field.type !== 'hidden' ? (
