@@ -111,3 +111,42 @@ export function normalizeDepths(rows) {
     return row.depth === 0 ? row : { ...row, depth: 0 };
   });
 }
+
+// Kéo thả không dùng được bằng bàn phím, nên mỗi mục còn có nút lên/xuống.
+// Mục cấp 1 nhảy qua trọn khối kế bên (kể cả mục con), mục con chỉ đổi chỗ với
+// anh em cùng cha.
+function prevBlockStart(rows, index) {
+  if (rows[index].depth > 0) {
+    return index > 0 && rows[index - 1].depth > 0 ? index - 1 : -1;
+  }
+  for (let i = index - 1; i >= 0; i -= 1) {
+    if (rows[i].depth === 0) return i;
+  }
+  return -1;
+}
+
+function nextBlockStart(rows, index) {
+  const next = index + getBlockLength(rows, index);
+  if (next >= rows.length) return -1;
+  if (rows[index].depth > 0 && rows[next].depth === 0) return -1;
+  return next;
+}
+
+export function canMoveUp(rows, index) {
+  return prevBlockStart(rows, index) >= 0;
+}
+
+export function canMoveDown(rows, index) {
+  return nextBlockStart(rows, index) >= 0;
+}
+
+export function moveUpRow(rows, index) {
+  const target = prevBlockStart(rows, index);
+  return target < 0 ? rows : moveBlock(rows, index, target);
+}
+
+export function moveDownRow(rows, index) {
+  const next = nextBlockStart(rows, index);
+  if (next < 0) return rows;
+  return moveBlock(rows, index, next + getBlockLength(rows, next));
+}
