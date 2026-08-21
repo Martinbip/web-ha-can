@@ -256,7 +256,12 @@ export default function ResourceListPage() {
 }
 
 function formatCell(value, fieldConfig) {
-  if (value === null || value === undefined || value === '') return fieldConfig?.emptyText || '';
+  // Ô số bỏ trống lưu thành null, nhưng dữ liệu cũ còn nhiều bản ghi mang số 0.
+  // Cả hai đều nghĩa là "chưa có giá", nên hiện cùng một chữ thay thế.
+  const isEmptyNumber = fieldConfig?.type === 'number' && value === 0;
+  if (value === null || value === undefined || value === '' || isEmptyNumber) {
+    return fieldConfig?.emptyText || (isEmptyNumber ? '0' : '');
+  }
   if (typeof value === 'boolean') return value ? 'Có' : 'Không';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
