@@ -27,12 +27,16 @@ const ALLOWED_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
 const DELETED_TTL_MS = 30 * 60 * 1000;
 const recentlyDeleted = new Map();
 
-setInterval(() => {
+// unref: Strapi chạy dài nên timer này vô hại ở production, nhưng nó giữ event
+// loop sống và làm `npm test` treo vĩnh viễn sau khi test chạy xong.
+const sweepTimer = setInterval(() => {
   const now = Date.now();
   for (const [publicId, deletedAt] of recentlyDeleted) {
     if (now - deletedAt > DELETED_TTL_MS) recentlyDeleted.delete(publicId);
   }
 }, 5 * 60 * 1000);
+
+if (typeof sweepTimer.unref === 'function') sweepTimer.unref();
 
 function configureCloudinary() {
   if (process.env.CLOUDINARY_URL) {

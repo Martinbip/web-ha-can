@@ -63,10 +63,16 @@ test('project and hero editor labels match Task 1 schema and locale', () => {
   const heroSlides = getResourceConfig('hero-slides');
   const siteSetting = getResourceConfig('site-setting');
 
-  assert.deepEqual(projects.editableFields, ['name', 'location', 'scale', 'method', 'value', 'image']);
-  assert.equal(projects.fields.image.label, 'Ảnh dự án');
-  assert.equal(projects.fields.cloudinary_image_url, undefined);
-  assert.equal(projects.fields.cloudinary_public_id, undefined);
+  // Ảnh dự án nằm ở cặp cloudinary_* dạng chuỗi. Trường `image` của schema là
+  // quan hệ media còn sót lại — đưa nó vào editableFields làm Document Service
+  // trả 400 "Invalid key image" và trang danh sách trắng xoá.
+  assert.deepEqual(projects.editableFields, [
+    'name', 'location', 'scale', 'method', 'value', 'cloudinary_image_url', 'cloudinary_public_id',
+  ]);
+  assert.equal(projects.fields.image, undefined);
+  assert.equal(projects.fields.cloudinary_image_url.label, 'Ảnh dự án');
+  assert.equal(projects.fields.cloudinary_image_url.publicIdField, 'cloudinary_public_id');
+  assert.equal(projects.fields.cloudinary_public_id.type, 'hidden');
 
   assert.equal(heroSlides.label, 'Slide trang chủ');
   assert.equal(heroSlides.pluralLabel, 'Slide trang chủ');

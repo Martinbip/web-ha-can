@@ -79,7 +79,7 @@ const RESOURCE_CONFIG = {
     titleField: 'name',
     defaultSort: { createdAt: 'desc' },
     searchableFields: ['name', 'location', 'method'],
-    editableFields: ['name', 'location', 'scale', 'method', 'value', 'image'],
+    editableFields: ['name', 'location', 'scale', 'method', 'value', 'cloudinary_image_url', 'cloudinary_public_id'],
     listFields: ['name', 'location', 'method', 'publishedAt'],
     fields: {
       name: { label: 'Tên dự án', type: 'text', required: true, maxLength: 300 },
@@ -87,7 +87,8 @@ const RESOURCE_CONFIG = {
       scale: { label: 'Quy mô', type: 'text', maxLength: 200 },
       method: { label: 'Phương pháp', type: 'text', maxLength: 200 },
       value: { label: 'Giá trị', type: 'text', maxLength: 200 },
-      image: { label: 'Ảnh dự án', type: 'cloudinary-image', folder: 'dha/projects' },
+      cloudinary_image_url: { label: 'Ảnh dự án', type: 'cloudinary-image', folder: 'dha/projects', publicIdField: 'cloudinary_public_id' },
+      cloudinary_public_id: { label: 'Cloudinary public ID', type: 'hidden' },
     },
   },
   'services': {
