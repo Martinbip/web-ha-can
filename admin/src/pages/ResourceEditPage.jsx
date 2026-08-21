@@ -44,18 +44,7 @@ export default function ResourceEditPage({ mode }) {
   }
 
   function handleChange(field, value) {
-    const cleared = value ? config.fields?.[field]?.clearFields : null;
-    if (!cleared) {
-      setField(field, value);
-      return;
-    }
-    // Bật một công tắc kiểu "giá liên hệ" thì các ô nó thay thế phải rỗng theo,
-    // nếu không con số cũ vẫn nằm lại trong dữ liệu và lộ ra ở bảng danh sách.
-    setValues((prev) => ({
-      ...prev,
-      [field]: value,
-      ...Object.fromEntries(cleared.map((name) => [name, null])),
-    }));
+    setField(field, value);
   }
 
   async function handleSubmit(event) {
@@ -63,7 +52,7 @@ export default function ResourceEditPage({ mode }) {
     setSaving(true);
     setError('');
     try {
-      const payload = withGeneratedSlugs(config, values);
+      const payload = withClearedFields(config, withGeneratedSlugs(config, values));
       if (isNew) {
         await createResource(type, payload);
       } else {
@@ -116,6 +105,16 @@ export default function ResourceEditPage({ mode }) {
       )}
     </main>
   );
+}
+
+// Bật một công tắc kiểu "giá liên hệ" thì các ô nó thay thế phải rỗng theo, nếu
+// không con số cũ vẫn nằm lại trong dữ liệu và lộ ra ở bảng danh sách. Chỉ dọn
+// lúc lưu, chứ không dọn ngay lúc tick: tick nhầm rồi bỏ tick vẫn còn giá cũ.
+export function withClearedFields(config, values) {
+  return Object.entries(config.fields || {}).reduce((data, [name, field]) => {
+    if (!field.clearFields || !data[name]) return data;
+    return { ...data, ...Object.fromEntries(field.clearFields.map((target) => [target, null])) };
+  }, values);
 }
 
 // Vài trường chỉ có nghĩa khi một công tắc khác đang bật (hoặc đang tắt). Ẩn hẳn
