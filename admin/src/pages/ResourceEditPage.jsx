@@ -44,7 +44,18 @@ export default function ResourceEditPage({ mode }) {
   }
 
   function handleChange(field, value) {
-    setField(field, value);
+    const cleared = value ? config.fields?.[field]?.clearFields : null;
+    if (!cleared) {
+      setField(field, value);
+      return;
+    }
+    // Bật một công tắc kiểu "giá liên hệ" thì các ô nó thay thế phải rỗng theo,
+    // nếu không con số cũ vẫn nằm lại trong dữ liệu và lộ ra ở bảng danh sách.
+    setValues((prev) => ({
+      ...prev,
+      [field]: value,
+      ...Object.fromEntries(cleared.map((name) => [name, null])),
+    }));
   }
 
   async function handleSubmit(event) {
@@ -67,6 +78,7 @@ export default function ResourceEditPage({ mode }) {
   }
 
   const fieldEntries = Object.entries(config.fields || {});
+  const visibleFields = fieldEntries.filter(([, field]) => isFieldVisible(field, values));
 
   return (
     <main className="page">
@@ -80,7 +92,7 @@ export default function ResourceEditPage({ mode }) {
         <form className="edit-form" onSubmit={handleSubmit}>
           {error ? <p className="form-error">{error}</p> : null}
           <div className="field-grid">
-            {fieldEntries.map(([name, field]) => (
+            {visibleFields.map(([name, field]) => (
               <FieldRenderer
                 key={name}
                 name={name}
@@ -104,6 +116,14 @@ export default function ResourceEditPage({ mode }) {
       )}
     </main>
   );
+}
+
+// Vài trường chỉ có nghĩa khi một công tắc khác đang bật (hoặc đang tắt). Ẩn hẳn
+// chúng đi thay vì để biên tập viên điền vào ô không có tác dụng.
+function isFieldVisible(field, values) {
+  if (field.showWhen && !values[field.showWhen]) return false;
+  if (field.hideWhen && values[field.hideWhen]) return false;
+  return true;
 }
 
 // Lưới an toàn cho trường đường dẫn: nếu vì lý do nào đó slug vẫn rỗng (ví dụ
