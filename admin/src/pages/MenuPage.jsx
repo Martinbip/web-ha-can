@@ -151,10 +151,22 @@ export default function MenuPage() {
 
   return (
     <main className="page menu-page">
-      <div className="page-heading">
-        <h1>Thanh menu</h1>
-        <p>Sắp xếp các mục điều hướng hiện trên đầu website. Kéo thả hoặc dùng nút lên/xuống để đổi thứ tự, thụt vào để tạo mục con.</p>
-      </div>
+      <SaveBar
+        title="Thanh menu"
+        description="Sắp xếp các mục điều hướng hiện trên đầu website. Kéo thả hoặc dùng nút lên/xuống để đổi thứ tự, thụt vào để tạo mục con."
+        saving={saving}
+        disabled={!dirty}
+        label="Lưu thay đổi"
+        onSave={handleSave}
+        onCancel={handleReset}
+        cancelLabel="Hoàn tác"
+        cancelDisabled={!dirty}
+        status={
+          <span className={`savebar-status${dirty ? ' is-dirty' : ''}`}>
+            {dirty ? 'Có thay đổi chưa lưu' : 'Mọi thay đổi đã được lưu'}
+          </span>
+        }
+      />
 
       {error ? <p className="form-error" role="alert"><Icon name="alert" size={16} /> {error}</p> : null}
       {notice ? <p className="form-notice" role="status"><Icon name="check" size={16} /> {notice}</p> : null}
@@ -163,21 +175,6 @@ export default function MenuPage() {
         <p className="menu-loading">Đang tải thanh menu...</p>
       ) : (
         <>
-          <SaveBar
-            saving={saving}
-            disabled={!dirty}
-            label="Lưu thay đổi"
-            onSave={handleSave}
-            onCancel={handleReset}
-            cancelLabel="Hoàn tác"
-            cancelDisabled={!dirty}
-            status={
-              <span className={`savebar-status${dirty ? ' is-dirty' : ''}`}>
-                {dirty ? 'Có thay đổi chưa lưu' : 'Mọi thay đổi đã được lưu'}
-              </span>
-            }
-          />
-
           <section className="menu-preview" aria-label="Xem trước thanh menu">
             <p className="menu-preview-title">Khách sẽ thấy</p>
             {visibleTree.length ? (

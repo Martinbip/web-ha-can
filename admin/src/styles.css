@@ -1178,12 +1178,28 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 16px;
   flex-wrap: wrap;
-  margin: 0 -28px 24px;
-  padding: 12px 28px;
+  margin: -28px -28px 20px;
+  padding: 14px 28px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
+  /* Bóng rất nhẹ, chỉ đủ để khi cuộn thì nội dung trượt bên dưới trông có lớp,
+     không dính bệt vào thanh. */
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.savebar-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.savebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
 }
 
 .savebar-status {
@@ -1192,8 +1208,7 @@ button:hover {
   color: var(--muted);
 }
 
-/* Chấm cam báo "còn thay đổi chưa lưu" — giữ nguyên từ thanh lưu của trang menu,
-   giờ dùng chung cho mọi màn hình có trạng thái này. */
+/* Chấm cam báo "còn thay đổi chưa lưu". */
 .savebar-status.is-dirty {
   color: #b45309;
 }
@@ -1209,10 +1224,10 @@ button:hover {
   vertical-align: middle;
 }
 
-.savebar-actions {
-  display: flex;
-  gap: 12px;
-  margin-left: auto;
+/* Câu mô tả trang: nằm ngoài thanh để thanh còn mỏng khi bám theo màn hình. */
+.savebar-description {
+  margin: -8px 0 20px;
+  color: var(--muted);
 }
 
 
@@ -1323,8 +1338,12 @@ button:hover {
 
 @media (max-width: 720px) {
   .savebar {
-    margin: 0 -16px 18px;
-    padding: 10px 16px;
+    margin: -28px -28px 18px;
+    padding: 10px 28px;
+  }
+
+  .savebar-title {
+    font-size: 18px;
   }
 }
 

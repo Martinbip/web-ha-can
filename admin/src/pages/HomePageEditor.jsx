@@ -71,10 +71,12 @@ export default function HomePageEditor() {
 
   return (
     <main className="page">
-      <div className="page-heading">
-        <h1>Trang chủ</h1>
-        <p>Quản lý slide, quy trình và nội dung giới thiệu hiển thị trên trang chủ.</p>
-      </div>
+      <SaveBar
+        title="Trang chủ"
+        description="Quản lý slide, quy trình và nội dung giới thiệu hiển thị trên trang chủ."
+        formId="edit-form"
+        saving={saving}
+      />
 
       <section className="card-grid">
         <article className="card">
@@ -100,8 +102,7 @@ export default function HomePageEditor() {
       {loading ? (
         <p>Đang tải...</p>
       ) : (
-        <form className="edit-form" onSubmit={handleSubmit}>
-          <SaveBar saving={saving} />
+        <form id="edit-form" className="edit-form" onSubmit={handleSubmit}>
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
           <div className="field-grid">

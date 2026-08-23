@@ -90,23 +90,19 @@ export default function FormLabelsPage() {
 
   return (
     <main className="page">
-      <div className="page-heading">
-        <h1>Chữ trong form quản trị</h1>
-        <p>
-          Đổi tên ô nhập và câu hướng dẫn hiện trong các form quản trị. Bỏ trống là dùng lại
-          chữ mặc định ghi mờ trong ô.
-        </p>
-      </div>
+      <SaveBar
+        title="Chữ trong form quản trị"
+        description="Đổi tên ô nhập và câu hướng dẫn hiện trong các form quản trị. Bỏ trống là dùng lại chữ mặc định ghi mờ trong ô."
+        formId="edit-form"
+        saving={saving}
+        onCancel={resetCurrentResource}
+        cancelLabel="Trả form này về chữ mặc định"
+      />
 
       {loading ? (
         <p>Đang tải...</p>
       ) : (
-        <form className="edit-form" onSubmit={handleSubmit}>
-          <SaveBar
-            saving={saving}
-            onCancel={resetCurrentResource}
-            cancelLabel="Trả form này về chữ mặc định"
-          />
+        <form id="edit-form" className="edit-form" onSubmit={handleSubmit}>
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
 

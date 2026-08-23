@@ -89,16 +89,17 @@ export default function SettingsPage() {
 
   return (
     <main className="page">
-      <div className="page-heading">
-        <h1>Cài đặt website</h1>
-        <p>Thông tin liên hệ, thương hiệu chung hiển thị trên toàn bộ website.</p>
-      </div>
+      <SaveBar
+        title="Cài đặt website"
+        description="Thông tin liên hệ, thương hiệu chung hiển thị trên toàn bộ website."
+        formId="edit-form"
+        saving={saving}
+      />
 
       {loading ? (
         <p>Đang tải...</p>
       ) : (
-        <form className="edit-form" onSubmit={handleSubmit}>
-          <SaveBar saving={saving} />
+        <form id="edit-form" className="edit-form" onSubmit={handleSubmit}>
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
           <div className="page-heading">

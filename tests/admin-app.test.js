@@ -115,7 +115,7 @@ test('image picker uploads without a nested form that would submit the edit form
   const picker = read('admin/src/components/ImagePicker.jsx');
   const editPage = read('admin/src/pages/ResourceEditPage.jsx');
 
-  assert.match(editPage, /<form className="edit-form"/, 'edit page wraps fields in a form');
+  assert.match(editPage, /<form[^>]*className="edit-form"/, 'edit page wraps fields in a form');
   assert.doesNotMatch(picker, /<form/, 'image picker renders no nested form');
   assert.doesNotMatch(picker, /type="submit"/, 'image picker upload button never submits a form');
   assert.match(picker, /onClick=\{\(\) => handleUpload\(\)\}/, 'image picker uploads on click');

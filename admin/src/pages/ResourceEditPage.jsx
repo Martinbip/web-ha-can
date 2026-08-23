@@ -72,15 +72,17 @@ export default function ResourceEditPage({ mode }) {
 
   return (
     <main className="page">
-      <div className="page-heading">
-        <h1>{isNew ? `Thêm ${config.label}` : `Sửa ${config.label}`}</h1>
-      </div>
+      <SaveBar
+        title={isNew ? `Thêm ${config.label}` : `Sửa ${config.label}`}
+        formId="edit-form"
+        saving={saving}
+        onCancel={() => navigate(`/resources/${type}`)}
+      />
 
       {loading ? (
         <p>Đang tải...</p>
       ) : (
-        <form className="edit-form" onSubmit={handleSubmit}>
-          <SaveBar saving={saving} onCancel={() => navigate(`/resources/${type}`)} />
+        <form id="edit-form" className="edit-form" onSubmit={handleSubmit}>
           {error ? <p className="form-error">{error}</p> : null}
           <div className="field-grid">
             {visibleFields.map(([name, field]) => (
