@@ -44,6 +44,14 @@
       "type": "string",
       "maxLength": 255
     },
+    "logo_image_dark_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "logo_image_dark_public_id": {
+      "type": "string",
+      "maxLength": 255
+    },
     "logo_text_accent": {
       "type": "string",
       "maxLength": 20,

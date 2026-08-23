@@ -11,6 +11,7 @@ const TYPE = 'site-setting';
 // Logo đứng ở đầu mọi trang nên tách riêng một khối, đặt trước phần liên hệ.
 const LOGO_FIELDS = [
   'logo_image_url',
+  'logo_image_dark_url',
   'logo_alt',
   'logo_text_accent',
   'logo_text_main',

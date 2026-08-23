@@ -283,14 +283,18 @@ async function initSiteSettings() {
 }
 
 // Logo đứng ở header lẫn footer của mọi trang. Quản trị có hai cách đặt: tải ảnh
-// lên (ưu tiên) hoặc sửa hai mảnh chữ "DHA" + "MINERALS". Ảnh hỏng đường dẫn thì
-// tự rơi về logo chữ, không để trống một khoảng trắng ở đầu trang.
+// lên (ưu tiên) hoặc sửa hai mảnh chữ "DHA" + "MINERALS". Chân trang nền đen nên
+// có ô ảnh riêng; thiếu ô đó thì dùng ảnh chính, thiếu cả ảnh thì về logo chữ —
+// ảnh hỏng đường dẫn cũng rơi về chữ, không để trống một khoảng ở đầu trang.
 function applyLogo(settings) {
     const imageUrl = toSiteAssetUrl(String(settings.logo_image_url || '').trim());
+    const darkImageUrl = toSiteAssetUrl(String(settings.logo_image_dark_url || '').trim()) || imageUrl;
     const accent = String(settings.logo_text_accent || '').trim();
     const main = String(settings.logo_text_main || '').trim();
 
     document.querySelectorAll('a.logo').forEach(link => {
+        // Logo chân trang nằm trên nền tối, dùng bản ảnh riêng nếu quản trị có đặt.
+        const url = link.closest('.footer') ? darkImageUrl : imageUrl;
         const accentEl = link.querySelector('.logo-accent');
         const mainEl = link.querySelector('.logo-text');
         if (accentEl && accent) accentEl.textContent = accent;
@@ -301,7 +305,7 @@ function applyLogo(settings) {
             || 'Trang chủ';
 
         let img = link.querySelector('.logo-img');
-        if (!imageUrl) {
+        if (!url) {
             if (img) img.remove();
             link.classList.remove('logo-has-image');
             return;
@@ -316,7 +320,7 @@ function applyLogo(settings) {
             });
             link.prepend(img);
         }
-        img.src = imageUrl;
+        img.src = url;
         img.alt = altText;
         link.classList.add('logo-has-image');
     });
