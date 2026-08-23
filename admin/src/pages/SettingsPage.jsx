@@ -15,6 +15,7 @@ const LOGO_FIELDS = [
   'logo_alt',
   'logo_text_accent',
   'logo_text_main',
+  'favicon_url',
 ];
 
 const GENERAL_FIELDS = [
@@ -99,7 +100,7 @@ export default function SettingsPage() {
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
           <div className="page-heading">
-            <h2>Logo</h2>
+            <h2>Logo &amp; favicon</h2>
             <p>Tải ảnh logo lên, hoặc bỏ trống ảnh để website dùng logo chữ bên dưới.</p>
           </div>
           <div className="field-grid">
