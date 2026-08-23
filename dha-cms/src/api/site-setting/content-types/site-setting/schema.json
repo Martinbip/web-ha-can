@@ -66,6 +66,14 @@
       "type": "string",
       "maxLength": 150
     },
+    "favicon_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "favicon_public_id": {
+      "type": "string",
+      "maxLength": 255
+    },
     "tax_code": {
       "type": "string",
       "maxLength": 20

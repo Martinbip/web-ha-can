@@ -278,6 +278,7 @@ async function initSiteSettings() {
 
     applySiteTexts(settings);
     applyLogo(settings);
+    applyFavicon(settings);
     initHeroContent(settings);
     initHeroSlides();
 }
@@ -324,6 +325,56 @@ function applyLogo(settings) {
         img.alt = altText;
         link.classList.add('logo-has-image');
     });
+}
+
+// Favicon tĩnh trong HTML là bản dự phòng. Quản trị tải ảnh khác lên thì gỡ hẳn
+// các thẻ tĩnh đi rồi cắm một thẻ của mình vào — để lẫn lộn thì trình duyệt tự
+// chọn, và thường vẫn giữ icon cũ. Bỏ ảnh trong CMS thì trả lại thẻ tĩnh.
+let defaultIconLinks = null;
+
+function applyFavicon(settings) {
+    const head = document.head;
+    if (!head) return;
+
+    if (defaultIconLinks === null) {
+        defaultIconLinks = [...head.querySelectorAll('link[rel~="icon"]:not([data-site-favicon])')];
+    }
+
+    const url = toSiteAssetUrl(String(settings.favicon_url || '').trim());
+    let custom = head.querySelector('link[data-site-favicon]');
+
+    if (!url) {
+        if (custom) custom.remove();
+        defaultIconLinks.forEach(link => {
+            if (!link.isConnected) head.appendChild(link);
+        });
+        return;
+    }
+
+    defaultIconLinks.forEach(link => link.remove());
+
+    if (!custom) {
+        custom = document.createElement('link');
+        custom.setAttribute('data-site-favicon', '');
+        custom.rel = 'icon';
+        head.appendChild(custom);
+    }
+
+    const type = getFaviconType(url);
+    if (type) custom.type = type;
+    else custom.removeAttribute('type');
+    custom.href = url;
+}
+
+// Thiếu type thì Safari hay bỏ qua icon; suy ra từ đuôi file, bỏ phần ?query.
+function getFaviconType(url) {
+    const clean = String(url).split(/[?#]/)[0].toLowerCase();
+    if (clean.endsWith('.svg')) return 'image/svg+xml';
+    if (clean.endsWith('.png')) return 'image/png';
+    if (clean.endsWith('.ico')) return 'image/x-icon';
+    if (clean.endsWith('.webp')) return 'image/webp';
+    if (clean.endsWith('.jpg') || clean.endsWith('.jpeg')) return 'image/jpeg';
+    return '';
 }
 
 // Các câu chữ cố định quanh bảng giá từng nằm cứng trong HTML, quản trị không sửa

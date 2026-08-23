@@ -183,6 +183,54 @@ test('ảnh logo hỏng đường dẫn thì rơi về logo chữ thay vì để
   assert.ok(!link.classList.contains('logo-has-image'));
 });
 
+test('favicon do quản trị đặt thay hẳn favicon tĩnh trong HTML', () => {
+  const window = loadPage();
+  const head = window.document.head;
+  assert.ok(head.querySelectorAll('link[rel~="icon"]').length >= 1, 'trang có favicon tĩnh làm dự phòng');
+
+  window.applyFavicon({ favicon_url: 'https://res.cloudinary.com/demo/image/upload/dha/settings/icon.png' });
+
+  const icons = [...head.querySelectorAll('link[rel~="icon"]')];
+  assert.equal(icons.length, 1, 'chỉ còn đúng một thẻ icon, không để trình duyệt tự chọn');
+  assert.equal(icons[0].getAttribute('href'), 'https://res.cloudinary.com/demo/image/upload/dha/settings/icon.png');
+  assert.equal(icons[0].getAttribute('type'), 'image/png');
+});
+
+test('bỏ favicon trong quản trị thì trả lại favicon mặc định của website', () => {
+  const window = loadPage();
+  const head = window.document.head;
+  const original = [...head.querySelectorAll('link[rel~="icon"]')].map((link) => link.getAttribute('href'));
+
+  window.applyFavicon({ favicon_url: '/uploads/icon.svg' });
+  window.applyFavicon({ favicon_url: '' });
+
+  const restored = [...head.querySelectorAll('link[rel~="icon"]')].map((link) => link.getAttribute('href'));
+  assert.deepEqual(restored, original);
+  assert.equal(head.querySelector('link[data-site-favicon]'), null, 'thẻ do JS thêm đã được gỡ');
+});
+
+test('đổi favicon nhiều lần không đẻ thêm thẻ link', () => {
+  const window = loadPage();
+
+  window.applyFavicon({ favicon_url: '/uploads/a.png' });
+  window.applyFavicon({ favicon_url: '/uploads/b.svg' });
+
+  const icons = [...window.document.head.querySelectorAll('link[rel~="icon"]')];
+  assert.equal(icons.length, 1);
+  assert.equal(icons[0].getAttribute('href'), '/uploads/b.svg');
+  assert.equal(icons[0].getAttribute('type'), 'image/svg+xml', 'type đổi theo đuôi file mới');
+});
+
+test('type của favicon suy đúng từ đuôi file, kể cả khi URL có tham số', () => {
+  const window = loadPage();
+
+  window.applyFavicon({ favicon_url: 'https://res.cloudinary.com/demo/icon.ico?v=3' });
+  assert.equal(window.document.querySelector('link[data-site-favicon]').getAttribute('type'), 'image/x-icon');
+
+  window.applyFavicon({ favicon_url: 'https://res.cloudinary.com/demo/icon-khong-duoi' });
+  assert.equal(window.document.querySelector('link[data-site-favicon]').getAttribute('type'), null);
+});
+
 test('CSS ẩn logo chữ khi đang dùng ảnh', () => {
   const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
   assert.match(css, /\.logo-has-image \.logo-accent,\s*\n\.logo-has-image \.logo-text \{\s*\n\s*display: none;/);
