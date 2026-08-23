@@ -56,8 +56,11 @@ export default function ImagePicker({ id, value, onChange, onSelect, onClear, fo
     setOpen(false);
   }
 
-  async function handleUpload() {
-    const file = fileInputRef.current?.files?.[0];
+  // Chọn file xong là tải lên luôn. Trước đây phải bấm thêm nút "Tải ảnh lên";
+  // ai chọn file rồi bấm thẳng "Lưu" thì file bị bỏ quên, form lưu ô ảnh rỗng mà
+  // không báo gì — đúng cái bẫy đã làm mất một lần đổi logo.
+  async function handleUpload(selectedFile) {
+    const file = selectedFile || fileInputRef.current?.files?.[0];
     if (!file) {
       setError('Vui lòng chọn ảnh để tải lên.');
       return;
@@ -96,11 +99,23 @@ export default function ImagePicker({ id, value, onChange, onSelect, onClear, fo
           button here would submit the edit form and reload the page instead of
           uploading. */}
       <div className="image-picker-upload">
-        <input ref={fileInputRef} id={id} type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-        <button type="button" className="btn-primary" disabled={uploading} onClick={handleUpload}>
-          {uploading ? 'Đang tải lên...' : 'Tải ảnh lên'}
+        <input
+          ref={fileInputRef}
+          id={id}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          disabled={uploading}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) handleUpload(file);
+          }}
+        />
+        {/* Nút chỉ còn để thử lại khi lần tải tự động vừa rồi hỏng. */}
+        <button type="button" className="btn-primary" disabled={uploading} onClick={() => handleUpload()}>
+          {uploading ? 'Đang tải lên...' : 'Tải lại'}
         </button>
       </div>
+      <p className="image-picker-hint">Chọn file là ảnh tự tải lên ngay, không cần bấm thêm.</p>
 
       <div className="image-picker-actions">
         <button type="button" className="btn-secondary" onClick={() => setOpen((prev) => !prev)}>
