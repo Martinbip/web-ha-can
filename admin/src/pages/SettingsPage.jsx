@@ -21,6 +21,17 @@ const GENERAL_FIELDS = [
   'twitter_url',
 ];
 
+// Chữ nghĩa quanh giá: mặc định dùng chung cho mọi sản phẩm, và các câu ghi chú
+// đứng cạnh bảng giá trên từng trang. Trước đây những câu này nằm cứng trong HTML.
+const PRICE_FIELDS = [
+  'price_contact_text',
+  'price_unit_default',
+  'price_intro_home',
+  'price_note_home',
+  'price_note_products',
+  'price_note_pricing',
+];
+
 export default function SettingsPage() {
   const config = getResourceConfig(TYPE);
   const [recordId, setRecordId] = useState(null);
@@ -89,6 +100,23 @@ export default function SettingsPage() {
               />
             ))}
           </div>
+
+          <div className="page-heading">
+            <h2>Giá &amp; báo giá</h2>
+            <p>Chữ hiển thị thay cho giá và các ghi chú đứng cạnh bảng giá trên website.</p>
+          </div>
+          <div className="field-grid">
+            {PRICE_FIELDS.map((name) => (
+              <FieldRenderer
+                key={name}
+                name={name}
+                field={config.fields[name]}
+                value={values[name]}
+                onChange={(value) => handleChange(name, value)}
+              />
+            ))}
+          </div>
+
           <div className="form-actions">
             <button type="submit" disabled={saving}>
               {saving ? 'Đang lưu...' : 'Lưu'}

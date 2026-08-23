@@ -20,5 +20,11 @@
   "stat2_number": "1.200+",
   "stat2_label": "Mẫu đã phân phối",
   "stat3_number": "0,2%",
-  "stat3_label": "Sai số tối đa"
+  "stat3_label": "Sai số tối đa",
+  "price_contact_text": "Liên hệ",
+  "price_unit_default": "đ/kg",
+  "price_intro_home": "Giá tham khảo cập nhật theo sàn LME và thị trường nội địa. Liên hệ hotline để nhận báo giá chính xác.",
+  "price_note_home": "* Giá tham khảo, thay đổi theo thời điểm giao dịch. Liên hệ để nhận báo giá chính xác.",
+  "price_note_products": "Liên hệ hotline để nhận báo giá chính xác theo số lượng và thời điểm.",
+  "price_note_pricing": "* Giá tham khảo tại thời điểm cập nhật. Giá giao dịch thực tế có thể thay đổi theo số lượng, thời điểm và điều kiện giao hàng. Vui lòng liên hệ hotline để nhận báo giá chính xác."
 }

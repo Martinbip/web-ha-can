@@ -1323,3 +1323,38 @@ button:hover {
     transition: none;
   }
 }
+
+/* ── Sửa chữ hiển thị trong form quản trị ── */
+.label-editor {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.label-editor-row {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.label-editor-field {
+  margin: 0;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #667085;
+}
+
+.label-editor-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .label-editor-inputs {
+    grid-template-columns: 1fr;
+  }
+}

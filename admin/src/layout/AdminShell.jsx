@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import Icon from '../components/Icon.jsx';
+import { setLabelOverrides } from '../config/resources.js';
+import { getSingletonResource } from '../api/resources.js';
 
 // Menu được chia nhóm theo công việc thực tế của người quản trị: viết nội dung,
 // chỉnh các trang có sẵn, xử lý yêu cầu khách gửi về, và cấu hình website.
@@ -39,6 +41,7 @@ const NAV_GROUPS = [
     items: [
       ['/media', 'Thư viện ảnh', 'media'],
       ['/settings', 'Cài đặt website', 'settings'],
+      ['/form-labels', 'Chữ trong form', 'settings'],
     ],
   },
 ];
@@ -60,6 +63,25 @@ export default function AdminShell() {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const toggleRef = useRef(null);
   const closeRef = useRef(null);
+
+  // Chữ trong form do quản trị đặt lại nằm cùng bản ghi cài đặt website. Nạp một
+  // lần khi vào khu quản trị rồi phủ lên cấu hình gốc; hỏng thì form giữ chữ mặc định.
+  const [, setLabelsLoaded] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    getSingletonResource('site-setting')
+      .then((data) => {
+        if (cancelled) return;
+        setLabelOverrides(data?.admin_labels);
+        setLabelsLoaded(true);
+      })
+      .catch(() => {
+        /* không tải được thì dùng chữ mặc định trong cấu hình */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false);
