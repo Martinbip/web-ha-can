@@ -965,20 +965,41 @@ button:hover {
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 22px;
+  align-items: flex-start;
+  gap: 10px 18px;
 }
 
 .menu-preview-bar li {
   display: grid;
-  gap: 2px;
+  gap: 4px;
+  min-width: 0;
+  max-width: 240px;
   font-weight: 650;
   font-size: 14px;
 }
 
+.menu-preview-label {
+  overflow-wrap: anywhere;
+}
+
 .menu-preview-children {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
   font-size: 12px;
   font-weight: 500;
   color: var(--muted);
+}
+
+.menu-preview-children span {
+  max-width: 100%;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .menu-preview-empty {

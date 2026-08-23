@@ -183,10 +183,20 @@ export default function MenuPage() {
                   const children = (item.children || []).filter((child) => child.visible !== false);
                   return (
                     <li key={`${item.label}-${index}`}>
-                      <span>{item.label || 'Chưa đặt tên'}</span>
+                      <span className="menu-preview-label">{item.label || 'Chưa đặt tên'}</span>
                       {children.length ? (
                         <span className="menu-preview-children">
-                          {children.map((child) => child.label || 'Chưa đặt tên').join(' · ')}
+                          {children.slice(0, 4).map((child, childIndex) => {
+                            const label = child.label || 'Chưa đặt tên';
+                            return (
+                              <span key={`${label}-${childIndex}`} title={label}>{label}</span>
+                            );
+                          })}
+                          {children.length > 4 ? (
+                            <span title={children.slice(4).map((child) => child.label || 'Chưa đặt tên').join(', ')}>
+                              +{children.length - 4}
+                            </span>
+                          ) : null}
                         </span>
                       ) : null}
                     </li>
