@@ -4,6 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import ImagePicker from './ImagePicker.jsx';
+import { normalizeLinkHref } from '../lib/link.js';
 
 // Trình soạn thảo nội dung bài viết. Giá trị vẫn là một chuỗi HTML nên hợp đồng
 // value/onChange với FieldRenderer không đổi, nhưng biên tập viên làm việc trực
@@ -45,17 +46,36 @@ export default function RichTextField({ id, value, onChange, imageFolder = 'dha/
     setImagePanelOpen(false);
   }
 
-  function toggleLink() {
+  function setLink() {
     const previous = editor.getAttributes('link').href || '';
-    const input = window.prompt('Dán liên kết (để trống để bỏ liên kết):', previous);
+    const input = window.prompt('Dán liên kết (địa chỉ web, /trang-trong-site, email hoặc số điện thoại):', previous);
     if (input === null) return;
-    const href = input.trim();
+
+    const href = normalizeLinkHref(input);
     if (!href) {
-      editor.chain().focus().unsetLink().run();
+      // Bỏ trống thì coi như muốn gỡ; gõ thứ không dùng được thì phải nói rõ,
+      // im lặng bỏ qua sẽ khiến biên tập viên tưởng đã gắn xong.
+      if (input.trim()) window.alert('Địa chỉ này không dùng được. Hãy nhập địa chỉ web, /trang-trong-site, email hoặc số điện thoại.');
+      else editor.chain().focus().extendMarkRange('link').unsetLink().run();
       return;
     }
-    const url = /^[a-z][a-z0-9+.-]*:/i.test(href) ? href : `https://${href}`;
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+
+    // Chưa bôi đen chữ nào thì không có gì để gắn liên kết vào — chèn luôn địa
+    // chỉ làm chữ hiển thị, thay vì bấm xong mà trông như không có chuyện gì.
+    if (editor.state.selection.empty && !editor.isActive('link')) {
+      editor.chain().focus().insertContent({
+        type: 'text',
+        text: href,
+        marks: [{ type: 'link', attrs: { href } }],
+      }).run();
+      return;
+    }
+
+    editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
+  }
+
+  function removeLink() {
+    editor.chain().focus().extendMarkRange('link').unsetLink().run();
   }
 
   return (
@@ -90,9 +110,14 @@ export default function RichTextField({ id, value, onChange, imageFolder = 'dha/
         <ToolbarButton active={editor.isActive('blockquote')} label="Trích dẫn" onClick={() => editor.chain().focus().toggleBlockquote().run()}>
           ❝ Trích dẫn
         </ToolbarButton>
-        <ToolbarButton active={editor.isActive('link')} label="Liên kết" onClick={toggleLink}>
+        <ToolbarButton active={editor.isActive('link')} label="Liên kết" onClick={setLink}>
           🔗 Liên kết
         </ToolbarButton>
+        {editor.isActive('link') ? (
+          <ToolbarButton label="Gỡ liên kết" onClick={removeLink}>
+            🔗✕ Gỡ liên kết
+          </ToolbarButton>
+        ) : null}
         <ToolbarButton active={imagePanelOpen} label="Chèn ảnh vào bài" onClick={() => setImagePanelOpen((open) => !open)}>
           🖼 Chèn ảnh
         </ToolbarButton>
