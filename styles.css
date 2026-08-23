@@ -200,6 +200,21 @@ button, a, input, select, textarea {
     color: #2C3E50;
 }
 
+/* Logo ảnh do quản trị tải lên thay chỗ logo chữ; giữ chữ trong DOM để còn rơi
+   về được khi ảnh lỗi. */
+.logo-img {
+    display: block;
+    height: 44px;
+    width: auto;
+    max-width: 220px;
+    object-fit: contain;
+}
+
+.logo-has-image .logo-accent,
+.logo-has-image .logo-text {
+    display: none;
+}
+
 .header-search {
     flex: 1;
     max-width: 420px;
@@ -2458,6 +2473,11 @@ a.product-card {
 
     .logo {
         font-size: 1.8rem;
+    }
+
+    .logo-img {
+        height: 40px;
+        max-width: 60vw;
     }
 
     .header-search {

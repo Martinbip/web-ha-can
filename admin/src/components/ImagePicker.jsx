@@ -7,7 +7,7 @@ import { MEDIA_FOLDERS, getLegacyFolder, listMedia, uploadMedia } from '../api/m
 // stored secure_url string, onChange(url) updates the field), and additionally
 // calls onSelect(asset) with the full Cloudinary asset when one is chosen, so
 // callers that need more than the URL (e.g. public_id) can use it too.
-export default function ImagePicker({ id, value, onChange, onSelect, folder, showPreview = true }) {
+export default function ImagePicker({ id, value, onChange, onSelect, onClear, folder, showPreview = true }) {
   const [open, setOpen] = useState(false);
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -106,6 +106,20 @@ export default function ImagePicker({ id, value, onChange, onSelect, folder, sho
         <button type="button" className="btn-secondary" onClick={() => setOpen((prev) => !prev)}>
           {open ? 'Đóng thư viện ảnh' : 'Chọn ảnh có sẵn'}
         </button>
+        {/* Không có nút này thì đã chọn ảnh là không quay lại được trạng thái
+            "không ảnh" — với logo, đó chính là cách trở về logo chữ. */}
+        {value ? (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              onChange('');
+              if (onClear) onClear();
+            }}
+          >
+            Bỏ ảnh
+          </button>
+        ) : null}
       </div>
 
       {folder ? <p className="image-picker-hint">Thư mục: {folder}</p> : null}

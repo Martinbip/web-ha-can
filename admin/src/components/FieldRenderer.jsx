@@ -193,6 +193,11 @@ function renderInput({ id, field, value, onChange, setField, values }) {
               ? (asset) => setField(field.publicIdField, asset.public_id)
               : undefined
           }
+          onClear={
+            field.publicIdField && setField
+              ? () => setField(field.publicIdField, '')
+              : undefined
+          }
           folder={field.folder}
         />
       );

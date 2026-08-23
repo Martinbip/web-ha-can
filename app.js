@@ -277,8 +277,49 @@ async function initSiteSettings() {
     });
 
     applySiteTexts(settings);
+    applyLogo(settings);
     initHeroContent(settings);
     initHeroSlides();
+}
+
+// Logo đứng ở header lẫn footer của mọi trang. Quản trị có hai cách đặt: tải ảnh
+// lên (ưu tiên) hoặc sửa hai mảnh chữ "DHA" + "MINERALS". Ảnh hỏng đường dẫn thì
+// tự rơi về logo chữ, không để trống một khoảng trắng ở đầu trang.
+function applyLogo(settings) {
+    const imageUrl = toSiteAssetUrl(String(settings.logo_image_url || '').trim());
+    const accent = String(settings.logo_text_accent || '').trim();
+    const main = String(settings.logo_text_main || '').trim();
+
+    document.querySelectorAll('a.logo').forEach(link => {
+        const accentEl = link.querySelector('.logo-accent');
+        const mainEl = link.querySelector('.logo-text');
+        if (accentEl && accent) accentEl.textContent = accent;
+        if (mainEl && main) mainEl.textContent = main;
+
+        const altText = String(settings.logo_alt || '').trim()
+            || [accentEl?.textContent, mainEl?.textContent].map(text => String(text || '').trim()).filter(Boolean).join(' ')
+            || 'Trang chủ';
+
+        let img = link.querySelector('.logo-img');
+        if (!imageUrl) {
+            if (img) img.remove();
+            link.classList.remove('logo-has-image');
+            return;
+        }
+
+        if (!img) {
+            img = document.createElement('img');
+            img.className = 'logo-img';
+            img.addEventListener('error', () => {
+                img.remove();
+                link.classList.remove('logo-has-image');
+            });
+            link.prepend(img);
+        }
+        img.src = imageUrl;
+        img.alt = altText;
+        link.classList.add('logo-has-image');
+    });
 }
 
 // Các câu chữ cố định quanh bảng giá từng nằm cứng trong HTML, quản trị không sửa
