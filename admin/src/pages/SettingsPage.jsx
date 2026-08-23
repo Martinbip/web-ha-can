@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getResourceConfig } from '../config/resources.js';
 import { getSingletonResource, saveSingletonResource } from '../api/resources.js';
 import FieldRenderer from '../components/FieldRenderer.jsx';
+import SaveBar from '../components/SaveBar.jsx';
 
 const TYPE = 'site-setting';
 
@@ -97,6 +98,7 @@ export default function SettingsPage() {
         <p>Đang tải...</p>
       ) : (
         <form className="edit-form" onSubmit={handleSubmit}>
+          <SaveBar saving={saving} />
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
           <div className="page-heading">
@@ -148,11 +150,6 @@ export default function SettingsPage() {
             ))}
           </div>
 
-          <div className="form-actions">
-            <button type="submit" disabled={saving}>
-              {saving ? 'Đang lưu...' : 'Lưu'}
-            </button>
-          </div>
         </form>
       )}
     </main>

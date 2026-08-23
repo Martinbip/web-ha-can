@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getResourceConfig } from '../config/resources.js';
 import { createResource, getResource, saveResource } from '../api/resources.js';
 import FieldRenderer from '../components/FieldRenderer.jsx';
+import SaveBar from '../components/SaveBar.jsx';
 import { slugify } from '../lib/slug.js';
 
 export default function ResourceEditPage({ mode }) {
@@ -79,6 +80,7 @@ export default function ResourceEditPage({ mode }) {
         <p>Đang tải...</p>
       ) : (
         <form className="edit-form" onSubmit={handleSubmit}>
+          <SaveBar saving={saving} onCancel={() => navigate(`/resources/${type}`)} />
           {error ? <p className="form-error">{error}</p> : null}
           <div className="field-grid">
             {visibleFields.map(([name, field]) => (
@@ -92,14 +94,6 @@ export default function ResourceEditPage({ mode }) {
                 setField={setField}
               />
             ))}
-          </div>
-          <div className="form-actions">
-            <button type="submit" disabled={saving}>
-              {saving ? 'Đang lưu...' : 'Lưu'}
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate(`/resources/${type}`)}>
-              Hủy
-            </button>
           </div>
         </form>
       )}

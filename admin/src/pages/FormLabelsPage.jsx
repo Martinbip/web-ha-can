@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RESOURCE_CONFIG, setLabelOverrides } from '../config/resources.js';
 import { getSingletonResource, saveSingletonResource } from '../api/resources.js';
+import SaveBar from '../components/SaveBar.jsx';
 
 const TYPE = 'site-setting';
 
@@ -101,6 +102,11 @@ export default function FormLabelsPage() {
         <p>Đang tải...</p>
       ) : (
         <form className="edit-form" onSubmit={handleSubmit}>
+          <SaveBar
+            saving={saving}
+            onCancel={resetCurrentResource}
+            cancelLabel="Trả form này về chữ mặc định"
+          />
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
 
@@ -146,14 +152,6 @@ export default function FormLabelsPage() {
             ))}
           </div>
 
-          <div className="form-actions">
-            <button type="submit" disabled={saving}>
-              {saving ? 'Đang lưu...' : 'Lưu'}
-            </button>
-            <button type="button" className="btn-secondary" onClick={resetCurrentResource}>
-              Trả form này về chữ mặc định
-            </button>
-          </div>
         </form>
       )}
     </main>

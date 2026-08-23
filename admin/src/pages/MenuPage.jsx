@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getNavigation, saveNavigation } from '../api/navigation.js';
 import Icon from '../components/Icon.jsx';
+import SaveBar from '../components/SaveBar.jsx';
 import {
   buildTree,
   canMoveDown,
@@ -162,6 +163,21 @@ export default function MenuPage() {
         <p className="menu-loading">Đang tải thanh menu...</p>
       ) : (
         <>
+          <SaveBar
+            saving={saving}
+            disabled={!dirty}
+            label="Lưu thay đổi"
+            onSave={handleSave}
+            onCancel={handleReset}
+            cancelLabel="Hoàn tác"
+            cancelDisabled={!dirty}
+            status={
+              <span className={`savebar-status${dirty ? ' is-dirty' : ''}`}>
+                {dirty ? 'Có thay đổi chưa lưu' : 'Mọi thay đổi đã được lưu'}
+              </span>
+            }
+          />
+
           <section className="menu-preview" aria-label="Xem trước thanh menu">
             <p className="menu-preview-title">Khách sẽ thấy</p>
             {visibleTree.length ? (
@@ -335,19 +351,6 @@ export default function MenuPage() {
             </button>
           ) : null}
 
-          <div className="menu-savebar">
-            <span className={`menu-status${dirty ? ' is-dirty' : ''}`}>
-              {dirty ? 'Có thay đổi chưa lưu' : 'Mọi thay đổi đã được lưu'}
-            </span>
-            <div className="menu-savebar-actions">
-              <button type="button" className="btn-secondary" onClick={handleReset} disabled={!dirty || saving}>
-                Hoàn tác
-              </button>
-              <button type="button" className="btn-primary" onClick={handleSave} disabled={saving || !dirty}>
-                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-              </button>
-            </div>
-          </div>
         </>
       )}
     </main>

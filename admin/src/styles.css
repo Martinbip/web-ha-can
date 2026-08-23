@@ -1168,34 +1168,37 @@ button:hover {
   color: var(--brand);
 }
 
-/* Thanh lưu bám đáy: trạng thái "chưa lưu" luôn nằm trong tầm mắt, không phải
-   cuộn xuống cuối danh sách mới thấy. */
-.menu-savebar {
+/* Thanh lưu bám đầu màn hình: nút Lưu luôn trong tầm tay, không phải cuộn hết
+   form dài xuống đáy. Đặt ngay dưới .topbar (cũng sticky, top: 0) để hai thanh
+   không chồng lên nhau. */
+.savebar {
   position: sticky;
-  bottom: 0;
+  top: 58px;
   z-index: 4;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
-  margin: 24px -28px -28px;
-  padding: 14px 28px;
+  margin: 0 -28px 24px;
+  padding: 12px 28px;
   background: var(--panel);
-  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
-.menu-status {
+.savebar-status {
   font-size: 13px;
   font-weight: 650;
   color: var(--muted);
 }
 
-.menu-status.is-dirty {
+/* Chấm cam báo "còn thay đổi chưa lưu" — giữ nguyên từ thanh lưu của trang menu,
+   giờ dùng chung cho mọi màn hình có trạng thái này. */
+.savebar-status.is-dirty {
   color: #b45309;
 }
 
-.menu-status.is-dirty::before {
+.savebar-status.is-dirty::before {
   content: '';
   display: inline-block;
   width: 7px;
@@ -1206,10 +1209,13 @@ button:hover {
   vertical-align: middle;
 }
 
-.menu-savebar-actions {
+.savebar-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  margin-left: auto;
 }
+
+
 
 .form-error,
 .form-notice {
@@ -1313,8 +1319,12 @@ button:hover {
     margin-left: 16px;
   }
 
-  .menu-savebar {
-    margin-top: 18px;
+}
+
+@media (max-width: 720px) {
+  .savebar {
+    margin: 0 -16px 18px;
+    padding: 10px 16px;
   }
 }
 
