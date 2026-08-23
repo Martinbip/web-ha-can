@@ -118,7 +118,7 @@ test('image picker uploads without a nested form that would submit the edit form
   assert.match(editPage, /<form className="edit-form"/, 'edit page wraps fields in a form');
   assert.doesNotMatch(picker, /<form/, 'image picker renders no nested form');
   assert.doesNotMatch(picker, /type="submit"/, 'image picker upload button never submits a form');
-  assert.match(picker, /onClick={handleUpload}/, 'image picker uploads on click');
+  assert.match(picker, /onClick=\{\(\) => handleUpload\(\)\}/, 'image picker uploads on click');
 });
 
 test('image picker offers upload upfront and can reuse pre-rebrand images', () => {
@@ -133,6 +133,23 @@ test('image picker offers upload upfront and can reuse pre-rebrand images', () =
 
   assert.match(mediaApi, /export function getLegacyFolder/, 'legacy folder mapping is shared from the media api');
   assert.match(picker, /getLegacyFolder/, 'picker also lists the pre-rebrand folder');
+});
+
+// Chọn file rồi bấm thẳng "Lưu" từng làm mất hẳn lần đổi logo: file nằm im
+// trong ô chọn, không ai tải lên, form lưu ô ảnh rỗng mà không báo gì.
+test('chọn file trong image picker là tải lên ngay, không chờ bấm nút', () => {
+  const picker = read('admin/src/components/ImagePicker.jsx');
+
+  assert.match(
+    picker,
+    /type="file"[\s\S]{0,300}onChange=\{\(event\) => \{[\s\S]{0,160}handleUpload\(file\)/,
+    'ô chọn file gọi thẳng handleUpload khi có file mới',
+  );
+  assert.match(
+    picker,
+    /async function handleUpload\(selectedFile\)/,
+    'handleUpload nhận file từ sự kiện, không chỉ đọc lại từ ref',
+  );
 });
 
 test('admin has grouped homepage pricing and settings screens', () => {
