@@ -152,3 +152,29 @@ test('admin has grouped homepage pricing and settings screens', () => {
   assert.match(pricing, /pricing-surveys/, 'pricing page manages survey prices');
   assert.match(settings, /hotline/, 'settings page manages contact fields');
 });
+
+test('trang cài đặt cho đổi logo, và ảnh đã chọn có thể gỡ ra', () => {
+  const settings = read('admin/src/pages/SettingsPage.jsx');
+  const config = read('admin/src/config/resources.js');
+  const picker = read('admin/src/components/ImagePicker.jsx');
+  const fieldRenderer = read('admin/src/components/FieldRenderer.jsx');
+
+  for (const field of ['logo_image_url', 'logo_alt', 'logo_text_accent', 'logo_text_main']) {
+    assert.match(settings, new RegExp(`'${field}'`), `settings page renders ${field}`);
+  }
+  assert.match(
+    config,
+    /logo_image_url:\s*\{[\s\S]{0,400}?publicIdField:\s*'logo_image_public_id'/,
+    'ô ảnh logo khai báo trường public ID đi kèm',
+  );
+  assert.match(settings, /setField=\{handleChange\}/, 'settings page truyền setField để lưu public ID');
+
+  // Không gỡ được ảnh thì quản trị không quay lại được logo chữ.
+  assert.match(picker, /Bỏ ảnh/, 'image picker có nút gỡ ảnh');
+  assert.match(picker, /onChange\(''\)/, 'gỡ ảnh xóa URL đang lưu');
+  assert.match(
+    fieldRenderer,
+    /onClear=\{[\s\S]{0,160}setField\(field\.publicIdField,\s*''\)/,
+    'gỡ ảnh cũng xóa luôn public ID đi kèm',
+  );
+});

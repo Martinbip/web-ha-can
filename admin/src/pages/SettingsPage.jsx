@@ -8,6 +8,14 @@ const TYPE = 'site-setting';
 // General site-wide contact/branding fields. Homepage-specific hero/stat fields for
 // this same site-setting record are edited on HomePageEditor instead, so a save here
 // only sends this subset of fields.
+// Logo đứng ở đầu mọi trang nên tách riêng một khối, đặt trước phần liên hệ.
+const LOGO_FIELDS = [
+  'logo_image_url',
+  'logo_alt',
+  'logo_text_accent',
+  'logo_text_main',
+];
+
 const GENERAL_FIELDS = [
   'hotline',
   'hotline2',
@@ -89,6 +97,27 @@ export default function SettingsPage() {
         <form className="edit-form" onSubmit={handleSubmit}>
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
+          <div className="page-heading">
+            <h2>Logo</h2>
+            <p>Tải ảnh logo lên, hoặc bỏ trống ảnh để website dùng logo chữ bên dưới.</p>
+          </div>
+          <div className="field-grid">
+            {LOGO_FIELDS.map((name) => (
+              <FieldRenderer
+                key={name}
+                name={name}
+                field={config.fields[name]}
+                value={values[name]}
+                values={values}
+                onChange={(value) => handleChange(name, value)}
+                setField={handleChange}
+              />
+            ))}
+          </div>
+
+          <div className="page-heading">
+            <h2>Thông tin liên hệ</h2>
+          </div>
           <div className="field-grid">
             {GENERAL_FIELDS.map((name) => (
               <FieldRenderer

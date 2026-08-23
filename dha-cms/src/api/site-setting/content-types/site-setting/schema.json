@@ -36,6 +36,28 @@
       "default": "Văn Phòng Hà Nội",
       "maxLength": 200
     },
+    "logo_image_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "logo_image_public_id": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "logo_text_accent": {
+      "type": "string",
+      "maxLength": 20,
+      "default": "DHA"
+    },
+    "logo_text_main": {
+      "type": "string",
+      "maxLength": 40,
+      "default": "MINERALS"
+    },
+    "logo_alt": {
+      "type": "string",
+      "maxLength": 150
+    },
     "tax_code": {
       "type": "string",
       "maxLength": 20
