@@ -606,6 +606,28 @@ button:hover {
   font-weight: inherit;
 }
 
+.multi-select {
+  display: grid;
+  gap: 8px;
+}
+
+.multi-select .check-row {
+  padding: 10px 12px;
+  font-weight: 550;
+}
+
+.multi-select-note {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.field-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 13px;
+}
+
 .field-hint-check {
   margin-left: 2px;
 }

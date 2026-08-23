@@ -113,6 +113,65 @@ function getProjectImageUrl(project) {
 }
 
 // ======================================================
+// DANH MỤC SẢN PHẨM
+// ======================================================
+// Các tab lọc trên trang chủ và trang Sản phẩm do quản trị tự đặt trong CMS
+// (collection product-categories). Sản phẩm mang một mảng mã danh mục ở trường
+// `categories`. Trước đây bốn tab này viết cứng trong HTML và luật lọc đoán
+// theo tên sản phẩm — đó là lý do có tab luôn hiện 0 sản phẩm.
+const DEFAULT_PRODUCT_CATEGORIES = [
+    { slug: 'color-metal', name: 'Kim Loại Màu' },
+    { slug: 'black-metal', name: 'Kim Loại Đen' },
+    { slug: 'rare-earth', name: 'Đất Hiếm' },
+];
+
+async function fetchProductCategories() {
+    const items = await fetchFromCMS(
+        'product-categories?sort=sort_order:asc&pagination[limit]=100',
+        '/data/product_categories.json',
+    );
+    const usable = (items || []).filter(item => item && item.slug && item.visible !== false);
+    return usable.length ? usable : DEFAULT_PRODUCT_CATEGORIES;
+}
+
+function getProductCategorySlugs(product) {
+    const raw = product?.categories;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(slug => typeof slug === 'string' && slug);
+}
+
+function productMatchesCategory(product, slug) {
+    if (!slug || slug === 'all') return true;
+    return getProductCategorySlugs(product).includes(slug);
+}
+
+// Dựng lại thanh tab từ danh mục CMS. Nút "Tất Cả" luôn đứng đầu và không đến
+// từ CMS — bỏ nó đi thì không còn đường quay lại toàn bộ danh sách.
+function renderCategoryTabs(container, categories, products, options) {
+    if (!container) return;
+    const { buttonClass, countClass, wrapCount } = options;
+    const tabs = [{ slug: 'all', name: 'Tất Cả' }, ...categories];
+
+    container.innerHTML = tabs.map((tab, index) => {
+        const count = tab.slug === 'all'
+            ? products.length
+            : products.filter(product => productMatchesCategory(product, tab.slug)).length;
+        const isFirst = index === 0;
+        const countHtml = wrapCount
+            ? `<span class="${countClass}">${count}</span>`
+            : `<em>(${count})</em>`;
+        return `
+            <button class="${buttonClass}${isFirst ? ' active' : ''}"
+                    data-filter="${escapeHtml(tab.slug)}"
+                    role="tab"
+                    aria-selected="${isFirst ? 'true' : 'false'}">
+                ${escapeHtml(tab.name)} ${countHtml}
+            </button>
+        `;
+    }).join('');
+}
+
+// ======================================================
 // CMS DATA FETCHING
 // ======================================================
 async function fetchFromCMS(endpoint, fallbackFile) {
@@ -982,32 +1041,15 @@ async function initHomeProducts() {
         return;
     }
 
-    const isColorMetal = (p) => ['dong', 'nhom', 'chi', 'thiec'].includes(p.group) || p.uid === 'quang-dong-tho';
-    const isBlackMetal = (p) => p.group === 'quang' && (p.uid.includes('sat') || p.name.toLowerCase().includes('sắt'));
-    const isRareEarth  = (p) => p.group === 'rare-earth' || p.uid.includes('dat-hiem') || p.name.toLowerCase().includes('đất hiếm');
-
-    const counts = {
-        all: allProducts.length,
-        'color-metal': allProducts.filter(isColorMetal).length,
-        'black-metal': allProducts.filter(isBlackMetal).length,
-        'rare-earth': allProducts.filter(isRareEarth).length
-    };
-
-    ['all', 'color-metal', 'black-metal', 'rare-earth'].forEach(key => {
-        const el = document.getElementById(`hcount-${key}`);
-        if (el) el.textContent = `(${counts[key] || 0})`;
+    const tabsContainer = document.getElementById('home-filter-tabs');
+    const categories = await fetchProductCategories();
+    renderCategoryTabs(tabsContainer, categories, allProducts, {
+        buttonClass: 'home-filter-btn',
+        wrapCount: false,
     });
 
     const render = (filter, searchVal = '') => {
-        let filtered = allProducts;
-
-        if (filter === 'color-metal') {
-            filtered = allProducts.filter(isColorMetal);
-        } else if (filter === 'black-metal') {
-            filtered = allProducts.filter(isBlackMetal);
-        } else if (filter === 'rare-earth') {
-            filtered = allProducts.filter(isRareEarth);
-        }
+        let filtered = allProducts.filter(product => productMatchesCategory(product, filter));
 
         if (searchVal) {
             const q = searchVal.toLowerCase();
@@ -1031,7 +1073,6 @@ async function initHomeProducts() {
     let activeFilter = 'all';
     render(activeFilter);
 
-    const tabsContainer = document.getElementById('home-filter-tabs');
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (e) => {
             const btn = e.target.closest('.home-filter-btn');
@@ -1357,28 +1398,19 @@ async function initProductsPage() {
         return;
     }
 
-    const counts = { all: allProducts.length };
-    allProducts.forEach(p => { counts[p.group] = (counts[p.group] || 0) + 1; });
-    ['all', 'dong', 'nhom', 'chi', 'thiec', 'quang'].forEach(key => {
-        const el = document.getElementById(`count-${key}`);
-        if (el) el.textContent = counts[key] || 0;
+    const tabsContainer = document.getElementById('product-filter-tabs');
+    const categories = await fetchProductCategories();
+    renderCategoryTabs(tabsContainer, categories, allProducts, {
+        buttonClass: 'product-filter-btn',
+        countClass: 'filter-count',
+        wrapCount: true,
     });
 
     const urlParams = new URLSearchParams(window.location.search);
     const preFilter = urlParams.get('filter');
 
     const renderProducts = (filter) => {
-        let filtered = allProducts;
-
-        if (filter === 'color-metal') {
-            filtered = allProducts.filter(p => ['dong', 'nhom', 'chi', 'thiec'].includes(p.group) || p.uid === 'quang-dong-tho');
-        } else if (filter === 'black-metal') {
-            filtered = allProducts.filter(p => p.group === 'quang' && (p.uid.includes('sat') || p.name.toLowerCase().includes('sắt')));
-        } else if (filter === 'rare-earth') {
-            filtered = allProducts.filter(p => p.group === 'rare-earth' || p.uid.includes('dat-hiem') || p.name.toLowerCase().includes('đất hiếm'));
-        } else if (filter !== 'all') {
-            filtered = allProducts.filter(p => p.group === filter);
-        }
+        const filtered = allProducts.filter(product => productMatchesCategory(product, filter));
 
         const empty = document.getElementById('products-empty');
         if (filtered.length === 0) {
@@ -1410,7 +1442,6 @@ async function initProductsPage() {
         }
     }
 
-    const tabsContainer = document.getElementById('product-filter-tabs');
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (e) => {
             const btn = e.target.closest('.product-filter-btn');

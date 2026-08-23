@@ -3,6 +3,7 @@
 const path = require('path');
 const fs = require('fs');
 const { getDefaultNavItems } = require('./api/navigation/default-items');
+const { DEFAULT_CATEGORIES, guessCategories } = require('./api/product-category/default-categories');
 
 function loadJsonFile(filename) {
   const filePath = path.join(__dirname, '..', '..', 'data', filename);
@@ -102,6 +103,9 @@ module.exports = {
       uid: item.uid,
       name: item.name,
       group: item.group,
+      categories: Array.isArray(item.categories) && item.categories.length
+        ? item.categories
+        : guessCategories(item),
       grade: item.grade,
       origin: item.origin,
       price: item.price,
@@ -155,6 +159,41 @@ module.exports = {
       price: item.price || getOreSeedPrice(item),
     }));
 
+    // Danh mục sản phẩm và việc gán danh mục cho sản phẩm cũ đều đến từ code
+    // (xem product-category/default-categories.js) vì thư mục data/ ở gốc repo
+    // không được deploy sang máy chủ Strapi.
+    try {
+      const categoryCount = await strapi.db.query('api::product-category.product-category').count();
+      if (categoryCount === 0) {
+        console.log('Seeding collection: api::product-category.product-category');
+        for (const category of DEFAULT_CATEGORIES) {
+          await strapi.db.query('api::product-category.product-category').create({
+            data: { ...category, publishedAt: new Date() },
+          });
+        }
+        console.log(`Seeded ${DEFAULT_CATEGORIES.length} items for api::product-category.product-category`);
+      }
+    } catch (err) {
+      console.error('Error seeding api::product-category.product-category:', err.message);
+    }
+
+    // Sản phẩm đã có từ trước lần nâng cấp này chưa mang danh mục nào. Đoán một
+    // lần theo luật cũ; sản phẩm nào quản trị đã gán tay thì không đụng tới.
+    try {
+      const products = await strapi.db.query('api::product.product').findMany({ limit: 500 });
+      for (const product of products) {
+        if (Array.isArray(product.categories) && product.categories.length) continue;
+        const guessed = guessCategories(product);
+        if (!guessed.length) continue;
+        await strapi.db.query('api::product.product').update({
+          where: { id: product.id },
+          data: { categories: guessed },
+        });
+      }
+    } catch (err) {
+      console.error('Error backfilling product categories:', err.message);
+    }
+
     await seedSingleType('api::site-setting.site-setting', 'site_setting.json');
     // Menu mặc định đến từ code (xem default-items.js) vì thư mục data/ ở gốc
     // repo không được deploy sang máy chủ Strapi.
@@ -191,6 +230,8 @@ module.exports = {
           'api::navigation.navigation.find',
           'api::product.product.find',
           'api::product.product.findOne',
+          'api::product-category.product-category.find',
+          'api::product-category.product-category.findOne',
           'api::ore.ore.find',
           'api::ore.ore.findOne',
           'api::news.news.find',

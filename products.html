@@ -102,24 +102,10 @@
                 <p class="section-desc text-center">Cung cấp đa dạng các loại kim loại màu và quặng khoáng sản. Click vào sản phẩm để xem thông tin chi tiết.</p>
 
                 <div class="product-filter-wrap">
-                    <div class="product-filter-tabs" id="product-filter-tabs" role="tablist" aria-label="Lọc theo nhóm kim loại">
+                    <div class="product-filter-tabs" id="product-filter-tabs" role="tablist" aria-label="Lọc theo danh mục sản phẩm">
+                        <!-- Các tab do app.js dựng từ danh mục trong CMS. -->
                         <button class="product-filter-btn active" data-filter="all" role="tab" aria-selected="true">
-                            Tất Cả <span class="filter-count" id="count-all"></span>
-                        </button>
-                        <button class="product-filter-btn" data-filter="dong" role="tab" aria-selected="false">
-                            Đồng <span class="filter-count" id="count-dong"></span>
-                        </button>
-                        <button class="product-filter-btn" data-filter="nhom" role="tab" aria-selected="false">
-                            Nhôm <span class="filter-count" id="count-nhom"></span>
-                        </button>
-                        <button class="product-filter-btn" data-filter="chi" role="tab" aria-selected="false">
-                            Chì <span class="filter-count" id="count-chi"></span>
-                        </button>
-                        <button class="product-filter-btn" data-filter="thiec" role="tab" aria-selected="false">
-                            Thiếc <span class="filter-count" id="count-thiec"></span>
-                        </button>
-                        <button class="product-filter-btn" data-filter="quang" role="tab" aria-selected="false">
-                            Quặng <span class="filter-count" id="count-quang"></span>
+                            Tất Cả <span class="filter-count"></span>
                         </button>
                     </div>
                 </div>
@@ -218,6 +204,6 @@
     </button>
 
     <script>window.__STRAPI_URL=location.origin;</script>
-    <script src="app.js?v=2.2"></script>
+    <script src="app.js?v=3.2"></script>
 </body>
 </html>

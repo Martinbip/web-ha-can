@@ -234,17 +234,10 @@
 
                 <div class="home-products-controls">
                     <nav class="home-filter-tabs" id="home-filter-tabs" role="tablist" aria-label="Lọc sản phẩm theo nhóm">
+                        <!-- Các tab do app.js dựng từ danh mục trong CMS. Quản trị tự thêm/sửa
+                             ở trang Danh mục sản phẩm, nên không viết cứng ở đây nữa. -->
                         <button class="home-filter-btn active" data-filter="all" role="tab" aria-selected="true">
-                            Tất Cả <em id="hcount-all"></em>
-                        </button>
-                        <button class="home-filter-btn" data-filter="color-metal" role="tab" aria-selected="false">
-                            Kim Loại Màu <em id="hcount-color-metal"></em>
-                        </button>
-                        <button class="home-filter-btn" data-filter="black-metal" role="tab" aria-selected="false">
-                            Kim Loại Đen <em id="hcount-black-metal"></em>
-                        </button>
-                        <button class="home-filter-btn" data-filter="rare-earth" role="tab" aria-selected="false">
-                            Đất Hiếm <em id="hcount-rare-earth"></em>
+                            Tất Cả <em></em>
                         </button>
                     </nav>
 
@@ -382,6 +375,6 @@
     </button>
 
     <script>window.__STRAPI_URL=location.origin;</script>
-    <script src="app.js?v=2.2"></script>
+    <script src="app.js?v=3.2"></script>
 </body>
 </html>

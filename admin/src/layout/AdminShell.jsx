@@ -17,6 +17,7 @@ const NAV_GROUPS = [
     items: [
       ['/resources/news', 'Tin tức', 'news'],
       ['/resources/products', 'Sản phẩm', 'product'],
+      ['/resources/product-categories', 'Danh mục sản phẩm', 'menu'],
       ['/resources/projects', 'Dự án', 'project'],
       ['/resources/services', 'Dịch vụ', 'service'],
     ],

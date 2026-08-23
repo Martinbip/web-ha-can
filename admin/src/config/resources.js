@@ -27,7 +27,13 @@ export const RESOURCE_CONFIG = {
     fields: {
       uid: { label: 'Mã/đường dẫn', type: 'text', required: true },
       name: { label: 'Tên sản phẩm', type: 'text', required: true },
-      group: { label: 'Nhóm', type: 'select', options: ['dong', 'nhom', 'chi', 'thiec', 'quang'] },
+      group: { label: 'Nhóm', type: 'select', options: ['dong', 'nhom', 'chi', 'thiec', 'quang'], hint: 'Quyết định nhãn màu góc ảnh sản phẩm. Việc lọc trên website do Danh mục hiển thị bên dưới đảm nhiệm.' },
+      categories: {
+        label: 'Danh mục hiển thị',
+        type: 'multi-select',
+        optionsFrom: 'product-categories',
+        hint: 'Chọn các tab mà sản phẩm này xuất hiện ở trang chủ và trang Sản phẩm. Bỏ trống thì chỉ thấy ở tab Tất cả.',
+      },
       grade: { label: 'Hàm lượng/grade', type: 'text' },
       origin: { label: 'Nguồn gốc', type: 'text' },
       price_on_request: { label: 'Giá liên hệ (không hiện số)', type: 'boolean', hint: 'Bật khi sản phẩm báo giá theo từng đơn. Website sẽ hiện chữ bên dưới thay cho con số.', clearFields: ['price', 'price_unit'] },
@@ -39,6 +45,17 @@ export const RESOURCE_CONFIG = {
       image: { label: 'Ảnh sản phẩm', type: 'cloudinary-image', folder: 'dha/products' },
       featured: { label: 'Nổi bật', type: 'boolean' },
       in_stock: { label: 'Còn hàng', type: 'boolean' },
+      sort_order: { label: 'Thứ tự', type: 'number' },
+    },
+  },
+  'product-categories': {
+    label: 'Danh mục sản phẩm',
+    titleField: 'name',
+    listFields: ['name', 'slug', 'visible', 'sort_order'],
+    fields: {
+      name: { label: 'Tên danh mục', type: 'text', required: true },
+      slug: { label: 'Mã danh mục', type: 'slug', sourceField: 'name', required: true, hint: 'Mã dùng trong đường dẫn lọc, ví dụ /products?filter=kim-loai-mau. Đổi mã thì các sản phẩm đã gán được cập nhật theo.' },
+      visible: { label: 'Hiện trên website', type: 'boolean' },
       sort_order: { label: 'Thứ tự', type: 'number' },
     },
   },

@@ -71,6 +71,9 @@
       "type": "boolean",
       "default": true
     },
+    "categories": {
+      "type": "json"
+    },
     "sort_order": {
       "type": "integer",
       "default": 0

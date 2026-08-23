@@ -1,0 +1,5 @@
+[
+  { "slug": "color-metal", "name": "Kim Loại Màu", "visible": true, "sort_order": 1 },
+  { "slug": "black-metal", "name": "Kim Loại Đen", "visible": true, "sort_order": 2 },
+  { "slug": "rare-earth", "name": "Đất Hiếm", "visible": true, "sort_order": 3 }
+]
