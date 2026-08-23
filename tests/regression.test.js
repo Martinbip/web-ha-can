@@ -231,7 +231,7 @@ test('hardcoded contact details match the seeded site settings', () => {
 // quản trị bỏ trống thì trang dẫn khách tới tài khoản không tồn tại.
 test('social links are hidden when the CMS has no address for them', () => {
   const appJs = read('app.js');
-  const body = appJs.split('async function initSiteSettings')[1].split('\n}\n')[0];
+  const body = appJs.split('function renderSiteSettings')[1].split('\n}\n')[0];
 
   assert.match(body, /SOCIAL_LINKS/, 'social links go through one list');
   assert.match(body, /hidden = true/, 'links without an address are hidden');

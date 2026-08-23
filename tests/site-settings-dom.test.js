@@ -270,3 +270,102 @@ test('chữ thay cho giá và đơn vị giá theo đúng thứ tự ưu tiên',
   // Sản phẩm chưa nhập giá cũng dùng chữ thay thế, không hiện "0đ".
   assert.equal(window.getProductPriceLabel({}).text, 'Báo giá theo lô');
 });
+
+// ── Chớp nội dung cũ khi tải lại trang ──
+// HTML tĩnh hard-code sẵn hotline/câu chữ mặc định, còn dữ liệu thật chỉ về sau
+// khi CMS trả lời. Vì vậy mỗi lần refresh khách thấy nội dung cũ nhấp nháy rồi
+// mới bị thay. Bộ nhớ đệm của lần tải trước phải được áp ngay khi app.js chạy.
+const SITE_SETTINGS_CACHE_KEY = 'dha:site-settings:v1';
+
+// Khác loadPage: gieo sẵn bộ nhớ đệm và để CMS treo mãi không trả lời, đúng
+// cảnh khoảnh khắc đầu tiên sau khi refresh.
+function loadPageWithCache(cached, file = 'index.html') {
+  const errors = [];
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('jsdomError', (err) => errors.push(err));
+  const dom = new JSDOM(fs.readFileSync(path.join(root, file), 'utf8'), {
+    runScripts: 'dangerously',
+    url: 'https://dhakimloaimau.vn/',
+    virtualConsole,
+  });
+  const { window } = dom;
+  window.__scriptErrors = errors;
+  window.localStorage.setItem(SITE_SETTINGS_CACHE_KEY, JSON.stringify(cached));
+  window.fetch = () => new Promise(() => {});
+  const script = window.document.createElement('script');
+  script.textContent = APP_JS;
+  window.document.body.appendChild(script);
+  return window;
+}
+
+test('tải lại trang thì hotline hiện ngay theo bộ nhớ đệm, không chớp số cũ', () => {
+  const window = loadPageWithCache({ hotline: '0912.345.678', email: 'moi@dha.vn' });
+
+  const hotlines = [...window.document.querySelectorAll('.site-hotline')];
+  assert.ok(hotlines.length >= 2, 'trang chủ có hotline ở header và chân trang');
+  for (const el of hotlines) {
+    assert.equal(el.textContent, '0912.345.678');
+  }
+  assert.equal(window.document.querySelector('a.site-hotline').getAttribute('href'), 'tel:0912345678');
+});
+
+test('câu chữ do quản trị đặt cũng hiện ngay từ bộ nhớ đệm', () => {
+  const window = loadPageWithCache({ hotline: '0912345678', price_intro_home: 'Giá cập nhật mỗi sáng.' });
+
+  assert.equal(
+    window.document.querySelector('[data-site-text="price_intro_home"]').textContent,
+    'Giá cập nhật mỗi sáng.',
+  );
+});
+
+test('bộ nhớ đệm hỏng thì trang vẫn chạy bình thường', () => {
+  const dom = new JSDOM(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), {
+    runScripts: 'dangerously',
+    url: 'https://dhakimloaimau.vn/',
+    virtualConsole: new VirtualConsole(),
+  });
+  const { window } = dom;
+  window.localStorage.setItem(SITE_SETTINGS_CACHE_KEY, '{khong-phai-json');
+  window.fetch = () => new Promise(() => {});
+  const script = window.document.createElement('script');
+  script.textContent = APP_JS;
+  window.document.body.appendChild(script);
+
+  assert.equal(typeof window.applyLogo, 'function', 'app.js chạy trọn vẹn dù bộ nhớ đệm hỏng');
+});
+
+test('dữ liệu CMS về thì được ghi lại vào bộ nhớ đệm cho lần tải sau', async () => {
+  const dom = new JSDOM(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), {
+    runScripts: 'dangerously',
+    url: 'https://dhakimloaimau.vn/',
+    virtualConsole: new VirtualConsole(),
+  });
+  const { window } = dom;
+  window.fetch = (url) =>
+    String(url).includes('/api/site-setting')
+      ? Promise.resolve({ ok: true, json: async () => ({ data: { hotline: '0988777666' } }) })
+      : Promise.reject(new Error('network disabled in tests'));
+  const script = window.document.createElement('script');
+  script.textContent = APP_JS;
+  window.document.body.appendChild(script);
+
+  await window.initSiteSettings();
+
+  const cached = JSON.parse(window.localStorage.getItem(SITE_SETTINGS_CACHE_KEY));
+  assert.equal(cached.hotline, '0988777666');
+});
+
+// Áp bộ nhớ đệm sớm nghĩa là chạy mã ở phạm vi ngoài cùng của app.js; đặt lời
+// gọi trước chỗ khai báo hằng nào đó sẽ làm cả tệp chết giữa chừng mà trang vẫn
+// trông gần như bình thường.
+test('áp bộ nhớ đệm không làm app.js chết giữa chừng', () => {
+  const window = loadPageWithCache({ hotline: '0912345678', favicon_url: '/assets/icon.png' });
+
+  assert.deepEqual(
+    window.__scriptErrors.map((err) => err.message || String(err)),
+    [],
+    'app.js chạy hết mà không ném lỗi',
+  );
+  // Hằng khai báo gần cuối tệp: chỉ tồn tại nếu app.js chạy trọn vẹn.
+  assert.doesNotThrow(() => window.eval('ARTICLE_CATEGORY_LABELS'));
+});

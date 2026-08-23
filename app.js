@@ -200,6 +200,41 @@ document.addEventListener('DOMContentLoaded', () => {
 // chỉ gọi CMS một lần và chia sẻ chung lời hứa — phần render nào cần thì chờ nó.
 let siteSettingsPromise = null;
 
+// HTML tĩnh hard-code sẵn hotline và các câu chữ mặc định, còn dữ liệu thật chỉ
+// về sau khi CMS trả lời. Nếu chỉ chờ CMS thì mỗi lần khách tải lại trang, nội
+// dung cũ nhấp nháy một nhịp rồi mới bị thay. Nên cất lại lần trả lời gần nhất
+// và áp ngay khi app.js chạy — lần tải sau khách thấy đúng nội dung từ đầu.
+const SITE_SETTINGS_CACHE_KEY = 'dha:site-settings:v1';
+
+function readCachedSiteSettings() {
+    try {
+        const raw = window.localStorage.getItem(SITE_SETTINGS_CACHE_KEY);
+        const parsed = raw ? JSON.parse(raw) : null;
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+        // Bộ nhớ đệm hỏng hoặc bị trình duyệt chặn: coi như chưa có, không chặn trang.
+        return null;
+    }
+}
+
+function writeCachedSiteSettings(settings) {
+    try {
+        window.localStorage.setItem(SITE_SETTINGS_CACHE_KEY, JSON.stringify(settings));
+    } catch {
+        /* riêng tư / hết dung lượng — bỏ qua, chỉ mất phần chống chớp */
+    }
+}
+
+// Chạy đồng bộ ngay lúc app.js được nạp (thẻ script nằm cuối body nên DOM đã đủ),
+// trước cả DOMContentLoaded, để nội dung đúng có mặt ngay từ khung hình đầu tiên.
+function applyCachedSiteSettings() {
+    const cached = readCachedSiteSettings();
+    if (!cached || !Object.keys(cached).length) return;
+    // Các phần dựng bằng JS (thanh gọi nhanh trên mobile) cũng cần số đúng ngay.
+    window.__siteSettings = cached;
+    renderSiteSettings(cached);
+}
+
 function loadSiteSettings() {
     if (!siteSettingsPromise) {
         siteSettingsPromise = fetchSingleFromCMS('site-setting', '/data/site_setting.json')
@@ -219,10 +254,24 @@ async function initSiteSettings() {
     const settings = await loadSiteSettings();
     if (!settings || !Object.keys(settings).length) return;
 
-    const hotlineClean = (settings.hotline || '').replace(/[.\s\-()]/g, '');
+    writeCachedSiteSettings(settings);
+    renderSiteSettings(settings);
+    // Ảnh hero là dữ liệu riêng, chỉ gọi sau khi đã có cài đặt thật — không lặp
+    // lại ở lượt áp bộ nhớ đệm.
+    initHeroSlides();
+}
+
+function renderSiteSettings(settings) {
+    // Ô nào quản trị bỏ trống thì giữ nguyên chữ có sẵn trong HTML, không xóa
+    // trắng — vừa tránh mất thông tin liên hệ, vừa khớp với bản đã prerender
+    // lúc deploy (xem scripts/prerender-site-settings.js) nên không chớp.
+    const hotline = String(settings.hotline || '').trim();
+    const hotlineClean = hotline.replace(/[.\s\-()]/g, '');
+    const email = String(settings.email || '').trim();
 
     document.querySelectorAll('.site-hotline').forEach(el => {
-        el.textContent = settings.hotline || '';
+        if (!hotline) return;
+        el.textContent = hotline;
         if (el.tagName === 'A') el.href = `tel:${hotlineClean}`;
     });
 
@@ -231,16 +280,17 @@ async function initSiteSettings() {
     });
 
     document.querySelectorAll('.site-email').forEach(el => {
-        el.textContent = settings.email || '';
-        if (el.tagName === 'A') el.href = `mailto:${settings.email}`;
+        if (!email) return;
+        el.textContent = email;
+        if (el.tagName === 'A') el.href = `mailto:${email}`;
     });
 
     document.querySelectorAll('.site-address').forEach(el => {
-        el.textContent = settings.address || '';
+        if (settings.address) el.textContent = settings.address;
     });
 
     document.querySelectorAll('.site-office-name').forEach(el => {
-        el.textContent = settings.office_name || '';
+        if (settings.office_name) el.textContent = settings.office_name;
     });
 
     document.querySelectorAll('.site-tax-code').forEach(el => {
@@ -250,7 +300,7 @@ async function initSiteSettings() {
     });
 
     document.querySelectorAll('.site-brand-bio').forEach(el => {
-        el.textContent = settings.brand_bio || '';
+        if (settings.brand_bio) el.textContent = settings.brand_bio;
     });
 
     // Link mạng xã hội chỉ hiện khi quản trị đã nhập địa chỉ thật. Trước đây
@@ -280,7 +330,6 @@ async function initSiteSettings() {
     applyLogo(settings);
     applyFavicon(settings);
     initHeroContent(settings);
-    initHeroSlides();
 }
 
 // Logo đứng ở header lẫn footer của mọi trang. Quản trị có hai cách đặt: tải ảnh
@@ -1785,3 +1834,7 @@ async function initProjectsPage() {
         container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:#666666;"><p>Không thể tải danh mục dự án.</p></div>';
     }
 }
+
+// Đặt ở cuối file: chạy ngay khi trình duyệt nạp xong app.js, nhưng sau khi mọi
+// hằng và hàm phía trên đã khởi tạo.
+applyCachedSiteSettings();

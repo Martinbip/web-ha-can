@@ -54,6 +54,14 @@ echo "▸ Sinh sitemap từ CMS..."
 node /var/www/web-ha-can/scripts/generate-sitemap.js /var/www/dhakimloaimau.vn/sitemap.xml \
     || echo "⚠️  Không sinh được sitemap — giữ nguyên bản cũ."
 
+# HTML trong repo chứa nội dung mẫu (hotline, địa chỉ, câu chữ), nội dung thật
+# nằm trong CMS. Không ghi sẵn vào HTML thì khách vào lần đầu thấy nội dung mẫu
+# chớp qua trước khi app.js kịp thay. Ghi thẳng vào thư mục nginx phục vụ, không
+# ghi vào repo — hệt như sitemap ở trên.
+echo "▸ Ghi cài đặt website từ CMS vào HTML tĩnh..."
+node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn \
+    || echo "⚠️  Không ghi được cài đặt vào HTML — trang vẫn tự áp bằng JS như trước."
+
 # Chỉ build & sync admin khi thư mục admin/ thật sự có thay đổi
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^admin/'; then
     echo "▸ Phát hiện thay đổi Admin → build & sync admin tĩnh..."
