@@ -120,15 +120,53 @@ test('áp lại nhiều lần không nhân đôi ảnh logo', () => {
   assert.equal(link.querySelector('img.logo-img').getAttribute('src'), '/assets/logo-moi.png');
 });
 
+test('chân trang dùng ảnh logo nền tối khi quản trị có đặt riêng', () => {
+  const window = loadPage();
+  const [header, footer] = logoLinks(window);
+
+  window.applyLogo({
+    logo_image_url: '/assets/logo-sang.png',
+    logo_image_dark_url: '/assets/logo-toi.png',
+  });
+
+  assert.equal(header.querySelector('img.logo-img').getAttribute('src'), '/assets/logo-sang.png');
+  assert.equal(footer.querySelector('img.logo-img').getAttribute('src'), '/assets/logo-toi.png');
+  assert.ok(footer.closest('.footer'), 'logo thứ hai đúng là logo chân trang');
+});
+
+test('không đặt ảnh nền tối thì chân trang dùng lại ảnh logo chính', () => {
+  const window = loadPage();
+  const [header, footer] = logoLinks(window);
+
+  window.applyLogo({ logo_image_url: '/assets/logo-sang.png', logo_image_dark_url: '   ' });
+
+  assert.equal(header.querySelector('img.logo-img').getAttribute('src'), '/assets/logo-sang.png');
+  assert.equal(footer.querySelector('img.logo-img').getAttribute('src'), '/assets/logo-sang.png');
+});
+
+test('chỉ có ảnh nền tối thì header vẫn về logo chữ, không mượn ảnh chân trang', () => {
+  const window = loadPage();
+  const [header, footer] = logoLinks(window);
+
+  window.applyLogo({ logo_image_dark_url: '/assets/logo-toi.png' });
+
+  assert.equal(header.querySelector('img.logo-img'), null, 'header không dùng ảnh dành cho nền tối');
+  assert.ok(!header.classList.contains('logo-has-image'));
+  assert.equal(footer.querySelector('img.logo-img').getAttribute('src'), '/assets/logo-toi.png');
+});
+
 test('gỡ ảnh trong quản trị thì website quay lại logo chữ', () => {
   const window = loadPage();
   const [link] = logoLinks(window);
 
-  window.applyLogo({ logo_image_url: '/assets/logo.png' });
-  window.applyLogo({ logo_image_url: '' });
+  window.applyLogo({ logo_image_url: '/assets/logo.png', logo_image_dark_url: '/assets/logo-toi.png' });
+  window.applyLogo({ logo_image_url: '', logo_image_dark_url: '' });
 
-  assert.equal(link.querySelector('img.logo-img'), null);
-  assert.ok(!link.classList.contains('logo-has-image'), 'bỏ dấu đang dùng ảnh');
+  for (const each of logoLinks(window)) {
+    assert.equal(each.querySelector('img.logo-img'), null);
+    assert.ok(!each.classList.contains('logo-has-image'), 'bỏ dấu đang dùng ảnh');
+  }
+  assert.equal(link.querySelector('.logo-accent').textContent, 'DHA');
 });
 
 test('ảnh logo hỏng đường dẫn thì rơi về logo chữ thay vì để trống đầu trang', () => {
