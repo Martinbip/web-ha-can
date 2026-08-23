@@ -31,9 +31,9 @@ export const RESOURCE_CONFIG = {
       grade: { label: 'Hàm lượng/grade', type: 'text' },
       origin: { label: 'Nguồn gốc', type: 'text' },
       price_on_request: { label: 'Giá liên hệ (không hiện số)', type: 'boolean', hint: 'Bật khi sản phẩm báo giá theo từng đơn. Website sẽ hiện chữ bên dưới thay cho con số.', clearFields: ['price', 'price_unit'] },
-      price_label: { label: 'Chữ hiển thị khi giá liên hệ', type: 'text', placeholder: 'Liên hệ', showWhen: 'price_on_request', hint: 'Ví dụ: Liên hệ, Báo giá theo lô. Bỏ trống sẽ dùng "Liên hệ".' },
+      price_label: { label: 'Chữ hiển thị khi giá liên hệ', type: 'text', placeholder: 'Liên hệ', hint: 'Ví dụ: Liên hệ, Báo giá theo lô. Bỏ trống sẽ dùng chữ mặc định khai báo trong Cài đặt website.' },
       price: { label: 'Giá', type: 'number', placeholder: 'Ví dụ 285000', hideWhen: 'price_on_request', emptyText: 'Liên hệ' },
-      price_unit: { label: 'Đơn vị giá', type: 'text', placeholder: 'đ/kg', hideWhen: 'price_on_request', hint: 'Ghi liền ngay sau con số, ví dụ đ/kg, đ/tấn. Bỏ trống sẽ dùng đ/kg.' },
+      price_unit: { label: 'Đơn vị giá', type: 'text', placeholder: 'đ/kg', hideWhen: 'price_on_request', hint: 'Ghi liền ngay sau con số, ví dụ đ/kg, đ/tấn. Bỏ trống sẽ dùng đơn vị mặc định trong Cài đặt website.' },
       description: { label: 'Mô tả', type: 'textarea' },
       specs: { label: 'Thông số', type: 'key-value-table' },
       image: { label: 'Ảnh sản phẩm', type: 'cloudinary-image', folder: 'dha/products' },
@@ -91,12 +91,52 @@ export const RESOURCE_CONFIG = {
       stat2_label: { label: 'Nhãn số liệu 2', type: 'text' },
       stat3_number: { label: 'Số liệu 3', type: 'text' },
       stat3_label: { label: 'Nhãn số liệu 3', type: 'text' },
+      price_contact_text: { label: 'Chữ thay cho giá khi liên hệ', type: 'text', placeholder: 'Liên hệ', hint: 'Dùng cho mọi sản phẩm bật "Giá liên hệ" hoặc chưa nhập giá, trừ khi sản phẩm có chữ riêng.' },
+      price_unit_default: { label: 'Đơn vị giá mặc định', type: 'text', placeholder: 'đ/kg', hint: 'Ghép ngay sau con số khi sản phẩm bỏ trống ô Đơn vị giá.' },
+      price_intro_home: { label: 'Mô tả bảng giá (trang chủ)', type: 'textarea', hint: 'Câu dẫn nằm ngay dưới tiêu đề "Giá Kim Loại Thị Trường".' },
+      price_note_home: { label: 'Ghi chú dưới bảng giá (trang chủ)', type: 'textarea' },
+      price_note_products: { label: 'Ghi chú báo giá (trang sản phẩm)', type: 'textarea', hint: 'Câu nằm trong khối "CẦN BÁO GIÁ CHI TIẾT?" cuối trang sản phẩm.' },
+      price_note_pricing: { label: 'Ghi chú dưới bảng giá (trang bảng giá)', type: 'textarea' },
+      admin_labels: { label: 'Nhãn form quản trị', type: 'hidden' },
     },
   },
   'contact-inquiries': { label: 'Yêu cầu liên hệ', titleField: 'name', readOnlyCreate: true, listFields: ['name', 'phone', 'service', 'status', 'createdAt'], fields: { email: { label: 'Email', type: 'email', readOnly: true }, address: { label: 'Địa chỉ', type: 'textarea', readOnly: true }, message: { label: 'Lời nhắn', type: 'textarea', readOnly: true }, status: { label: 'Trạng thái', type: 'select', options: ['new', 'contacted', 'completed'] } } },
   'order-requests': { label: 'Đơn đặt mẫu', titleField: 'customer_name', readOnlyCreate: true, listFields: ['product_name', 'customer_name', 'phone', 'quantity', 'status', 'createdAt'], fields: { product_uid: { label: 'Mã sản phẩm', type: 'text', readOnly: true }, email: { label: 'Email', type: 'email', readOnly: true }, unit: { label: 'Đơn vị', type: 'text', readOnly: true }, note: { label: 'Ghi chú', type: 'textarea', readOnly: true }, status: { label: 'Trạng thái', type: 'select', options: ['new', 'processing', 'done'] } } },
 };
 
+// Nhãn và câu hướng dẫn trong form là chữ của người quản trị, không phải hằng số
+// kỹ thuật. Quản trị viên sửa chúng ở trang "Chữ trong form quản trị"; bản sửa
+// được nạp một lần khi vào admin rồi phủ lên cấu hình gốc bên dưới.
+let LABEL_OVERRIDES = {};
+
+export function setLabelOverrides(overrides) {
+  LABEL_OVERRIDES = overrides && typeof overrides === 'object' ? overrides : {};
+}
+
+export function getLabelOverrides() {
+  return LABEL_OVERRIDES;
+}
+
+function applyOverrides(type, config) {
+  const overrides = LABEL_OVERRIDES[type];
+  if (!overrides || !config.fields) return config;
+
+  const fields = Object.fromEntries(
+    Object.entries(config.fields).map(([name, field]) => {
+      const override = overrides[name];
+      if (!override) return [name, field];
+      const next = { ...field };
+      // Chuỗi rỗng nghĩa là "bỏ hẳn câu hướng dẫn", khác với chưa từng sửa.
+      if (typeof override.label === 'string' && override.label.trim()) next.label = override.label.trim();
+      if (typeof override.hint === 'string') next.hint = override.hint.trim() || undefined;
+      return [name, next];
+    }),
+  );
+
+  return { ...config, fields };
+}
+
 export function getResourceConfig(type) {
-  return RESOURCE_CONFIG[type];
+  const config = RESOURCE_CONFIG[type];
+  return config ? applyOverrides(type, config) : config;
 }

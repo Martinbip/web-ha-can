@@ -71,18 +71,28 @@ function getOrePrice(ore) {
 }
 
 // Công tắc "Giá liên hệ" trong CMS là ý định rõ ràng của quản trị viên; sản phẩm
-// chưa kịp điền giá cũng rơi về cùng cách hiển thị đó. Đơn vị và chữ thay thế
-// đều lấy từ CMS, chỉ khi bỏ trống mới về mặc định "đ/kg" và "Liên hệ".
+// chưa kịp điền giá cũng rơi về cùng cách hiển thị đó. Chữ thay thế và đơn vị lấy
+// theo thứ tự: khai báo riêng của sản phẩm → mặc định trong Cài đặt website →
+// giá trị dự phòng cứng, chỉ dùng khi cả hai nơi đều bỏ trống.
 function getProductPriceLabel(product) {
+    const settings = window.__siteSettings || {};
     const price = Number(product?.price);
     const hasPrice = Number.isFinite(price) && price > 0;
 
     if (product?.price_on_request || !hasPrice) {
-        const label = String(product?.price_label || '').trim() || 'Liên hệ';
+        const label = firstFilled(product?.price_label, settings.price_contact_text, 'Liên hệ');
         return { text: label, isContact: true };
     }
-    const unit = String(product?.price_unit || '').trim() || 'đ/kg';
+    const unit = firstFilled(product?.price_unit, settings.price_unit_default, 'đ/kg');
     return { text: `${price.toLocaleString('vi-VN')}${unit}`, isContact: false };
+}
+
+function firstFilled(...values) {
+    for (const value of values) {
+        const text = String(value ?? '').trim();
+        if (text) return text;
+    }
+    return '';
 }
 
 // Ảnh trong CMS là URL Cloudinary tuyệt đối, nhưng dữ liệu dự phòng trong data/
@@ -186,11 +196,28 @@ document.addEventListener('DOMContentLoaded', () => {
 // ======================================================
 // SITE SETTINGS — Dynamic header, footer, contact info
 // ======================================================
-async function initSiteSettings() {
-    const settings = await fetchSingleFromCMS('site-setting', '/data/site_setting.json');
-    if (!settings) return;
+// Cài đặt website được nhiều nơi dùng chung (giá, hotline, chữ thay cho giá), nên
+// chỉ gọi CMS một lần và chia sẻ chung lời hứa — phần render nào cần thì chờ nó.
+let siteSettingsPromise = null;
 
-    window.__siteSettings = settings;
+function loadSiteSettings() {
+    if (!siteSettingsPromise) {
+        siteSettingsPromise = fetchSingleFromCMS('site-setting', '/data/site_setting.json')
+            .then((settings) => {
+                window.__siteSettings = settings || {};
+                return window.__siteSettings;
+            })
+            .catch(() => {
+                window.__siteSettings = {};
+                return window.__siteSettings;
+            });
+    }
+    return siteSettingsPromise;
+}
+
+async function initSiteSettings() {
+    const settings = await loadSiteSettings();
+    if (!settings || !Object.keys(settings).length) return;
 
     const hotlineClean = (settings.hotline || '').replace(/[.\s\-()]/g, '');
 
@@ -249,8 +276,19 @@ async function initSiteSettings() {
         });
     });
 
+    applySiteTexts(settings);
     initHeroContent(settings);
     initHeroSlides();
+}
+
+// Các câu chữ cố định quanh bảng giá từng nằm cứng trong HTML, quản trị không sửa
+// được. Giờ mỗi câu đánh dấu data-site-text="<tên trường trong Cài đặt website>";
+// bỏ trống trong CMS thì giữ nguyên chữ có sẵn trong HTML làm dự phòng.
+function applySiteTexts(settings) {
+    document.querySelectorAll('[data-site-text]').forEach(el => {
+        const value = String(settings[el.dataset.siteText] ?? '').trim();
+        if (value) el.textContent = value;
+    });
 }
 
 // ======================================================
@@ -620,7 +658,11 @@ function initScrollTopButton() {
 // ======================================================
 // DYNAMIC CONTENT ROUTING
 // ======================================================
-function initDynamicContent() {
+async function initDynamicContent() {
+    // Thẻ sản phẩm lấy chữ thay cho giá và đơn vị mặc định từ cài đặt, nên phải
+    // chờ cài đặt về trước, nếu không lần render đầu sẽ hiện chữ dự phòng.
+    await loadSiteSettings();
+
     initMarketPrices();
     initSurveyPricing();
     initHomeNewsPreview();

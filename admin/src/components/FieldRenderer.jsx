@@ -49,6 +49,7 @@ function renderInput({ id, field, value, onChange, setField, values }) {
           id={id}
           type="text"
           value={value ?? ''}
+          placeholder={field.placeholder}
           required={field.required}
           readOnly={field.readOnly}
           disabled={field.readOnly}
@@ -115,6 +116,7 @@ function renderInput({ id, field, value, onChange, setField, values }) {
           id={id}
           rows={4}
           value={value ?? ''}
+          placeholder={field.placeholder}
           required={field.required}
           readOnly={field.readOnly}
           disabled={field.readOnly}

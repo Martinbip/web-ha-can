@@ -105,6 +105,36 @@
     "stat3_label": {
       "type": "string",
       "maxLength": 100
+    },
+    "price_contact_text": {
+      "type": "string",
+      "maxLength": 50,
+      "default": "Liên hệ"
+    },
+    "price_unit_default": {
+      "type": "string",
+      "maxLength": 20,
+      "default": "đ/kg"
+    },
+    "price_intro_home": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "price_note_home": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "price_note_products": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "price_note_pricing": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "admin_labels": {
+      "type": "json",
+      "private": true
     }
   }
 }

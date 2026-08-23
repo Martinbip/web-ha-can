@@ -11,6 +11,7 @@ import HomePageEditor from './pages/HomePageEditor.jsx';
 import PricingPage from './pages/PricingPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import MenuPage from './pages/MenuPage.jsx';
+import FormLabelsPage from './pages/FormLabelsPage.jsx';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/form-labels" element={<FormLabelsPage />} />
             <Route path="/resources/:type" element={<ResourceListPage />} />
             <Route path="/resources/:type/new" element={<ResourceEditPage mode="new" />} />
             <Route path="/resources/:type/:id" element={<ResourceEditPage />} />
