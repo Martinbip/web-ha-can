@@ -14,7 +14,7 @@ export default function DashboardPage() {
         <h1>Dashboard</h1>
         <p>Tổng quan nội dung và yêu cầu mới.</p>
       </div>
-      <section className="metric-grid">
+      <section className="metric-grid" data-tour="dashboard-metrics">
         {cards.map((card) => (
           <article className="metric-card" key={card.type}>
             <span>{card.label}</span>

@@ -84,7 +84,7 @@ export default function ResourceEditPage({ mode }) {
       ) : (
         <form id="edit-form" className="edit-form" onSubmit={handleSubmit}>
           {error ? <p className="form-error">{error}</p> : null}
-          <div className="field-grid">
+          <div className="field-grid" data-tour="edit-fields">
             {visibleFields.map(([name, field]) => (
               <FieldRenderer
                 key={name}

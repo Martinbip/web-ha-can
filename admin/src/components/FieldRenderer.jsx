@@ -14,7 +14,7 @@ export default function FieldRenderer({ name, field, value, onChange, setField, 
   // Checkbox đọc ngược so với các field khác: ô tick đứng trước, nhãn nằm cùng hàng.
   if (field.type === 'boolean') {
     return (
-      <div className="field-row field-row-check" key={name}>
+      <div className="field-row field-row-check" key={name} data-tour={`field-${field.type}`}>
         <label className="check-row" htmlFor={id}>
           {renderInput({ id, field, value, onChange, setField, values })}
           <span>
@@ -28,7 +28,7 @@ export default function FieldRenderer({ name, field, value, onChange, setField, 
   }
 
   return (
-    <div className="field-row" key={name}>
+    <div className="field-row" key={name} data-tour={`field-${field.type}`}>
       {field.type !== 'hidden' ? (
         <label htmlFor={id}>
           {label}

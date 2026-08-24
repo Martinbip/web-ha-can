@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/regression.test.js tests/admin-ui-config.test.js tests/admin-app.test.js tests/admin-dashboard.test.js tests/news-editor.test.js tests/navigation.test.js tests/admin-resource-fields.test.js tests/site-settings-dom.test.js tests/prerender-site-settings.test.js tests/site-setting-prerender.test.js tests/article-link.test.js tests/admin-savebar.test.js tests/product-categories.test.js",
+    "test": "node --test tests/regression.test.js tests/admin-ui-config.test.js tests/admin-app.test.js tests/admin-dashboard.test.js tests/news-editor.test.js tests/navigation.test.js tests/admin-resource-fields.test.js tests/site-settings-dom.test.js tests/prerender-site-settings.test.js tests/site-setting-prerender.test.js tests/article-link.test.js tests/admin-savebar.test.js tests/product-categories.test.js tests/admin-tour.test.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "admin:install": "npm install --prefix admin",

@@ -78,6 +78,29 @@ FRONTEND_URL=http://localhost:3000
 
 Không đưa `CLOUDINARY_URL`, `CLOUDINARY_API_SECRET`, hoặc token Strapi vào frontend.
 
+### Hướng dẫn sử dụng ngay trong admin
+
+Khu quản trị có sẵn tour chỉ việc bằng lớp phủ. Lần đầu đăng nhập, tour **Làm quen
+khu quản trị** tự chạy một lần; xem xong (hoặc bấm đóng) là thôi, ghi nhớ trong
+trình duyệt của từng người qua `localStorage` khoá `dha-admin-tour-seen`.
+
+Nút dấu hỏi trên thanh trên cùng mở lại hướng dẫn bất cứ lúc nào, và gợi ý đúng
+bài của màn hình đang mở. Chấm xanh trên nút nghĩa là màn hình này còn bài chưa xem.
+
+Mã nguồn nằm trong `admin/src/tour/`:
+
+*   `tourSteps.js` — nội dung các tour và ánh xạ đường dẫn → tour. Sửa lời hướng
+    dẫn hay thêm bước thì chỉ động vào file này.
+*   `tourPlacement.js` — lọc bước và tính vị trí bong bóng (thuần, có test riêng).
+*   `TourProvider.jsx` / `TourOverlay.jsx` / `TourButton.jsx` — trạng thái, lớp phủ, nút mở.
+
+Mỗi bước neo vào thuộc tính `data-tour="..."` đặt sẵn trên giao diện. **Đổi tên hay
+xoá một `data-tour` là làm hụt một bước hướng dẫn** — `tests/admin-tour.test.js`
+canh chỗ này, chạy `npm test` trước khi sửa giao diện admin.
+
+Muốn xem lại tour tổng quan từ đầu như người dùng mới: xoá khoá `dha-admin-tour-seen`
+trong localStorage rồi tải lại trang.
+
 ### Thanh menu động
 
 Mục **Thanh menu** trong admin (`/admin/menu`) quản lý thanh điều hướng chính của

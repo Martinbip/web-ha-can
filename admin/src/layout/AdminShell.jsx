@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthProvider.jsx';
 import Icon from '../components/Icon.jsx';
 import { setLabelOverrides } from '../config/resources.js';
 import { getSingletonResource } from '../api/resources.js';
+import TourButton from '../tour/TourButton.jsx';
 
 // Menu được chia nhóm theo công việc thực tế của người quản trị: viết nội dung,
 // chỉnh các trang có sẵn, xử lý yêu cầu khách gửi về, và cấu hình website.
@@ -13,6 +14,7 @@ const NAV_GROUPS = [
     items: [['/', 'Dashboard', 'dashboard', true]],
   },
   {
+    key: 'content',
     title: 'Nội dung',
     items: [
       ['/resources/news', 'Tin tức', 'news'],
@@ -23,6 +25,7 @@ const NAV_GROUPS = [
     ],
   },
   {
+    key: 'pages',
     title: 'Trang trên website',
     items: [
       ['/home', 'Trang chủ', 'home'],
@@ -31,6 +34,7 @@ const NAV_GROUPS = [
     ],
   },
   {
+    key: 'inbox',
     title: 'Khách gửi về',
     items: [
       ['/resources/contact-inquiries', 'Liên hệ', 'inbox'],
@@ -38,6 +42,7 @@ const NAV_GROUPS = [
     ],
   },
   {
+    key: 'system',
     title: 'Hệ thống',
     items: [
       ['/media', 'Thư viện ảnh', 'media'],
@@ -116,7 +121,7 @@ export default function AdminShell() {
     <div className={`admin-shell${drawerOpen ? ' drawer-open' : ''}${collapsed ? ' is-collapsed' : ''}`}>
       <a className="skip-link" href="#admin-main">Bỏ qua menu, đến nội dung</a>
 
-      <aside className="sidebar" aria-label="Điều hướng quản trị">
+      <aside className="sidebar" aria-label="Điều hướng quản trị" data-tour="sidebar">
         <div className="sidebar-head">
           <span className="brand" title="DHA Hà Cẩn">
             <span className="brand-mark">DHA</span>
@@ -135,7 +140,11 @@ export default function AdminShell() {
 
         <nav className="sidebar-nav">
           {NAV_GROUPS.map((group, groupIndex) => (
-            <div className="nav-group" key={group.title || `group-${groupIndex}`}>
+            <div
+              className="nav-group"
+              key={group.title || `group-${groupIndex}`}
+              data-tour={group.key ? `nav-${group.key}` : undefined}
+            >
               {group.title ? <p className="nav-group-title">{group.title}</p> : null}
               {group.items.map(([href, label, icon, exact]) => (
                 <NavLink
@@ -182,12 +191,14 @@ export default function AdminShell() {
 
           <div className="topbar-spacer" />
 
-          <a className="topbar-link" href="/" target="_blank" rel="noreferrer">
+          <TourButton />
+
+          <a className="topbar-link" href="/" target="_blank" rel="noreferrer" data-tour="view-site">
             <Icon name="external" size={17} />
             <span>Xem website</span>
           </a>
 
-          <div className="topbar-user">
+          <div className="topbar-user" data-tour="account">
             <span className="avatar" aria-hidden="true">
               {(user?.email || '?').slice(0, 1).toUpperCase()}
             </span>

@@ -126,7 +126,7 @@ export default function ResourceListPage() {
       <div className="page-heading">
         <h1>{config.label}</h1>
         <div className="page-heading-actions">
-          <form className="search-form" onSubmit={handleSearchSubmit}>
+          <form className="search-form" onSubmit={handleSearchSubmit} data-tour="list-search">
             <input
               aria-label="Tìm kiếm"
               placeholder="Tìm kiếm..."
@@ -141,7 +141,7 @@ export default function ResourceListPage() {
             </button>
           ) : null}
           {!config.readOnlyCreate ? (
-            <Link className="btn-primary" to={`/resources/${type}/new`}>
+            <Link className="btn-primary" to={`/resources/${type}/new`} data-tour="list-create">
               + Thêm mới
             </Link>
           ) : null}
@@ -154,11 +154,11 @@ export default function ResourceListPage() {
         <p>Đang tải...</p>
       ) : (
         <div className="table-wrap">
-          <table className="data-table">
+          <table className="data-table" data-tour="list-table">
             <thead>
               <tr>
                 {!config.readOnlyCreate ? (
-                  <th className="table-select-cell">
+                  <th className="table-select-cell" data-tour="list-select-all">
                     <input
                       type="checkbox"
                       aria-label="Chọn tất cả"
@@ -206,7 +206,7 @@ export default function ResourceListPage() {
                           </span>
                         </td>
                       ) : null}
-                      <td className="table-actions">
+                      <td className="table-actions" data-tour="list-actions">
                         <Link to={`/resources/${type}/${id}`}>Sửa</Link>
                         {config.draftAndPublish ? (
                           <button
@@ -239,7 +239,7 @@ export default function ResourceListPage() {
       )}
 
       {totalPages > 1 ? (
-        <div className="pagination">
+        <div className="pagination" data-tour="list-pagination">
           <button type="button" disabled={meta.page <= 1} onClick={() => load(meta.page - 1)}>
             Trước
           </button>

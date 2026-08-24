@@ -106,7 +106,7 @@ export default function FormLabelsPage() {
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
 
-          <div className="field-row">
+          <div className="field-row" data-tour="labels-picker">
             <label htmlFor="label-resource">Form cần sửa</label>
             <select
               id="label-resource"
@@ -124,7 +124,7 @@ export default function FormLabelsPage() {
             </select>
           </div>
 
-          <div className="label-editor">
+          <div className="label-editor" data-tour="labels-editor">
             {fields.map(([name, field]) => (
               <div className="label-editor-row" key={name}>
                 <p className="label-editor-field">{name}</p>
