@@ -78,7 +78,7 @@ export default function HomePageEditor() {
         saving={saving}
       />
 
-      <section className="card-grid">
+      <section className="card-grid" data-tour="home-cards">
         <article className="card">
           <h2>Slide trang chủ</h2>
           <p>Quản lý các slide banner hiển thị ở đầu trang chủ.</p>
@@ -105,7 +105,7 @@ export default function HomePageEditor() {
         <form id="edit-form" className="edit-form" onSubmit={handleSubmit}>
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
-          <div className="field-grid">
+          <div className="field-grid" data-tour="edit-fields">
             {HERO_FIELDS.map((name) => (
               <FieldRenderer
                 key={name}

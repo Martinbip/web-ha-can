@@ -108,7 +108,7 @@ export default function MediaLibraryPage() {
         <p>Quản lý ảnh Cloudinary dùng cho website (tải lên, sao chép URL, xóa).</p>
       </div>
 
-      <form className="media-upload-form" onSubmit={handleUpload}>
+      <form className="media-upload-form" onSubmit={handleUpload} data-tour="media-upload">
         <label>
           Thư mục
           <select value={folder} onChange={(event) => setFolder(event.target.value)}>
@@ -134,7 +134,7 @@ export default function MediaLibraryPage() {
       {loading ? (
         <p>Đang tải...</p>
       ) : (
-        <div className="media-grid">
+        <div className="media-grid" data-tour="media-grid">
           {assets.length === 0 ? (
             <p>Chưa có ảnh nào trong thư mục này.</p>
           ) : (

@@ -27,7 +27,7 @@ export default function PricingPage() {
         <p>Quản lý giá kim loại, biểu phí phân tích và khảo sát.</p>
       </div>
 
-      <section className="card-grid">
+      <section className="card-grid" data-tour="pricing-cards">
         {CARDS.map((card) => (
           <article className="card" key={card.type}>
             <h2>{card.title}</h2>

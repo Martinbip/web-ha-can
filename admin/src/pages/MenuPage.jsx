@@ -175,7 +175,7 @@ export default function MenuPage() {
         <p className="menu-loading">Đang tải thanh menu...</p>
       ) : (
         <>
-          <section className="menu-preview" aria-label="Xem trước thanh menu">
+          <section className="menu-preview" aria-label="Xem trước thanh menu" data-tour="menu-preview">
             <p className="menu-preview-title">Khách sẽ thấy</p>
             {visibleTree.length ? (
               <ul className="menu-preview-bar">
@@ -232,6 +232,7 @@ export default function MenuPage() {
                   <li
                     key={row.key}
                     className={classes}
+                    data-tour="menu-row"
                     draggable
                     onDragStart={() => setDragIndex(index)}
                     onDragEnd={() => { setDragIndex(null); setDropIndex(null); }}
@@ -240,7 +241,7 @@ export default function MenuPage() {
                     onDrop={() => handleDrop(index)}
                   >
                     <div className="menu-handle">
-                      <span className="menu-drag" title="Kéo để đổi thứ tự" aria-hidden="true">
+                      <span className="menu-drag" title="Kéo để đổi thứ tự" aria-hidden="true" data-tour="menu-drag">
                         <Icon name="grip" size={18} />
                       </span>
                       <div className="menu-move">
@@ -297,7 +298,7 @@ export default function MenuPage() {
                       ) : null}
                     </div>
 
-                    <div className="menu-row-actions">
+                    <div className="menu-row-actions" data-tour="menu-row-actions">
                       {isChild ? (
                         <button
                           type="button"
@@ -353,7 +354,7 @@ export default function MenuPage() {
           </datalist>
 
           {rows.length ? (
-            <button type="button" className="menu-add" onClick={handleAdd}>
+            <button type="button" className="menu-add" onClick={handleAdd} data-tour="menu-add">
               <Icon name="plus" size={17} /> Thêm mục
             </button>
           ) : null}

@@ -32,6 +32,7 @@ const PATHS = {
   plus: <><path d="M12 5v14M5 12h14" /></>,
   check: <><path d="m5 12.5 4.5 4.5L19 7.5" /></>,
   alert: <><path d="M12 4.5 21 20H3z" /><path d="M12 10v4M12 17h.01" /></>,
+  help: <><circle cx="12" cy="12" r="9" /><path d="M9.6 9.3a2.5 2.5 0 0 1 4.9.7c0 1.7-2.5 2-2.5 3.5" /><path d="M12 17h.01" /></>,
 };
 
 export default function Icon({ name, size = 20, className = '' }) {

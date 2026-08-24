@@ -106,7 +106,7 @@ export default function SettingsPage() {
             <h2>Logo &amp; favicon</h2>
             <p>Tải ảnh logo lên, hoặc bỏ trống ảnh để website dùng logo chữ bên dưới.</p>
           </div>
-          <div className="field-grid">
+          <div className="field-grid" data-tour="settings-logo">
             {LOGO_FIELDS.map((name) => (
               <FieldRenderer
                 key={name}
@@ -123,7 +123,7 @@ export default function SettingsPage() {
           <div className="page-heading">
             <h2>Thông tin liên hệ</h2>
           </div>
-          <div className="field-grid">
+          <div className="field-grid" data-tour="settings-contact">
             {GENERAL_FIELDS.map((name) => (
               <FieldRenderer
                 key={name}
@@ -139,7 +139,7 @@ export default function SettingsPage() {
             <h2>Giá &amp; báo giá</h2>
             <p>Chữ hiển thị thay cho giá và các ghi chú đứng cạnh bảng giá trên website.</p>
           </div>
-          <div className="field-grid">
+          <div className="field-grid" data-tour="settings-price">
             {PRICE_FIELDS.map((name) => (
               <FieldRenderer
                 key={name}

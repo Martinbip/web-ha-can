@@ -23,7 +23,7 @@ export default function SaveBar({
 }) {
   return (
     <>
-      <div className="savebar">
+      <div className="savebar" data-tour="savebar">
         <h1 className="savebar-title">{title}</h1>
         <div className="savebar-actions">
           {status}
