@@ -1147,6 +1147,8 @@ const ARTICLE_ALLOWED_ATTRS = {
 function isSafeArticleUrl(value, { allowRelative = true } = {}) {
     const raw = String(value || '').trim();
     if (!raw) return false;
+    // "//vi-du.vn" là liên kết ra tên miền khác chứ không phải đường dẫn nội bộ.
+    if (/^\/[/\\]/.test(raw)) return false;
     if (raw.startsWith('/') || raw.startsWith('#')) return allowRelative;
     return /^(https?:|mailto:|tel:)/i.test(raw);
 }

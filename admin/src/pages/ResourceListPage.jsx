@@ -15,11 +15,14 @@ export default function ResourceListPage() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
+  // `keepError`: sau một thao tác hỏng (ví dụ xoá hàng loạt dừng giữa chừng),
+  // danh sách vẫn phải tải lại, nhưng xoá luôn thông báo lỗi thì người dùng chỉ
+  // thấy vài mục còn sót mà không hiểu vì sao.
   const load = useCallback(
-    (page = 1) => {
+    (page = 1, { keepError = false } = {}) => {
       if (!config) return;
       setLoading(true);
-      setError('');
+      if (!keepError) setError('');
       const params = { page };
       if (search) params.search = search;
       listResources(type, params)
@@ -95,7 +98,7 @@ export default function ResourceListPage() {
       load(1);
     } catch (err) {
       setError(err.message || 'Không xóa được một số mục đã chọn.');
-      load(1);
+      load(1, { keepError: true });
     } finally {
       setBulkDeleting(false);
     }

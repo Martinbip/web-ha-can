@@ -52,15 +52,13 @@ export default function HomePageEditor() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    if (!recordId) {
-      setError('Không tìm thấy bản ghi cài đặt để lưu.');
-      return;
-    }
     setSaving(true);
     setError('');
     setNotice('');
     try {
-      await saveSingletonResource(TYPE, recordId, values);
+      const saved = await saveSingletonResource(TYPE, recordId, values);
+      // Lần lưu đầu tiên là tạo mới: nhớ lại mã bản ghi cho những lần lưu sau.
+      if (!recordId && saved?.data) setRecordId(saved.data.documentId ?? saved.data.id ?? null);
       setNotice('Đã lưu nội dung trang chủ.');
     } catch (err) {
       setError(err.message || 'Không lưu được nội dung trang chủ.');

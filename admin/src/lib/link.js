@@ -20,6 +20,11 @@ export function normalizeLinkHref(input) {
   const raw = String(input ?? '').trim();
   if (!raw) return null;
 
+  // "//vi-du.vn" và "/\\vi-du.vn" trông như đường dẫn trong website nhưng trình
+  // duyệt hiểu là một tên miền khác. Biên tập viên tưởng đang trỏ vào trang nhà,
+  // người đọc lại bị đưa sang nơi khác — từ chối hẳn thay vì để lẫn lộn.
+  if (/^\/[/\\]/.test(raw)) return null;
+
   // Đường dẫn trong chính website và link nhảy tới mục trong bài: giữ nguyên.
   // Ghép thêm "https://" vào đây sẽ đẻ ra "https:///products".
   if (raw.startsWith('/') || raw.startsWith('#')) return raw;

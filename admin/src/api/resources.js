@@ -36,6 +36,9 @@ export function getSingletonResource(type) {
   return listResources(type).then((payload) => payload.data || null);
 }
 
+// CMS vừa dựng (hoặc bản ghi bị xoá) thì chưa có `documentId` nào để sửa. Backend
+// hiểu id 'null' của single type là "chưa có, tạo giúp bản đầu tiên", nên màn hình
+// cài đặt vẫn lưu được lần đầu thay vì báo không tìm thấy bản ghi.
 export function saveSingletonResource(type, id, data) {
-  return saveResource(type, id, data);
+  return saveResource(type, id || 'null', data);
 }
