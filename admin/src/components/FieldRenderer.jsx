@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import RichTextField from './RichTextField.jsx';
 import SlugField from './SlugField.jsx';
 import ImagePicker from './ImagePicker.jsx';
@@ -227,23 +227,44 @@ function toDateInputValue(value) {
   return stringValue.length >= 10 ? stringValue.slice(0, 10) : stringValue;
 }
 
+// Dữ liệu lưu xuống là một object, mà object không giữ được dòng có tên thông
+// số rỗng. Đọc thẳng từ `value` thì bấm "+ Thêm dòng" xong dòng mới biến mất
+// ngay lập tức — không có cách nào thêm thông số đầu tiên. Vì vậy các dòng đang
+// soạn phải nằm ở state riêng, `value` chỉ nhận những dòng đã có tên.
 function KeyValueTableField({ id, value, onChange }) {
-  const entries = toEntries(value);
+  const [entries, setEntries] = useState(() => toEntries(value));
+  const emitted = useRef(value);
+
+  // Chỉ dựng lại khi dữ liệu đến từ bên ngoài (tải bản ghi khác), không phải
+  // khi chính component vừa gửi thay đổi lên.
+  useEffect(() => {
+    if (value !== emitted.current) {
+      emitted.current = value;
+      setEntries(toEntries(value));
+    }
+  }, [value]);
+
+  function commit(next) {
+    setEntries(next);
+    const data = fromEntries(next);
+    emitted.current = data;
+    onChange(data);
+  }
 
   function updateEntry(index, key, val) {
     const next = entries.slice();
     next[index] = [key, val];
-    onChange(fromEntries(next));
+    commit(next);
   }
 
   function removeEntry(index) {
     const next = entries.slice();
     next.splice(index, 1);
-    onChange(fromEntries(next));
+    commit(next);
   }
 
   function addEntry() {
-    onChange(fromEntries([...entries, ['', '']]));
+    commit([...entries, ['', '']]);
   }
 
   return (

@@ -18,6 +18,9 @@ function normalizeUrl(raw) {
   const url = String(raw == null ? '' : raw).trim();
   if (!url) return null;
   if (url.length > MAX_URL_LENGTH) return null;
+  // "//vi-du.vn" và "/\\vi-du.vn" trông như đường dẫn trong website nhưng
+  // trình duyệt hiểu là một tên miền khác — khách bấm menu là rời khỏi website.
+  if (/^\/[/\\]/.test(url)) return null;
   if (url.startsWith('/') || url.startsWith('#')) return url;
   if (/^https?:\/\/\S+$/i.test(url)) return url;
   return null;
@@ -130,6 +133,7 @@ async function get(ctx) {
 async function update(ctx) {
   const user = await auth.requireSession(ctx);
   if (!user) return;
+  if (!auth.requireTrustedOrigin(ctx)) return;
 
   const body = ctx.request.body || {};
   const input = body.data || body;
