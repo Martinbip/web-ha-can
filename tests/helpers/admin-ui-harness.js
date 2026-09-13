@@ -91,7 +91,7 @@ function matchOperator(value, operator, operand) {
     case '$null':
       return operand ? value == null : value != null;
     case '$gte':
-      return new Date(value) >= new Date(operand);
+      return value != null && new Date(value) >= new Date(operand);
     default:
       throw new Error(`Toán tử lọc chưa hỗ trợ trong harness: ${operator}`);
   }
