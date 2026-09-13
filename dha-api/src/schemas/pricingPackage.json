@@ -1,0 +1,49 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pricing_packages",
+  "info": {
+    "singularName": "pricing-package",
+    "pluralName": "pricing-packages",
+    "displayName": "Giá Kim Loại Thị Trường",
+    "description": "Bảng giá kim loại thị trường cập nhật theo LME và nội địa"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "metal": {
+      "type": "string",
+      "required": true,
+      "maxLength": 100
+    },
+    "lme_price": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "domestic_price": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "unit": {
+      "type": "string",
+      "default": "/kg",
+      "maxLength": 20
+    },
+    "change": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "trend": {
+      "type": "enumeration",
+      "enum": [
+        "up",
+        "down",
+        "stable"
+      ]
+    },
+    "updated": {
+      "type": "date"
+    }
+  }
+}

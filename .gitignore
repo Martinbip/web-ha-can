@@ -9,9 +9,12 @@ dha-cms/node_modules/
 dha-cms/.cache/
 dha-cms/build/
 dha-cms/.tmp/
+dha-api/node_modules/
+dha-api/out/
 
 # Environment
 dha-cms/.env
+dha-api/.env
 deploy/.env
 
 # Local backups

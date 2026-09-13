@@ -1,0 +1,61 @@
+{
+  "kind": "collectionType",
+  "collectionName": "contact_inquiries",
+  "info": {
+    "singularName": "contact-inquiry",
+    "pluralName": "contact-inquiries",
+    "displayName": "Yêu Cầu Liên Hệ",
+    "description": "Danh sách khách hàng gửi yêu cầu tư vấn qua trang web"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "minLength": 2,
+      "maxLength": 200
+    },
+    "phone": {
+      "type": "string",
+      "required": true,
+      "regex": "^[0-9+\\-\\s()]{8,20}$",
+      "maxLength": 20
+    },
+    "email": {
+      "type": "email",
+      "maxLength": 254
+    },
+    "address": {
+      "type": "string",
+      "required": true,
+      "minLength": 5,
+      "maxLength": 500
+    },
+    "service": {
+      "type": "enumeration",
+      "enum": [
+        "cung-cap-mau",
+        "phan-tich-lab",
+        "khao-sat-mo",
+        "tuyen-khoang"
+      ],
+      "default": "cung-cap-mau"
+    },
+    "message": {
+      "type": "text",
+      "maxLength": 2000
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "new",
+        "contacted",
+        "completed"
+      ],
+      "default": "new"
+    }
+  }
+}

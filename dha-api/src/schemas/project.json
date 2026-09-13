@@ -1,0 +1,54 @@
+{
+  "kind": "collectionType",
+  "collectionName": "projects",
+  "info": {
+    "singularName": "project",
+    "pluralName": "projects",
+    "displayName": "Dự Án",
+    "description": "Danh sách các dự án kiểm định và khảo sát thực tế"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "maxLength": 300
+    },
+    "location": {
+      "type": "string",
+      "required": true,
+      "maxLength": 300
+    },
+    "scale": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "method": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "value": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "cloudinary_image_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "cloudinary_public_id": {
+      "type": "string",
+      "maxLength": 300
+    }
+  }
+}

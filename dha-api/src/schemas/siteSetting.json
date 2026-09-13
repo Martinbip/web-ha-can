@@ -1,0 +1,178 @@
+{
+  "kind": "singleType",
+  "collectionName": "site_settings",
+  "info": {
+    "singularName": "site-setting",
+    "pluralName": "site-settings",
+    "displayName": "Cài Đặt Website",
+    "description": "Thông tin liên hệ, mạng xã hội và cấu hình hiển thị trên website"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "hotline": {
+      "type": "string",
+      "required": true,
+      "maxLength": 20
+    },
+    "hotline2": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "email": {
+      "type": "email",
+      "required": true,
+      "maxLength": 254
+    },
+    "address": {
+      "type": "text",
+      "required": true,
+      "maxLength": 500
+    },
+    "office_name": {
+      "type": "string",
+      "default": "Văn Phòng Hà Nội",
+      "maxLength": 200
+    },
+    "logo_image_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "logo_image_public_id": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "logo_image_dark_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "logo_image_dark_public_id": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "logo_text_accent": {
+      "type": "string",
+      "maxLength": 20,
+      "default": "DHA"
+    },
+    "logo_text_main": {
+      "type": "string",
+      "maxLength": 40,
+      "default": "MINERALS"
+    },
+    "logo_alt": {
+      "type": "string",
+      "maxLength": 150
+    },
+    "favicon_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "favicon_public_id": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "tax_code": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "facebook_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "youtube_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "zalo_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "twitter_url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "hero_tagline": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "hero_title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "hero_description": {
+      "type": "text",
+      "maxLength": 1000
+    },
+    "hero_cert_label": {
+      "type": "string",
+      "maxLength": 50,
+      "default": "CHỨNG CHỈ"
+    },
+    "hero_cert_value": {
+      "type": "string",
+      "maxLength": 100,
+      "default": "XRF · ICP-MS"
+    },
+    "brand_bio": {
+      "type": "text",
+      "maxLength": 1000
+    },
+    "stat1_number": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "stat1_label": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "stat2_number": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "stat2_label": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "stat3_number": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "stat3_label": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "price_contact_text": {
+      "type": "string",
+      "maxLength": 50,
+      "default": "Liên hệ"
+    },
+    "price_unit_default": {
+      "type": "string",
+      "maxLength": 20,
+      "default": "đ/kg"
+    },
+    "price_intro_home": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "price_note_home": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "price_note_products": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "price_note_pricing": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "admin_labels": {
+      "type": "json",
+      "private": true
+    }
+  }
+}
