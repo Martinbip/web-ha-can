@@ -6,13 +6,14 @@
 
 **Architecture:** `dha-api` dựng lại đúng bề mặt `strapi.documents(uid)` mà các service admin-ui đang gọi, dưới dạng `store.documents(sanityType)` chạy trên `@sanity/client`. Service admin-ui được dời sang gần như nguyên văn và lấy store qua `store-registry`. API công khai đọc cú pháp query của Strapi và trả JSON dạng Strapi 5.
 
-**Tech Stack:** Node ≥ 20 (CommonJS), Koa 3, `@koa/router` 15, `koa-body` 8, `@sanity/client` 8, `bcryptjs` 3, `cloudinary` 2, `node:test`.
+**Tech Stack:** Node ≥ 22.12 (CommonJS), Koa 3, `@koa/router` 15, `koa-body` 8, `@sanity/client` 8, `bcryptjs` 3, `cloudinary` 2, `node:test`.
 
 **Spec:** `docs/superpowers/specs/2026-09-13-strapi-to-sanity-design.md`
 
 ## Global Constraints
 
 - CommonJS, mỗi file mở đầu `'use strict';`, comment tiếng Việt có dấu theo văn phong sẵn có của repo.
+- Node ≥ 22.12: `@sanity/client` 8 và các gói nó kéo theo (`get-it`, `eventsource`) khai `engines: >=22.12.0`. `dha-api/package.json` khai `"engines": { "node": ">=22.12.0" }`; VPS phải chạy Node ≥ 22.12 trước ngày chuyển.
 - Phiên bản: `koa ^3.2.1`, `@koa/router ^15.7.0`, `koa-body ^8.0.1`, `@sanity/client ^8.6.1`, `bcryptjs ^3.0.3`, `cloudinary ^2.11.0`. Không thêm dependency nào khác.
 - Import đúng dạng đã kiểm: `const Koa = require('koa')`, `const Router = require('@koa/router')`, `const { koaBody } = require('koa-body')`, `const { createClient } = require('@sanity/client')`, `const bcrypt = require('bcryptjs')`, `const cloudinary = require('cloudinary').v2`.
 - Sanity client: `apiVersion: '2025-02-19'`, `useCdn: false`, `perspective: 'raw'`, token chỉ ở server.
@@ -85,7 +86,7 @@
     "start": "node src/server.js",
     "dev": "node --watch --env-file-if-exists=.env src/server.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22.12.0" },
   "dependencies": {
     "@koa/router": "^15.7.0",
     "@sanity/client": "^8.6.1",
@@ -5080,8 +5081,8 @@ API_DIR="$PROJECT_DIR/dha-api"
 API_PORT=1337
 FRONTEND_PORT=3000
 
-# Ưu tiên Node cài qua nvm nếu có (dha-api cần Node >= 20.6 cho --env-file).
-for node_dir in "$HOME"/.nvm/versions/node/v22* "$HOME"/.nvm/versions/node/v20*; do
+# Ưu tiên Node cài qua nvm nếu có (dha-api cần Node >= 22.12: @sanity/client 8).
+for node_dir in "$HOME"/.nvm/versions/node/v24* "$HOME"/.nvm/versions/node/v22*; do
     if [ -x "$node_dir/bin/node" ] && [ -x "$node_dir/bin/npm" ]; then
         export PATH="$node_dir/bin:$PATH"
         break
@@ -5377,7 +5378,10 @@ Mỗi bước ghi **kết quả mong đợi**. Không khớp thì dừng lại, 
    HOST=127.0.0.1
    PORT=1338
    ```
-   Kiểm `node -v` ≥ 20.6 (cần cho `--env-file`).
+   Kiểm `node -v` ≥ 22.12 (`@sanity/client` 8 đòi). Thấp hơn thì nâng Node trên VPS
+   trước (vd. `nvm install 22 && nvm alias default 22`, hoặc gói Node 22 của NodeSource),
+   rồi xác nhận Strapi cũ vẫn chạy trên Node mới:
+   `pm2 restart dha-cms && curl -s http://127.0.0.1:1337/api/site-setting | head -c 100`.
 
 4. **Tạo API token của Strapi** để đọc dữ liệu: `https://dhakimloaimau.vn/strapi-admin`
    → Settings → API Tokens → *Full access*, hạn 7 ngày. Không lưu vào file;
