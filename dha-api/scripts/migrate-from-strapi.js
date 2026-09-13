@@ -19,7 +19,7 @@ const { createRequire } = require('node:module');
 
 const { getTypeOptions } = require('../src/sanity/types');
 const { toNdjson } = require('./lib/ndjson');
-const { EXPORT_TYPES, toSanityDocuments, adminUsersToDocs, planProjectImage, summarize } = require('./lib/strapi-export');
+const { EXPORT_TYPES, toSanityDocuments, adminUsersToDocs, planProjectImage, legacyImagePublicId, buildReport } = require('./lib/strapi-export');
 
 const STRAPI_URL = (process.env.STRAPI_URL || 'http://127.0.0.1:1337').replace(/\/$/, '');
 const STRAPI_TOKEN = process.env.STRAPI_TOKEN;
@@ -55,6 +55,7 @@ async function fetchSingle(apiPath) {
 
 async function exportContent() {
   const docs = [];
+  let media = [];
   for (const { path: apiPath, type } of EXPORT_TYPES) {
     const options = getTypeOptions(type);
     let draftRows = [];
@@ -66,15 +67,18 @@ async function exportContent() {
     } else {
       publishedRows = await fetchCollection(apiPath);
     }
-    if (type === 'project') await rehomeProjectImages([...draftRows, ...publishedRows]);
+    if (type === 'project') {
+      const uploaded = await rehomeProjectImages([...draftRows, ...publishedRows]);
+      media = media.concat(uploaded);
+    }
     docs.push(...toSanityDocuments({ type, draftRows, publishedRows }));
   }
-  return docs;
+  return { docs, media };
 }
 
 async function rehomeProjectImages(rows) {
   const pending = rows.map((row) => ({ row, plan: planProjectImage(row) })).filter((item) => item.plan);
-  if (!pending.length) return;
+  if (!pending.length) return [];
 
   const uploads = pending.filter((item) => item.plan.upload);
   let cloudinary = null;
@@ -86,20 +90,26 @@ async function rehomeProjectImages(rows) {
     cloudinary.config({ secure: true });
   }
 
+  const media = [];
   for (const { row, plan } of pending) {
     let patch = plan.patch;
     if (plan.upload) {
+      // Dùng documentId làm public_id cố định để upload lặp lại được idempotent:
+      // overwrite: false sẽ trả về asset hiện có thay vì tạo bản sao mới.
       const result = await cloudinary.uploader.upload(`${STRAPI_URL}${plan.upload}`, {
+        public_id: legacyImagePublicId(row.documentId),
         resource_type: 'image',
         folder: 'dha/legacy',
         overwrite: false,
         tags: ['dha-legacy'],
       });
       patch = { cloudinary_image_url: result.secure_url, cloudinary_public_id: result.public_id };
+      media.push({ from: plan.upload, publicId: result.public_id });
       console.error(`  ảnh cũ ${plan.upload} → ${result.public_id}`);
     }
     Object.assign(row, patch);
   }
+  return media;
 }
 
 function readAdminUsers() {
@@ -118,7 +128,7 @@ async function main() {
   if (!outFile) throw new Error('Dùng: migrate-from-strapi.js <file-ra.ndjson>');
   if (!STRAPI_TOKEN) throw new Error('Thiếu STRAPI_TOKEN (API token Full access của Strapi).');
 
-  const content = await exportContent();
+  const { docs: content, media } = await exportContent();
   const { docs: admins, skipped } = adminUsersToDocs(readAdminUsers());
   const docs = [...content, ...admins];
 
@@ -126,7 +136,8 @@ async function main() {
   fs.writeFileSync(outFile, toNdjson(docs), { mode: 0o600 });
 
   // Chỉ in số lượng — không in dữ liệu khách hàng ra log.
-  console.log(JSON.stringify({ file: outFile, total: docs.length, byType: summarize(docs), adminUsersSkipped: skipped }, null, 2));
+  const report = buildReport({ file: outFile, docs, adminUsersSkipped: skipped, media });
+  console.log(JSON.stringify(report, null, 2));
 }
 
 main().catch((err) => {

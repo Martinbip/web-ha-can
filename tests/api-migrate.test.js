@@ -9,6 +9,8 @@ const {
   adminUsersToDocs,
   planProjectImage,
   summarize,
+  legacyImagePublicId,
+  buildReport,
 } = require('../dha-api/scripts/lib/strapi-export');
 const { PUBLIC_COLLECTIONS, PUBLIC_SINGLES } = require('../dha-api/src/routes/public');
 
@@ -105,4 +107,25 @@ test('tóm tắt đếm theo type, tách nháp và bản xuất bản', () => {
     { _id: 'drafts.a', _type: 'news' },
     { _id: 'p', _type: 'product' },
   ]), { news: { published: 1, drafts: 1 }, product: { published: 1, drafts: 0 } });
+});
+
+test('legacyImagePublicId tạo id cố định từ documentId', () => {
+  assert.equal(legacyImagePublicId('p2'), 'project-p2');
+  assert.equal(legacyImagePublicId('p2'), 'project-p2', 'ổn định qua các lần gọi');
+});
+
+test('buildReport trả về báo cáo đầy đủ với đếm media', () => {
+  const docs = [
+    { _id: 'a', _type: 'news' },
+    { _id: 'drafts.a', _type: 'news' },
+    { _id: 'p', _type: 'product' },
+  ];
+  const media = [{ from: '/uploads/b.jpg', publicId: 'dha/legacy/project-p2' }];
+  const report = buildReport({ file: 'out/migrate.ndjson', docs, adminUsersSkipped: [], media });
+  assert.equal(report.file, 'out/migrate.ndjson');
+  assert.equal(report.total, 3);
+  assert.deepEqual(report.byType, { news: { published: 1, drafts: 1 }, product: { published: 1, drafts: 0 } });
+  assert.deepEqual(report.adminUsersSkipped, []);
+  assert.equal(report.mediaMigrated, 1);
+  assert.deepEqual(report.mediaFiles, ['/uploads/b.jpg']);
 });

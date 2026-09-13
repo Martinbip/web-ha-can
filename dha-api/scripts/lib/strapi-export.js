@@ -127,4 +127,22 @@ function summarize(docs) {
   return out;
 }
 
-module.exports = { EXPORT_TYPES, toSanityDocuments, adminUsersToDocs, planProjectImage, summarize, fieldsOf };
+// Tạo public_id cố định cho ảnh dự án cũ để upload lặp lại được có kết quả giống nhau.
+// Cloudinary với overwrite: false sẽ trả về asset hiện có nếu public_id trùng.
+function legacyImagePublicId(documentId) {
+  return `project-${documentId}`;
+}
+
+// Xây dựng báo cáo cuối cùng với đếm media đã chuyển.
+function buildReport({ file, docs, adminUsersSkipped, media }) {
+  return {
+    file,
+    total: docs.length,
+    byType: summarize(docs),
+    adminUsersSkipped,
+    mediaMigrated: media.length,
+    mediaFiles: media.map((m) => m.from),
+  };
+}
+
+module.exports = { EXPORT_TYPES, toSanityDocuments, adminUsersToDocs, planProjectImage, summarize, fieldsOf, legacyImagePublicId, buildReport };
