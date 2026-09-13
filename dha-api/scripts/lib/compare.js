@@ -1,15 +1,18 @@
 'use strict';
 
 // Khác biệt được phép giữa Strapi và dha-api: `id` (số nguyên ↔ documentId) và
-// `updatedAt` (import làm mới _updatedAt). Mọi thứ khác phải khớp.
-const IGNORED_KEYS = new Set(['id', 'updatedAt']);
+// `updatedAt` (import làm mới _updatedAt) của bản ghi (object có documentId).
+// Mọi thứ khác phải khớp, kể cả id của các thành phần lồng (ví dụ: mục menu).
+const RECORD_IGNORED_KEYS = new Set(['id', 'updatedAt']);
 
 function normalize(value) {
   if (Array.isArray(value)) return value.map(normalize);
   if (value && typeof value === 'object') {
+    // Chỉ bỏ id/updatedAt nếu đây là bản ghi (có documentId)
+    const isRecord = 'documentId' in value;
     return Object.fromEntries(
       Object.keys(value)
-        .filter((key) => !IGNORED_KEYS.has(key))
+        .filter((key) => !(isRecord && RECORD_IGNORED_KEYS.has(key)))
         .sort()
         .map((key) => [key, normalize(value[key])]),
     );

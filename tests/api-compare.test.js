@@ -11,10 +11,16 @@ const { listResourceConfigs } = require('../dha-api/src/services/resource-config
 
 const root = path.join(__dirname, '..');
 
-test('chuẩn hoá bỏ id và updatedAt ở mọi cấp, không phụ thuộc thứ tự khoá', () => {
+test('chuẩn hoá chỉ bỏ id và updatedAt của bản ghi, không phụ thuộc thứ tự khoá', () => {
+  // Bản ghi có documentId: bỏ id, updatedAt
   assert.deepEqual(
-    normalize({ b: 1, id: 9, a: { updatedAt: 'x', id: 3, c: [{ id: 1, d: 2 }] } }),
-    { a: { c: [{ d: 2 }] }, b: 1 },
+    normalize({ data: { documentId: 'n1', id: 7, updatedAt: 'x', title: 'A', b: 1 } }),
+    { data: { b: 1, documentId: 'n1', title: 'A' } },
+  );
+  // Bản ghi có documentId và items lồng với id content (giữ lại id của items)
+  assert.deepEqual(
+    normalize({ data: { documentId: 'navigation', id: 3, items: [{ id: 'gioi-thieu', label: 'Giới thiệu' }] } }),
+    { data: { documentId: 'navigation', items: [{ id: 'gioi-thieu', label: 'Giới thiệu' }] } },
   );
 });
 
@@ -24,6 +30,15 @@ test('diff chỉ ra đúng đường dẫn khác nhau', () => {
     { data: [{ title: 'A', price: 2 }], meta: { total: 1 }, extra: true },
   );
   assert.deepEqual(diffs.map((d) => d.path), ['$.data[0].price', '$.extra']);
+});
+
+test('lệch id của mục menu thì báo khác, không phải Khớp', () => {
+  const a = { data: { documentId: 'navigation', items: [{ id: 'gioi-thieu', label: 'Giới thiệu' }] } };
+  const b = { data: { documentId: 'navigation', items: [{ id: 'gioi-thieu-2', label: 'Giới thiệu' }] } };
+  const result = compareResponses(a, b);
+  assert.ok(result.differences.length > 0, 'phải phát hiện lệch id của item');
+  const idDiff = result.differences.find((d) => d.path === '$.data.items[0].id');
+  assert.ok(idDiff, 'phải có khác biệt ở $.data.items[0].id');
 });
 
 test('so không theo thứ tự: chỉ lệch thứ tự thì là cảnh báo, không phải lỗi', () => {

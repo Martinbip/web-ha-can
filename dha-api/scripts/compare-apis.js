@@ -55,7 +55,7 @@ async function detailPaths() {
 }
 
 async function adminPaths(cookie) {
-  const paths = [{ path: 'admin-ui/meta' }, { path: 'admin-ui/navigation' }, { path: 'admin-ui/dashboard' }];
+  const paths = [{ path: 'admin-ui/meta' }, { path: 'admin-ui/navigation' }, { path: 'admin-ui/dashboard' }, { path: 'admin-ui/media' }];
   for (const type of ADMIN_TYPES) {
     paths.push({ path: `admin-ui/resources/${type}?page=1&pageSize=100` });
     const { body } = await get(baseA, `admin-ui/resources/${type}?page=1&pageSize=100`, cookie);
