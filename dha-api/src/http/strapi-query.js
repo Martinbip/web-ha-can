@@ -6,6 +6,7 @@ const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
 const FIELD_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
 const FILTER_KEY = /^filters\[([^\]]+)\](?:\[(\$[a-z]+)\](?:\[(\d+)\])?)?$/;
+const MAX_IN_VALUES = 100;
 const ALLOWED_OPERATORS = new Set(['$eq', '$in', '$null', '$contains', '$containsi', '$gte']);
 
 class QueryError extends Error {}
@@ -77,10 +78,12 @@ function parseFilters(query) {
     }
     if (!ALLOWED_OPERATORS.has(operator)) throw new QueryError(`Toán tử lọc không hỗ trợ: ${operator}`);
 
-    const condition = filters[field] && typeof filters[field] === 'object' ? filters[field] : {};
-    if (operator === '$in') {
+    const condition = filters[field] && typeof filters[field] === "object" ? filters[field] : {};
+    if (operator === "$in") {
+      const position = index === undefined ? (condition.$in || []).length : Number(index);
+      if (position >= MAX_IN_VALUES) throw new QueryError(`Quá nhiều giá trị cho $in (tối đa ${MAX_IN_VALUES}).`);
       const list = condition.$in || [];
-      list[index === undefined ? list.length : Number(index)] = String(value);
+      list[position] = String(value);
       condition.$in = list.filter((item) => item !== undefined);
     } else {
       condition[operator] = parseFilterValue(operator, value);

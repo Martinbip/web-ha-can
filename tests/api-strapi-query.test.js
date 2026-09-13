@@ -62,10 +62,18 @@ test('đầu vào sai trả QueryError thay vì chạy truy vấn lạ', () => {
     { 'filters[__proto__][$eq]': 'x' },
     { 'filters[a.b][$eq]': 'x' },
     { 'pagination[page]': '1', 'pagination[limit]': '10' },
+    { 'filters[category][$in][4000000000]': 'x' },
+    { 'filters[category][$in][100]': 'x' },
   ];
   for (const query of bad) {
     assert.throws(() => parseStrapiQuery(query), QueryError, JSON.stringify(query));
   }
+});
+
+test('giới hạn 100 giá trị trong $in để chặn DoS', () => {
+  assert.deepEqual(parseStrapiQuery({ 'filters[category][$in][99]': 'x' }).filters, {
+    category: { $in: ['x'] },
+  });
 });
 
 test('meta đúng dạng Strapi 5 theo từng kiểu phân trang', () => {
