@@ -72,7 +72,7 @@ test('estimator reads ore prices from the CMS price field', () => {
 });
 
 test('CORS checks exact allowed origins', () => {
-  const middlewares = read('dha-cms/config/middlewares.js');
+  const middlewares = read('dha-api/src/http/cors.js');
 
   assert.match(middlewares, /new URL/, 'CORS should parse origins as URLs');
   assert.doesNotMatch(middlewares, /origin\.startsWith/, 'CORS must not allow prefix origin matches');

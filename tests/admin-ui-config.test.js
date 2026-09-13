@@ -107,7 +107,7 @@ test('admin-ui auth compares signatures without timingSafeEqual length throws', 
 });
 
 test('admin-ui CORS does not allowlist null origin for credentials', () => {
-  const middlewaresSource = read('dha-cms/config/middlewares.js');
+  const middlewaresSource = read('dha-api/src/http/cors.js');
 
   assert.doesNotMatch(middlewaresSource, /['"]null['"]/, 'credentialed CORS must not allowlist Origin: null');
 });
