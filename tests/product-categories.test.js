@@ -87,10 +87,10 @@ test('admin quản lý được danh mục và gán danh mục cho sản phẩm'
 });
 
 test('đổi mã hoặc xoá danh mục thì sản phẩm được dọn theo', () => {
-  const lifecycles = read('dha-cms/src/api/product-category/content-types/product-category/lifecycles.js');
-  assert.match(lifecycles, /afterUpdate/);
-  assert.match(lifecycles, /afterDelete/);
-  assert.match(lifecycles, /api::product\.product/);
+  const hook = read('dha-api/src/hooks/product-category.js');
+  assert.match(hook, /afterUpdate/);
+  assert.match(hook, /afterDelete/);
+  assert.match(hook, /PRODUCT_TYPE = 'product'/);
 });
 
 test('trang chủ và trang sản phẩm dựng tab từ CMS, không viết cứng', () => {
@@ -113,61 +113,44 @@ test('trang chủ và trang sản phẩm dựng tab từ CMS, không viết cứ
   }
 });
 
-// Lifecycle chạy trong Strapi nên test dựng một `strapi` giả tối thiểu: chỉ
-// db.query với hai collection trong bộ nhớ, đủ để kiểm chứng dữ liệu sản phẩm
-// được viết lại đúng.
-function withFakeStrapi(categories, products) {
-  const updates = [];
-  global.strapi = {
-    db: {
-      query(uid) {
-        if (uid === 'api::product-category.product-category') {
-          return {
-            findOne: async ({ where }) => categories.find((item) => item.id === where.id) || null,
-          };
-        }
-        return {
-          findMany: async () => products,
-          update: async ({ where, data }) => {
-            const product = products.find((item) => item.id === where.id);
-            Object.assign(product, data);
-            updates.push({ id: where.id, ...data });
-            return product;
-          },
-        };
-      },
-    },
-  };
-  return updates;
+// Hook chạy sau khi admin sửa/xoá danh mục (dha-api/src/hooks). Test dựng store
+// giả với vài sản phẩm, gọi thẳng hook rồi xem sản phẩm được viết lại ra sao.
+const { setStore } = require('../dha-api/src/sanity/store-registry');
+const { createFakeStore } = require('./helpers/admin-ui-harness');
+const categoryHooks = require('../dha-api/src/hooks/product-category');
+
+function useProducts(products) {
+  const fake = createFakeStore({ product: products });
+  setStore(fake);
+  return fake;
 }
 
 test('đổi mã danh mục thì sản phẩm đã gán đi theo mã mới', async () => {
-  const lifecycles = require('../dha-cms/src/api/product-category/content-types/product-category/lifecycles');
-  const products = [
-    { id: 1, categories: ['color-metal'] },
-    { id: 2, categories: ['color-metal', 'black-metal'] },
-    { id: 3, categories: [] },
-  ];
-  const updates = withFakeStrapi([{ id: 7, slug: 'color-metal' }], products);
+  const fake = useProducts([
+    { documentId: 'p1', categories: ['color-metal'] },
+    { documentId: 'p2', categories: ['color-metal', 'black-metal'] },
+    { documentId: 'p3', categories: [] },
+  ]);
 
-  await lifecycles.beforeUpdate({ params: { where: { id: 7 } } });
-  await lifecycles.afterUpdate({ params: { where: { id: 7 } }, result: { slug: 'kim-loai-mau' } });
+  await categoryHooks.afterUpdate({ slug: 'color-metal' }, { slug: 'kim-loai-mau' });
 
-  assert.deepEqual(products[0].categories, ['kim-loai-mau']);
-  assert.deepEqual(products[1].categories, ['kim-loai-mau', 'black-metal']);
-  assert.equal(updates.length, 2, 'sản phẩm không liên quan thì không bị ghi lại');
+  const rows = fake.__rows('product');
+  assert.deepEqual(rows[0].categories, ['kim-loai-mau']);
+  assert.deepEqual(rows[1].categories, ['kim-loai-mau', 'black-metal']);
+  assert.equal(fake.__calls.filter((call) => call.method === 'update').length, 2, 'sản phẩm không liên quan thì không bị ghi lại');
+  setStore(null);
 });
 
 test('xoá danh mục thì mã của nó được gỡ khỏi sản phẩm', async () => {
-  const lifecycles = require('../dha-cms/src/api/product-category/content-types/product-category/lifecycles');
-  const products = [
-    { id: 1, categories: ['color-metal', 'rare-earth'] },
-    { id: 2, categories: ['black-metal'] },
-  ];
-  withFakeStrapi([], products);
+  const fake = useProducts([
+    { documentId: 'p1', categories: ['color-metal', 'rare-earth'] },
+    { documentId: 'p2', categories: ['black-metal'] },
+  ]);
 
-  await lifecycles.afterDelete({ result: { slug: 'rare-earth' } });
+  await categoryHooks.afterDelete({ slug: 'rare-earth' });
 
-  assert.deepEqual(products[0].categories, ['color-metal']);
-  assert.deepEqual(products[1].categories, ['black-metal']);
+  const rows = fake.__rows('product');
+  assert.deepEqual(rows[0].categories, ['color-metal']);
+  assert.deepEqual(rows[1].categories, ['black-metal']);
+  setStore(null);
 });

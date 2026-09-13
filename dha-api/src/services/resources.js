@@ -5,6 +5,7 @@ const { sendError } = require('./errors');
 const { getStore } = require('../sanity/store-registry');
 const auth = require('./auth');
 const { buildDateBuckets, countRecordsByDay, toContactLead, toOrderLead } = require('./dashboard-metrics');
+const hooks = require('../hooks');
 
 const DASHBOARD_TREND_DAYS = 14;
 const DASHBOARD_PENDING_LIMIT = 5;
@@ -328,6 +329,7 @@ async function create(ctx) {
   const payload = await ensureUniqueSlugs(config, cleanData(config, ctx.request.body));
   const data = await getService(config).create({ data: payload });
   await publishAfterWrite(config, data?.documentId);
+  await hooks.afterCreate(config, data);
   ctx.body = { data: normalizeEntry(data, config) };
 }
 
@@ -339,11 +341,14 @@ async function update(ctx) {
   const service = getService(config);
   let data;
   let wasPublished = true;
+  let before = null;
+  let created = false;
 
   if (config.singleType && ctx.params.id === 'null') {
     // If it's a single type and there is no existing record, create a new one instead of update
     const existing = await service.findMany({ limit: 1 });
     if (existing && existing.length > 0) {
+      before = await hooks.snapshot(config, service, existing[0].documentId);
       wasPublished = await isPublished(config, existing[0].documentId);
       data = await service.update({
         documentId: existing[0].documentId,
@@ -351,8 +356,10 @@ async function update(ctx) {
       });
     } else {
       data = await service.create({ data: cleanData(config, ctx.request.body) });
+      created = true;
     }
   } else {
+    before = await hooks.snapshot(config, service, ctx.params.id);
     wasPublished = await isPublished(config, ctx.params.id);
     data = await service.update({
       documentId: ctx.params.id,
@@ -361,6 +368,8 @@ async function update(ctx) {
   }
 
   await publishAfterWrite(config, data?.documentId, { wasPublished });
+  if (created) await hooks.afterCreate(config, data);
+  else await hooks.afterUpdate(config, before, data);
 
   ctx.body = { data: normalizeEntry(data, config) };
 }
@@ -370,7 +379,10 @@ async function remove(ctx) {
   if (!config) return;
   if (!auth.requireTrustedOrigin(ctx)) return;
   if (config.readOnlyCreate) return sendError(ctx, 403, 'READ_ONLY', 'Module này không cho xóa dữ liệu từ admin.');
-  await getService(config).delete({ documentId: ctx.params.id });
+  const service = getService(config);
+  const before = await hooks.snapshot(config, service, ctx.params.id);
+  await service.delete({ documentId: ctx.params.id });
+  await hooks.afterDelete(config, before);
   ctx.body = { ok: true };
 }
 

@@ -7,7 +7,7 @@ const test = require('node:test');
 const { EventEmitter } = require('node:events');
 
 const root = path.resolve(__dirname, '..');
-const { createPrerenderRunner } = require('../dha-cms/src/api/site-setting/prerender.js');
+const { createPrerenderRunner } = require('../dha-api/src/hooks/prerender.js');
 
 // Bộ đồ giả: tiến trình con không chạy thật, đồng hồ do test bấm.
 function harness({ exists = () => true } = {}) {
@@ -93,8 +93,8 @@ test('máy chưa có script hoặc thư mục website thì bỏ qua, không làm
   assert.deepEqual(h.calls, [], 'không cố chạy thứ không tồn tại');
 });
 
-test('lifecycle của cài đặt website gọi prerender sau khi tạo và sau khi sửa', () => {
-  const file = path.join(root, 'dha-cms/src/api/site-setting/content-types/site-setting/lifecycles.js');
+test('hook của cài đặt website gọi prerender sau khi tạo và sau khi sửa', () => {
+  const file = path.join(root, 'dha-api/src/hooks/site-setting.js');
   const source = fs.readFileSync(file, 'utf8');
 
   assert.match(source, /afterUpdate/, 'chạy lại sau khi sửa cài đặt');
