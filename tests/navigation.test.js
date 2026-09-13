@@ -194,24 +194,25 @@ test('menu tĩnh trong HTML vẫn là bản dự phòng khi CMS lỗi', () => {
 });
 
 test('thanh menu được seed và đọc công khai từ CMS', () => {
-  const bootstrap = read('dha-cms/src/index.js');
+  const seed = read('dha-api/scripts/lib/seed-docs.js');
   const schema = JSON.parse(read('dha-api/src/schemas/navigation.json'));
-  const { DEFAULT_NAV_ITEMS } = require('../dha-cms/src/api/navigation/default-items');
+  const { DEFAULT_NAV_ITEMS } = require('../dha-api/src/defaults/default-items');
+  const { PUBLIC_SINGLES } = require('../dha-api/src/routes/public');
 
   assert.equal(schema.kind, 'singleType');
   assert.equal(schema.attributes.items.type, 'json');
-  assert.match(bootstrap, /getDefaultNavItems/, 'menu được seed lúc bootstrap');
-  assert.match(bootstrap, /'api::navigation\.navigation\.find'/, 'menu đọc được công khai');
+  assert.match(seed, /getDefaultNavItems/, 'menu được seed từ code');
+  assert.equal(PUBLIC_SINGLES.navigation, 'navigation', 'menu đọc được công khai');
   assert.equal(DEFAULT_NAV_ITEMS.length, 8, 'menu mặc định giữ đúng 8 mục hiện có');
 });
 
-// Deploy chỉ rsync thư mục dha-cms/ sang máy chủ Strapi, nên seed đọc file ở
-// gốc repo sẽ luôn thất bại trên production.
-test('menu mặc định nằm trong dha-cms chứ không đọc file ngoài', () => {
-  const bootstrap = read('dha-cms/src/index.js');
-  const defaults = read('dha-cms/src/api/navigation/default-items.js');
+// Menu mặc định phải nằm trong code của dha-api: data/ ở gốc repo không đi
+// theo khi deploy dha-api sang máy chủ.
+test('menu mặc định nằm trong code chứ không đọc file ngoài', () => {
+  const seed = read('dha-api/scripts/lib/seed-docs.js');
+  const defaults = read('dha-api/src/defaults/default-items.js');
 
-  assert.doesNotMatch(bootstrap, /navigation\.json/, 'không seed menu từ data/ ở gốc repo');
+  assert.doesNotMatch(seed, /navigation\.json/, 'không seed menu từ data/ ở gốc repo');
   assert.ok(!fs.existsSync(path.join(root, 'data/navigation.json')), 'file seed cũ đã bị bỏ');
 
   for (const label of ['Trang Chủ', 'Sản Phẩm', 'Liên Hệ']) {

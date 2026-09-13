@@ -45,22 +45,22 @@ test('product detail page can submit order requests to the CMS', () => {
 });
 
 test('homepage CMS-managed content is seeded and publicly readable', () => {
-  const bootstrap = read('dha-cms/src/index.js');
+  const seed = read('dha-api/scripts/lib/seed-docs.js');
+  const { PUBLIC_COLLECTIONS } = require('../dha-api/src/routes/public');
   const expectedSeeds = [
-    ['api::hero-slide.hero-slide', 'hero_slides.json'],
-    ['api::service.service', 'services.json'],
-    ['api::workflow-step.workflow-step', 'workflow_steps.json'],
-    ['api::ore.ore', 'products.json'],
+    ['heroSlide', 'hero_slides.json'],
+    ['service', 'services.json'],
+    ['workflowStep', 'workflow_steps.json'],
+    ['ore', 'products.json'],
   ];
 
-  for (const [uid, filename] of expectedSeeds) {
-    assert.match(bootstrap, new RegExp(uid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `${uid} is seeded`);
-    assert.match(bootstrap, new RegExp(filename.replace('.', '\\.')), `${filename} is used for seeding`);
+  for (const [type, filename] of expectedSeeds) {
+    assert.match(seed, new RegExp(`type: '${type}'`), `${type} is seeded`);
+    assert.match(seed, new RegExp(filename.replace('.', '\\.')), `${filename} is used for seeding`);
   }
 
-  for (const uid of ['api::hero-slide.hero-slide', 'api::service.service', 'api::workflow-step.workflow-step']) {
-    assert.match(bootstrap, new RegExp(`${uid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.find`), `${uid}.find permission is public`);
-    assert.match(bootstrap, new RegExp(`${uid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.findOne`), `${uid}.findOne permission is public`);
+  for (const [path, type] of [['hero-slides', 'heroSlide'], ['services', 'service'], ['workflow-steps', 'workflowStep']]) {
+    assert.equal(PUBLIC_COLLECTIONS[path], type, `${path} is publicly readable`);
   }
 });
 

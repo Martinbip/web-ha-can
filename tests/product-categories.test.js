@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const {
   DEFAULT_CATEGORIES,
   guessCategories,
-} = require('../dha-cms/src/api/product-category/default-categories');
+} = require('../dha-api/src/defaults/default-categories');
 const { getResourceConfig } = require('../dha-api/src/services/resource-config');
 
 function read(file) {
@@ -31,14 +31,13 @@ test('danh mục sản phẩm là một collection thật trong CMS', () => {
 });
 
 test('website đọc được danh mục mà không cần đăng nhập', () => {
-  const bootstrap = read('dha-cms/src/index.js');
-  assert.match(bootstrap, /api::product-category\.product-category\.find'/);
-  assert.match(bootstrap, /api::product-category\.product-category\.findOne'/);
+  const { PUBLIC_COLLECTIONS } = require('../dha-api/src/routes/public');
+  assert.equal(PUBLIC_COLLECTIONS['product-categories'], 'productCategory');
 });
 
 test('danh mục mặc định nằm trong code, không nằm ở data/', () => {
-  // data/ không được deploy sang máy chủ Strapi, seed đọc từ đó sẽ hỏng.
-  const source = read('dha-cms/src/api/product-category/default-categories.js');
+  // data/ không đi theo khi deploy dha-api, seed đọc từ đó sẽ hỏng.
+  const source = read('dha-api/src/defaults/default-categories.js');
   assert.doesNotMatch(source, /loadJsonFile|\.\.\/\.\.\/data/);
   assert.equal(DEFAULT_CATEGORIES.length, 3);
   assert.deepEqual(
