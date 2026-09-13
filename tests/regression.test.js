@@ -16,7 +16,7 @@ function schema(file) {
 test('contact form submits all required CMS fields and does not hide failed submissions', () => {
   const contactHtml = read('contact.html');
   const appJs = read('app.js');
-  const contactSchema = schema('dha-cms/src/api/contact-inquiry/content-types/contact-inquiry/schema.json');
+  const contactSchema = schema('dha-api/src/schemas/contactInquiry.json');
   const requiredFields = Object.entries(contactSchema.attributes)
     .filter(([, definition]) => definition.required)
     .map(([name]) => name);
@@ -31,7 +31,7 @@ test('contact form submits all required CMS fields and does not hide failed subm
 
 test('product detail page can submit order requests to the CMS', () => {
   const appJs = read('app.js');
-  const orderSchema = schema('dha-cms/src/api/order-request/content-types/order-request/schema.json');
+  const orderSchema = schema('dha-api/src/schemas/orderRequest.json');
   const requiredFields = Object.entries(orderSchema.attributes)
     .filter(([, definition]) => definition.required)
     .map(([name]) => name);
@@ -113,7 +113,7 @@ test('keyboard focus remains visible on interactive inputs', () => {
 });
 
 test('project rendering prefers Cloudinary image URLs during media migration', () => {
-  const projectSchema = schema('dha-cms/src/api/project/content-types/project/schema.json');
+  const projectSchema = schema('dha-api/src/schemas/project.json');
   const appJs = read('app.js');
 
   assert.ok(projectSchema.attributes.cloudinary_image_url, 'project schema includes Cloudinary image URL');

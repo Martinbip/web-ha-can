@@ -4,6 +4,10 @@ const Router = require('@koa/router');
 
 const { getStore } = require('../sanity/store-registry');
 const { parseStrapiQuery, buildMeta, QueryError } = require('../http/strapi-query');
+const { validateAgainstSchema } = require('../http/schema-validator');
+const { createRateLimit } = require('../http/rate-limit');
+const contactInquirySchema = require('../schemas/contactInquiry.json');
+const orderRequestSchema = require('../schemas/orderRequest.json');
 
 // Đường dẫn công khai (pluralName của Strapi) → sanityType. Chỉ các type này
 // đọc được không cần đăng nhập — đúng danh sách quyền `find`/`findOne` mà
@@ -35,9 +39,28 @@ function own(map, key) {
   return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
 }
 
-function strapiError(ctx, status, name, message) {
+function strapiError(ctx, status, name, message, details = {}) {
   ctx.status = status;
-  ctx.body = { data: null, error: { status, name, message, details: {} } };
+  ctx.body = { data: null, error: { status, name, message, details } };
+}
+
+// Hai form ghi được mà không cần đăng nhập. Giới hạn tần suất lấy đúng theo
+// route Strapi cũ (dha-cms/src/api/<type>/routes).
+const FORMS = {
+  'contact-inquiries': { type: 'contactInquiry', schema: contactInquirySchema, max: 5 },
+  'order-requests': { type: 'orderRequest', schema: orderRequestSchema, max: 10 },
+};
+
+function submitForm({ type, schema }) {
+  return async (ctx) => {
+    const body = ctx.request.body || {};
+    const input = body.data && typeof body.data === 'object' ? body.data : body;
+    const { data, errors } = validateAgainstSchema(schema, input, { forced: { status: 'new' } });
+    if (errors.length) return strapiError(ctx, 400, 'ValidationError', errors[0], { errors });
+    const created = await getStore().documents(type).create({ data });
+    ctx.body = { data: created, meta: {} };
+    return undefined;
+  };
 }
 
 function parseOr400(ctx) {
@@ -100,6 +123,9 @@ function createPublicRouter() {
   // Singleton đăng ký trước để không bị route /:collection nuốt mất.
   for (const [path, type] of Object.entries(PUBLIC_SINGLES)) {
     router.get(`/${path}`, readSingle(type));
+  }
+  for (const [path, form] of Object.entries(FORMS)) {
+    router.post(`/${path}`, createRateLimit({ windowMs: 15 * 60 * 1000, max: form.max }), submitForm(form));
   }
   router.get('/:collection', listCollection);
   router.get('/:collection/:documentId', findInCollection);

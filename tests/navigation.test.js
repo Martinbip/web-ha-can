@@ -195,7 +195,7 @@ test('menu tĩnh trong HTML vẫn là bản dự phòng khi CMS lỗi', () => {
 
 test('thanh menu được seed và đọc công khai từ CMS', () => {
   const bootstrap = read('dha-cms/src/index.js');
-  const schema = JSON.parse(read('dha-cms/src/api/navigation/content-types/navigation/schema.json'));
+  const schema = JSON.parse(read('dha-api/src/schemas/navigation.json'));
   const { DEFAULT_NAV_ITEMS } = require('../dha-cms/src/api/navigation/default-items');
 
   assert.equal(schema.kind, 'singleType');

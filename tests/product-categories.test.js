@@ -19,14 +19,14 @@ function readJson(file) {
 }
 
 test('danh mục sản phẩm là một collection thật trong CMS', () => {
-  const schema = readJson('dha-cms/src/api/product-category/content-types/product-category/schema.json');
+  const schema = readJson('dha-api/src/schemas/productCategory.json');
   assert.equal(schema.collectionName, 'product_categories');
   for (const field of ['slug', 'name', 'visible', 'sort_order']) {
     assert.ok(schema.attributes[field], `${field} có trong schema`);
   }
   assert.equal(schema.attributes.slug.unique, true, 'mã danh mục không được trùng');
 
-  const productSchema = readJson('dha-cms/src/api/product/content-types/product/schema.json');
+  const productSchema = readJson('dha-api/src/schemas/product.json');
   assert.equal(productSchema.attributes.categories.type, 'json', 'sản phẩm giữ mảng mã danh mục');
 });
 
