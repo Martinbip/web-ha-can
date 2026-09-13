@@ -6,13 +6,11 @@ const test = require('node:test');
 const root = path.resolve(__dirname, '..');
 const {
   listResourceConfigs,
-} = require('../dha-cms/src/api/admin-ui/services/resource-config');
+} = require('../dha-api/src/services/resource-config');
 
-function readSchema(uid) {
-  // uid dạng api::project.project → dha-cms/src/api/project/content-types/project
-  const [, name] = uid.split('::');
-  const [api, singular] = name.split('.');
-  const file = path.join(root, 'dha-cms/src/api', api, 'content-types', singular, 'schema.json');
+function readSchema(sanityType) {
+  // schema.json của Strapi được chép sang dha-api/src/schemas/<sanityType>.json
+  const file = path.join(root, 'dha-api/src/schemas', `${sanityType}.json`);
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
@@ -23,7 +21,7 @@ const BUILT_IN_FIELDS = ['id', 'documentId', 'createdAt', 'updatedAt', 'publishe
 // Mọi trường admin đọc/ghi phải là thuộc tính vô hướng có thật trong schema.
 test('mọi trường admin đọc/ghi đều tồn tại trong schema và không phải media', () => {
   for (const config of listResourceConfigs()) {
-    const schema = readSchema(config.uid);
+    const schema = readSchema(config.sanityType);
     const declared = [
       config.titleField,
       ...(config.listFields || []),
@@ -35,7 +33,7 @@ test('mọi trường admin đọc/ghi đều tồn tại trong schema và khôn
 
     for (const field of new Set(declared)) {
       const attribute = schema.attributes[field];
-      assert.ok(attribute, `${config.type}.${field} không có trong schema ${config.uid}`);
+      assert.ok(attribute, `${config.type}.${field} không có trong schema ${config.sanityType}`);
       assert.notEqual(
         attribute.type,
         'media',
@@ -55,14 +53,14 @@ test('trường trong giao diện admin đều tồn tại trong schema và đư
     const uiFields = readUiFields(source, config.type);
     if (!uiFields.length) continue;
 
-    const schema = readSchema(config.uid);
+    const schema = readSchema(config.sanityType);
     const writable = new Set(config.editableFields || []);
     const readOnly = new Set([...(config.readFields || []), ...BUILT_IN_FIELDS]);
 
     for (const field of uiFields) {
       assert.ok(
         schema.attributes[field],
-        `${config.type}.${field} có trong form admin nhưng không có trong schema ${config.uid}`,
+        `${config.type}.${field} có trong form admin nhưng không có trong schema ${config.sanityType}`,
       );
       assert.ok(
         writable.has(field) || readOnly.has(field),

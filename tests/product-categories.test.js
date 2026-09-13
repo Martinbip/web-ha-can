@@ -8,7 +8,7 @@ const {
   DEFAULT_CATEGORIES,
   guessCategories,
 } = require('../dha-cms/src/api/product-category/default-categories');
-const { getResourceConfig } = require('../dha-cms/src/api/admin-ui/services/resource-config');
+const { getResourceConfig } = require('../dha-api/src/services/resource-config');
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), 'utf8');
@@ -71,7 +71,7 @@ test('mọi sản phẩm dự phòng trong data/ đều đã có danh mục', ()
 
 test('admin quản lý được danh mục và gán danh mục cho sản phẩm', () => {
   const config = getResourceConfig('product-categories');
-  assert.equal(config.uid, 'api::product-category.product-category');
+  assert.equal(config.sanityType, 'productCategory');
   assert.deepEqual(config.editableFields, ['name', 'slug', 'visible', 'sort_order']);
 
   const products = getResourceConfig('products');

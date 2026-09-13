@@ -7,14 +7,15 @@ process.env.ADMIN_UI_SESSION_SECRET = 'test-secret-admin-ui';
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const navigation = require('../dha-cms/src/api/admin-ui/services/navigation');
-const media = require('../dha-cms/src/api/admin-ui/services/media');
-const { buildCtx, createFakeStrapi } = require('./helpers/admin-ui-harness');
+const navigation = require('../dha-api/src/services/navigation');
+const media = require('../dha-api/src/services/media');
+const { buildCtx, createFakeStore } = require('./helpers/admin-ui-harness');
+const { setStore } = require('../dha-api/src/sanity/store-registry');
 
-const NAV_UID = 'api::navigation.navigation';
+const NAV_UID = 'navigation';
 
 test.beforeEach(() => {
-  global.strapi = undefined;
+  setStore(null);
 });
 
 // --- menu: kiểm tra dữ liệu -------------------------------------------------
@@ -140,7 +141,7 @@ test('trạng thái ẩn/hiện giữ nguyên, mặc định là hiện', () => 
 // --- menu: endpoint ----------------------------------------------------------
 
 test('menu chưa có bản ghi thì trả menu mặc định để còn sửa được', async () => {
-  global.strapi = createFakeStrapi({ [NAV_UID]: [] });
+  setStore(createFakeStore({ [NAV_UID]: [] }));
   const ctx = buildCtx({});
   await navigation.get(ctx);
   assert.ok(Array.isArray(ctx.body.data.items));
@@ -148,8 +149,8 @@ test('menu chưa có bản ghi thì trả menu mặc định để còn sửa đ
 });
 
 test('chưa đăng nhập thì không đọc và không ghi được menu', async () => {
-  const fake = createFakeStrapi({ [NAV_UID]: [] });
-  global.strapi = fake;
+  const fake = createFakeStore({ [NAV_UID]: [] });
+  setStore(fake);
 
   const read = buildCtx({ cookie: null });
   await navigation.get(read);
@@ -162,8 +163,8 @@ test('chưa đăng nhập thì không đọc và không ghi được menu', asyn
 });
 
 test('lưu menu từ trang lạ bị chặn như mọi thao tác ghi khác', async () => {
-  const fake = createFakeStrapi({ [NAV_UID]: [] });
-  global.strapi = fake;
+  const fake = createFakeStore({ [NAV_UID]: [] });
+  setStore(fake);
   const ctx = buildCtx({ origin: 'https://ke-tan-cong.example', body: { data: { items: [{ label: 'A', url: '/a' }] } } });
   await navigation.update(ctx);
   assert.equal(ctx.status, 403, 'menu cũng phải kiểm tra nguồn yêu cầu');
@@ -171,8 +172,8 @@ test('lưu menu từ trang lạ bị chặn như mọi thao tác ghi khác', asy
 });
 
 test('menu sai dữ liệu trả lỗi 400 kèm danh sách lỗi, không ghi gì vào CSDL', async () => {
-  const fake = createFakeStrapi({ [NAV_UID]: [{ documentId: 'nav-1', items: [{ id: 'a', label: 'A', url: '/a' }] }] });
-  global.strapi = fake;
+  const fake = createFakeStore({ [NAV_UID]: [{ documentId: 'nav-1', items: [{ id: 'a', label: 'A', url: '/a' }] }] });
+  setStore(fake);
   const ctx = buildCtx({ body: { data: { items: [{ label: '', url: 'javascript:alert(1)' }] } } });
   await navigation.update(ctx);
   assert.equal(ctx.status, 400);
@@ -182,8 +183,8 @@ test('menu sai dữ liệu trả lỗi 400 kèm danh sách lỗi, không ghi gì
 });
 
 test('lưu menu hợp lệ ghi đè đúng bản ghi đang có', async () => {
-  const fake = createFakeStrapi({ [NAV_UID]: [{ documentId: 'nav-1', items: [{ id: 'a', label: 'A', url: '/a' }] }] });
-  global.strapi = fake;
+  const fake = createFakeStore({ [NAV_UID]: [{ documentId: 'nav-1', items: [{ id: 'a', label: 'A', url: '/a' }] }] });
+  setStore(fake);
   const ctx = buildCtx({ body: { data: { items: [{ label: 'Sản phẩm', url: '/products' }] } } });
   await navigation.update(ctx);
   assert.equal(ctx.status, 200);
@@ -241,7 +242,7 @@ test('ảnh tải lên bị chặn theo dung lượng, định dạng và phần
 });
 
 test('xoá ảnh ngoài vùng của website bị từ chối', async () => {
-  global.strapi = createFakeStrapi({});
+  setStore(createFakeStore({}));
   for (const publicId of ['khac/anh', '../ha-can/hero/a', '', 'dha', 'ha-can']) {
     const ctx = buildCtx({ params: { publicId: encodeURIComponent(publicId) } });
     await media.delete(ctx);
@@ -251,10 +252,10 @@ test('xoá ảnh ngoài vùng của website bị từ chối', async () => {
 });
 
 test('ảnh đang được nội dung nào đó dùng thì không cho xoá, và chỉ rõ chỗ dùng', async () => {
-  global.strapi = createFakeStrapi({
-    'api::news.news': [{ documentId: 'doc-a', title: 'Bài A', image: 'https://res.cloudinary.com/x/dha/news/anh-1.jpg' }],
-    'api::project.project': [{ documentId: 'doc-b', name: 'Dự án B', cloudinary_public_id: 'dha/news/anh-1' }],
-  });
+  setStore(createFakeStore({
+    'news': [{ documentId: 'doc-a', title: 'Bài A', image: 'https://res.cloudinary.com/x/dha/news/anh-1.jpg' }],
+    'project': [{ documentId: 'doc-b', name: 'Dự án B', cloudinary_public_id: 'dha/news/anh-1' }],
+  }));
 
   const references = await media.findReferences('dha/news/anh-1');
   assert.ok(references.length >= 2, 'tìm thấy cả ảnh gắn qua URL lẫn qua public_id');
@@ -268,7 +269,7 @@ test('ảnh đang được nội dung nào đó dùng thì không cho xoá, và 
 });
 
 test('chưa đăng nhập thì không xem, không tải lên, không xoá được ảnh', async () => {
-  global.strapi = createFakeStrapi({});
+  setStore(createFakeStore({}));
   for (const run of [media.list, media.upload, media.delete]) {
     const ctx = buildCtx({ cookie: null, params: { publicId: 'dha/news/anh-1' }, query: {} });
     await run(ctx);
@@ -277,7 +278,7 @@ test('chưa đăng nhập thì không xem, không tải lên, không xoá đư�
 });
 
 test('tải lên từ trang lạ bị chặn trước khi đụng tới Cloudinary', async () => {
-  global.strapi = createFakeStrapi({});
+  setStore(createFakeStore({}));
   const ctx = buildCtx({ origin: 'https://ke-tan-cong.example', body: {}, files: {} });
   await media.upload(ctx);
   assert.equal(ctx.status, 403);

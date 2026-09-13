@@ -1,0 +1,236 @@
+'use strict';
+
+const cloudinary = require('cloudinary').v2;
+const auth = require('./auth');
+const { RESOURCE_CONFIG } = require('./resource-config');
+const { sendError } = require('./errors');
+const { getStore } = require('../sanity/store-registry');
+
+// Cloudinary "folders" are just public_id prefixes, so renaming the old
+// ha-can/ namespace would rewrite every public_id — and every secure_url
+// already stored in the CMS — at once. Instead new uploads go to dha/ while
+// ha-can/ stays readable and deletable for assets uploaded before the rebrand.
+const MEDIA_NAMESPACES = ['dha', 'ha-can'];
+const DEFAULT_MEDIA_PREFIX = 'dha/';
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const ALLOWED_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
+
+// Cloudinary's Admin API (used by list()) is backed by a search index that
+// lags real deletion by anywhere from seconds to (observed in practice)
+// several minutes — deleting a resource makes it 404 on the CDN
+// immediately, but it can keep showing up in resources() results well
+// after that. Track recently-deleted public_ids here and filter them out
+// of every list() response for a generous window, so the media library
+// never shows an asset that's actually already gone, regardless of which
+// admin/session is looking or whether the page was freshly reloaded.
+const DELETED_TTL_MS = 30 * 60 * 1000;
+const recentlyDeleted = new Map();
+
+// unref: Strapi chạy dài nên timer này vô hại ở production, nhưng nó giữ event
+// loop sống và làm `npm test` treo vĩnh viễn sau khi test chạy xong.
+const sweepTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [publicId, deletedAt] of recentlyDeleted) {
+    if (now - deletedAt > DELETED_TTL_MS) recentlyDeleted.delete(publicId);
+  }
+}, 5 * 60 * 1000);
+
+if (typeof sweepTimer.unref === 'function') sweepTimer.unref();
+
+function configureCloudinary() {
+  if (process.env.CLOUDINARY_URL) {
+    cloudinary.config({ secure: true });
+    return;
+  }
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+}
+
+function normalizeAsset(asset) {
+  return {
+    public_id: asset.public_id,
+    secure_url: asset.secure_url,
+    width: asset.width,
+    height: asset.height,
+    format: asset.format,
+    bytes: asset.bytes,
+    created_at: asset.created_at,
+    folder: asset.folder,
+  };
+}
+
+function getBoundedInteger(value, fallback, min, max) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(Math.floor(parsed), min), max);
+}
+
+function isScopedPrefix(value) {
+  return MEDIA_NAMESPACES.some((namespace) => value.startsWith(`${namespace}/`));
+}
+
+function getScopedPrefix(value, fallback = DEFAULT_MEDIA_PREFIX) {
+  const raw = String(value || fallback);
+  const hasTrailingSlash = raw.endsWith('/');
+
+  // Split into segments and strip anything that could traverse out of the
+  // media namespaces (empty segments from repeated slashes, '.' and '..').
+  // Cloudinary folder/prefix values are opaque strings, not filesystem
+  // paths, so the safe behavior is to drop traversal segments entirely
+  // rather than try to resolve them against a parent directory.
+  const segments = raw
+    .split('/')
+    .filter((segment) => segment !== '' && segment !== '.' && segment !== '..');
+
+  if (segments.length === 0 || !MEDIA_NAMESPACES.includes(segments[0])) {
+    return fallback;
+  }
+
+  let prefix = segments.join('/');
+  if (hasTrailingSlash) prefix += '/';
+
+  if (!isScopedPrefix(prefix)) return fallback;
+  return prefix;
+}
+
+function getFileExtension(file) {
+  const name = file.originalFilename || file.name || file.filepath || file.path || '';
+  const pieces = String(name).toLowerCase().split('.');
+  return pieces.length > 1 ? pieces.pop() : '';
+}
+
+function validateUploadFile(file) {
+  const size = Number(file.size || 0);
+  if (!Number.isFinite(size) || size <= 0) {
+    return { ok: false, status: 400, code: 'INVALID_FILE', message: 'Tệp ảnh không hợp lệ.' };
+  }
+  if (size > MAX_UPLOAD_BYTES) {
+    return { ok: false, status: 413, code: 'FILE_TOO_LARGE', message: 'Ảnh tải lên không được vượt quá 5MB.' };
+  }
+
+  const mime = String(file.mimetype || file.type || '').toLowerCase();
+  const extension = getFileExtension(file);
+  if (!ALLOWED_IMAGE_TYPES.has(mime) || !ALLOWED_IMAGE_EXTENSIONS.has(extension)) {
+    return { ok: false, status: 400, code: 'INVALID_FILE_TYPE', message: 'Chỉ hỗ trợ ảnh JPG, PNG, WEBP hoặc GIF.' };
+  }
+
+  return { ok: true };
+}
+
+async function list(ctx) {
+  const user = await auth.requireSession(ctx);
+  if (!user) return;
+  configureCloudinary();
+
+  const prefix = getScopedPrefix(ctx.query.prefix);
+  const result = await cloudinary.api.resources({
+    resource_type: 'image',
+    type: 'upload',
+    prefix,
+    max_results: getBoundedInteger(ctx.query.limit, 30, 1, 100),
+    next_cursor: ctx.query.cursor || undefined,
+    direction: 'desc',
+  });
+
+  ctx.body = {
+    data: result.resources
+      .filter((asset) => !recentlyDeleted.has(asset.public_id))
+      .map(normalizeAsset),
+    next_cursor: result.next_cursor || null,
+  };
+}
+
+async function upload(ctx) {
+  const user = await auth.requireSession(ctx);
+  if (!user) return;
+  if (!auth.requireTrustedOrigin(ctx)) return;
+  configureCloudinary();
+
+  const file = ctx.request.files && ctx.request.files.file;
+  if (!file) {
+    return sendError(ctx, 400, 'NO_FILE', 'Vui lòng chọn ảnh để tải lên.');
+  }
+
+  const validation = validateUploadFile(file);
+  if (!validation.ok) {
+    return sendError(ctx, validation.status, validation.code, validation.message);
+  }
+
+  const folder = getScopedPrefix(ctx.request.body.folder, `${DEFAULT_MEDIA_PREFIX}uploads`);
+
+  const result = await cloudinary.uploader.upload(file.filepath || file.path, {
+    resource_type: 'image',
+    folder,
+    overwrite: false,
+    tags: ['dha-admin'],
+  });
+
+  ctx.body = { data: normalizeAsset(result) };
+}
+
+async function findReferences(publicId) {
+  const references = [];
+  for (const [type, config] of Object.entries(RESOURCE_CONFIG)) {
+    const fields = Object.entries(config.fields || {})
+      .filter(([, field]) => field.type === 'cloudinary-image' || field.publicIdField)
+      .flatMap(([name, field]) => [name, field.publicIdField].filter(Boolean));
+
+    for (const field of fields) {
+      const matches = await getStore().documents(config.sanityType).findMany({
+        filters: { [field]: { $contains: publicId } },
+        limit: 5,
+      });
+      for (const match of matches) {
+        references.push({
+          type,
+          label: config.pluralLabel,
+          documentId: match.documentId,
+          title: match[config.titleField] || match.documentId,
+          field,
+        });
+      }
+    }
+  }
+  return references;
+}
+
+async function remove(ctx) {
+  const user = await auth.requireSession(ctx);
+  if (!user) return;
+  if (!auth.requireTrustedOrigin(ctx)) return;
+  configureCloudinary();
+
+  const publicId = decodeURIComponent(ctx.params.publicId || '');
+  if (!isScopedPrefix(publicId)) {
+    return sendError(ctx, 400, 'INVALID_PUBLIC_ID', 'Ảnh không thuộc thư viện của website.');
+  }
+
+  const references = await findReferences(publicId);
+  if (references.length) {
+    return sendError(ctx, 409, 'MEDIA_IN_USE', 'Ảnh này đang được sử dụng.', { references });
+  }
+
+  const result = await cloudinary.api.delete_resources([publicId], {
+    resource_type: 'image',
+    invalidate: true,
+  });
+
+  recentlyDeleted.set(publicId, Date.now());
+
+  ctx.body = { data: result.deleted || {} };
+}
+
+module.exports = {
+  list,
+  upload,
+  delete: remove,
+  findReferences,
+  getScopedPrefix,
+  validateUploadFile,
+};

@@ -1,8 +1,13 @@
 'use strict';
 
-// Bộ giả lập tối thiểu cho Strapi + Koa context, đủ để gọi thẳng các service
-// của admin-ui trong test mà không cần dựng cả CMS.
+// Bộ giả lập tối thiểu cho store dữ liệu + Koa context, đủ để gọi thẳng các
+// service của admin-ui trong test mà không cần Sanity.
+//
+// createFakeStore() là bản mẫu hành vi: store Sanity thật (dha-api/src/sanity/
+// store.js) phải qua cùng bộ test hợp đồng trong document-store-contract.js.
 const crypto = require('node:crypto');
+
+const { setStore } = require('../../dha-api/src/sanity/store-registry');
 
 const COOKIE_NAME = 'ha_can_admin_session';
 
@@ -128,14 +133,14 @@ function pickFields(entry, fields) {
 }
 
 // Mỗi documentId có tối đa 2 bản: draft (luôn publishedAt = null) và published.
-function createFakeStrapi(seed = {}) {
+function createFakeStore(seed = {}) {
   const store = new Map();
   const calls = [];
   let autoId = 0;
 
-  for (const [uid, entries] of Object.entries(seed)) {
+  for (const [type, entries] of Object.entries(seed)) {
     store.set(
-      uid,
+      type,
       entries.map((entry) => {
         autoId += 1;
         return {
@@ -150,16 +155,16 @@ function createFakeStrapi(seed = {}) {
     );
   }
 
-  function rowsOf(uid) {
-    if (!store.has(uid)) store.set(uid, []);
-    return store.get(uid);
+  function rowsOf(type) {
+    if (!store.has(type)) store.set(type, []);
+    return store.get(type);
   }
 
-  function documents(uid) {
+  function documents(type) {
     return {
       async findMany({ fields, filters, sort, start = 0, limit = 100, status = 'draft' } = {}) {
-        calls.push({ uid, method: 'findMany', fields, filters, sort, start, limit, status });
-        const scoped = rowsOf(uid).filter((entry) =>
+        calls.push({ type, method: 'findMany', fields, filters, sort, start, limit, status });
+        const scoped = rowsOf(type).filter((entry) =>
           status === 'published' ? entry.publishedAt != null : true,
         );
         const filtered = scoped.filter((entry) => matchFilters(entry, filters));
@@ -168,18 +173,18 @@ function createFakeStrapi(seed = {}) {
           .map((entry) => pickFields(status === 'published' ? entry : { ...entry, publishedAt: null }, fields));
       },
       async findOne({ documentId, fields, status = 'draft' } = {}) {
-        calls.push({ uid, method: 'findOne', documentId, fields, status });
-        const entry = rowsOf(uid).find((row) => row.documentId === documentId);
+        calls.push({ type, method: 'findOne', documentId, fields, status });
+        const entry = rowsOf(type).find((row) => row.documentId === documentId);
         if (!entry) return null;
         if (status === 'published' && entry.publishedAt == null) return null;
         return pickFields(status === 'published' ? entry : { ...entry, publishedAt: null }, fields);
       },
       async count({ filters } = {}) {
-        calls.push({ uid, method: 'count', filters });
-        return rowsOf(uid).filter((entry) => matchFilters(entry, filters)).length;
+        calls.push({ type, method: 'count', filters });
+        return rowsOf(type).filter((entry) => matchFilters(entry, filters)).length;
       },
       async create({ data } = {}) {
-        calls.push({ uid, method: 'create', data });
+        calls.push({ type, method: 'create', data });
         autoId += 1;
         const entry = {
           id: autoId,
@@ -189,32 +194,32 @@ function createFakeStrapi(seed = {}) {
           publishedAt: null,
           ...data,
         };
-        rowsOf(uid).push(entry);
+        rowsOf(type).push(entry);
         return { ...entry };
       },
       async update({ documentId, data } = {}) {
-        calls.push({ uid, method: 'update', documentId, data });
-        const entry = rowsOf(uid).find((row) => row.documentId === documentId);
+        calls.push({ type, method: 'update', documentId, data });
+        const entry = rowsOf(type).find((row) => row.documentId === documentId);
         if (!entry) throw new Error(`Không có bản ghi ${documentId}`);
         Object.assign(entry, data, { updatedAt: '2026-02-02T00:00:00.000Z' });
         return { ...entry };
       },
       async delete({ documentId } = {}) {
-        calls.push({ uid, method: 'delete', documentId });
-        const rows = rowsOf(uid);
+        calls.push({ type, method: 'delete', documentId });
+        const rows = rowsOf(type);
         const index = rows.findIndex((row) => row.documentId === documentId);
         if (index >= 0) rows.splice(index, 1);
         return { documentId };
       },
       async publish({ documentId } = {}) {
-        calls.push({ uid, method: 'publish', documentId });
-        const entry = rowsOf(uid).find((row) => row.documentId === documentId);
+        calls.push({ type, method: 'publish', documentId });
+        const entry = rowsOf(type).find((row) => row.documentId === documentId);
         if (entry) entry.publishedAt = '2026-02-03T00:00:00.000Z';
         return entry ? { ...entry } : null;
       },
       async unpublish({ documentId } = {}) {
-        calls.push({ uid, method: 'unpublish', documentId });
-        const entry = rowsOf(uid).find((row) => row.documentId === documentId);
+        calls.push({ type, method: 'unpublish', documentId });
+        const entry = rowsOf(type).find((row) => row.documentId === documentId);
         if (entry) entry.publishedAt = null;
         return entry ? { ...entry } : null;
       },
@@ -223,20 +228,18 @@ function createFakeStrapi(seed = {}) {
 
   return {
     documents,
-    db: { query: () => ({ findOne: async () => null }) },
     __store: store,
     __calls: calls,
     __rows: rowsOf,
   };
 }
 
-function withStrapi(fake, run) {
-  const previous = global.strapi;
-  global.strapi = fake;
+function withStore(fake, run) {
+  setStore(fake);
   try {
     return run();
   } finally {
-    global.strapi = previous;
+    setStore(null);
   }
 }
 
@@ -245,6 +248,6 @@ module.exports = {
   buildCtx,
   signSession,
   validSessionToken,
-  createFakeStrapi,
-  withStrapi,
+  createFakeStore,
+  withStore,
 };

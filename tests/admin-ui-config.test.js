@@ -6,16 +6,16 @@ const test = require('node:test');
 const root = path.resolve(__dirname, '..');
 const {
   getResourceConfig,
-} = require('../dha-cms/src/api/admin-ui/services/resource-config');
-const { getScopedPrefix } = require('../dha-cms/src/api/admin-ui/services/media');
-const { mergePublishedAt } = require('../dha-cms/src/api/admin-ui/services/resources');
+} = require('../dha-api/src/services/resource-config');
+const { getScopedPrefix } = require('../dha-api/src/services/media');
+const { mergePublishedAt } = require('../dha-api/src/services/resources');
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), 'utf8');
 }
 
 test('admin-ui resource config whitelists every planned module', () => {
-  const configSource = read('dha-cms/src/api/admin-ui/services/resource-config.js');
+  const configSource = read('dha-api/src/services/resource-config.js');
   const expectedAliases = [
     'news',
     'products',
@@ -39,7 +39,7 @@ test('admin-ui resource config whitelists every planned module', () => {
 });
 
 test('admin-ui config includes Vietnamese labels and safe editable fields', () => {
-  const configSource = read('dha-cms/src/api/admin-ui/services/resource-config.js');
+  const configSource = read('dha-api/src/services/resource-config.js');
 
   for (const label of ['Tin tức', 'Sản phẩm', 'Dự án', 'Dịch vụ', 'Cài đặt website']) {
     assert.match(configSource, new RegExp(label), `${label} label is present`);
@@ -55,7 +55,7 @@ test('getResourceConfig only returns own whitelisted aliases', () => {
   assert.equal(getResourceConfig('constructor'), null);
   assert.equal(getResourceConfig('toString'), null);
   assert.equal(getResourceConfig('unknown-resource'), null);
-  assert.equal(getResourceConfig('projects')?.uid, 'api::project.project');
+  assert.equal(getResourceConfig('projects')?.sanityType, 'project');
 });
 
 test('project and hero editor labels match Task 1 schema and locale', () => {
@@ -82,26 +82,26 @@ test('project and hero editor labels match Task 1 schema and locale', () => {
 });
 
 test('admin-ui auth uses http-only cookie and never exposes Cloudinary secrets', () => {
-  const authSource = read('dha-cms/src/api/admin-ui/services/auth.js');
-  const routesSource = read('dha-cms/src/api/admin-ui/routes/admin-ui.js');
+  const authSource = read('dha-api/src/services/auth.js');
+  const routesSource = read('dha-api/src/routes/admin-ui.js');
 
   assert.match(authSource, /httpOnly:\s*true/, 'session cookie is http-only');
   assert.match(authSource, /sameSite:\s*(process\.env\.NODE_ENV\s*===\s*['"]production['"]\s*\?\s*['"]none['"]\s*:\s*['"]lax['"]|['"]lax['"])/, 'session cookie is sameSite lax or conditional none');
   assert.match(authSource, /ADMIN_UI_SESSION_SECRET/, 'custom session secret is required');
-  assert.match(routesSource, /auth:\s*false/, 'admin-ui routes bypass Strapi Content API auth');
+  assert.doesNotMatch(authSource, /strapi/, 'auth không còn phụ thuộc Strapi');
   assert.doesNotMatch(authSource, /CLOUDINARY_API_SECRET|CLOUDINARY_URL/, 'auth service must not read Cloudinary secrets');
 });
 
 test('admin-ui login route is tightly rate limited', () => {
-  const routesSource = read('dha-cms/src/api/admin-ui/routes/admin-ui.js');
+  const routesSource = read('dha-api/src/routes/admin-ui.js');
 
-  assert.match(routesSource, /path:\s*['"]\/admin-ui\/auth\/login['"][\s\S]*name:\s*['"]global::rate-limit['"]/, 'login route uses global rate-limit middleware');
+  assert.match(routesSource, /['"]\/admin-ui\/auth\/login['"],\s*createRateLimit\(/, 'login route uses the rate-limit middleware');
   assert.match(routesSource, /windowMs:\s*15\s*\*\s*60\s*\*\s*1000/, 'login rate limit uses a 15 minute window');
   assert.match(routesSource, /max:\s*5/, 'login rate limit allows at most 5 attempts');
 });
 
 test('admin-ui auth compares signatures without timingSafeEqual length throws', () => {
-  const authSource = read('dha-cms/src/api/admin-ui/services/auth.js');
+  const authSource = read('dha-api/src/services/auth.js');
 
   assert.match(authSource, /safe[A-Za-z]*Equal|signature\.length\s*!==\s*expected\.length|expected\.length\s*!==\s*signature\.length/, 'auth service guards timingSafeEqual length mismatch or uses a safe comparison helper');
 });
@@ -113,18 +113,18 @@ test('admin-ui CORS does not allowlist null origin for credentials', () => {
 });
 
 test('admin-ui resources use whitelisted config and Strapi 5 document service', () => {
-  const source = read('dha-cms/src/api/admin-ui/services/resources.js');
+  const source = read('dha-api/src/services/resources.js');
 
   assert.match(source, /getResourceConfig/, 'resource service loads whitelist config');
-  assert.match(source, /strapi\.documents\(config\.uid\)/, 'resource service uses Strapi 5 document service');
-  assert.doesNotMatch(source, /strapi\.documents\(ctx\.params\.type\)/, 'route param is never used as a document UID');
+  assert.match(source, /getStore\(\)\.documents\(config\.sanityType\)/, 'resource service reads through the document store');
+  assert.doesNotMatch(source, /documents\(ctx\.params\.type\)/, 'route param is never used as a document type');
   assert.match(source, /editableFields/, 'writes are limited to editable fields');
   assert.match(source, /publishedAt/, 'publish state is represented in responses');
 });
 
 test('admin-ui resource responses use explicit read whitelists', () => {
-  const source = read('dha-cms/src/api/admin-ui/services/resources.js');
-  const configSource = read('dha-cms/src/api/admin-ui/services/resource-config.js');
+  const source = read('dha-api/src/services/resources.js');
+  const configSource = read('dha-api/src/services/resource-config.js');
 
   assert.doesNotMatch(source, /publicationState/, 'Strapi 5 document service must not use v4 publicationState');
   assert.match(source, /function getReadableFields/, 'resource service defines readable field whitelist');
@@ -136,8 +136,8 @@ test('admin-ui resource responses use explicit read whitelists', () => {
 });
 
 test('admin-ui mutations require trusted origins and safe pagination defaults', () => {
-  const authSource = read('dha-cms/src/api/admin-ui/services/auth.js');
-  const resourceSource = read('dha-cms/src/api/admin-ui/services/resources.js');
+  const authSource = read('dha-api/src/services/auth.js');
+  const resourceSource = read('dha-api/src/services/resources.js');
 
   assert.match(authSource, /function requireTrustedOrigin/, 'auth service exposes trusted origin guard');
   assert.match(authSource, /ctx\.request\.headers\.origin/, 'origin header is checked');
@@ -153,8 +153,8 @@ test('admin-ui mutations require trusted origins and safe pagination defaults', 
 });
 
 test('admin-ui media service stores images in Cloudinary and checks references before delete', () => {
-  const source = read('dha-cms/src/api/admin-ui/services/media.js');
-  const packageJson = JSON.parse(read('dha-cms/package.json'));
+  const source = read('dha-api/src/services/media.js');
+  const packageJson = JSON.parse(read('dha-api/package.json'));
 
   assert.ok(packageJson.dependencies.cloudinary, 'Cloudinary SDK is installed');
   assert.match(source, /require\(['"]cloudinary['"]\)\.v2/, 'Cloudinary v2 SDK is used');
@@ -167,7 +167,7 @@ test('admin-ui media service stores images in Cloudinary and checks references b
 });
 
 test('admin-ui media service scopes library access and validates uploads', () => {
-  const source = read('dha-cms/src/api/admin-ui/services/media.js');
+  const source = read('dha-api/src/services/media.js');
 
   assert.doesNotMatch(source, /publicationState/, 'media reference checks must not use Strapi v4 publicationState');
   assert.match(source, /function getScopedPrefix/, 'media listing normalizes requested prefix');
@@ -203,7 +203,7 @@ test('getScopedPrefix still serves the legacy ha-can namespace', () => {
 });
 
 test('admin-ui list resolves publishedAt from the published version', () => {
-  const source = read('dha-cms/src/api/admin-ui/services/resources.js');
+  const source = read('dha-api/src/services/resources.js');
 
   assert.match(source, /status: 'published'/, "list must query the published version, since Document Service defaults to draft");
   assert.match(source, /attachPublishedAt\(config, service, data\)/, 'list rows go through publishedAt resolution before normalizing');

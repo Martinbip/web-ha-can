@@ -6,7 +6,7 @@ const {
   countRecordsByDay,
   toContactLead,
   toOrderLead,
-} = require('../dha-cms/src/api/admin-ui/services/dashboard-metrics');
+} = require('../dha-api/src/services/dashboard-metrics');
 
 test('buildDateBuckets returns dayCount buckets ending today, oldest first', () => {
   const now = new Date('2026-07-03T10:00:00');
@@ -86,7 +86,7 @@ function readSource(file) {
 }
 
 test('dashboard endpoint aggregates pending, trends and content health', () => {
-  const src = readSource('dha-cms/src/api/admin-ui/services/resources.js');
+  const src = readSource('dha-api/src/services/resources.js');
   assert.match(src, /require\(['"]\.\/dashboard-metrics['"]\)/, 'imports metric helpers');
   assert.match(src, /pending:/, 'returns pending block');
   assert.match(src, /trends:/, 'returns trends block');
@@ -99,7 +99,7 @@ test('dashboard endpoint aggregates pending, trends and content health', () => {
 });
 
 test('dashboard endpoint never selects sensitive lead fields in queries', () => {
-  const src = readSource('dha-cms/src/api/admin-ui/services/resources.js');
+  const src = readSource('dha-api/src/services/resources.js');
   const dashboardBody = src.slice(src.indexOf('async function dashboard'), src.indexOf('async function list'));
   assert.doesNotMatch(dashboardBody, /['"]message['"]/, 'does not query message');
   assert.doesNotMatch(dashboardBody, /['"]address['"]/, 'does not query address');

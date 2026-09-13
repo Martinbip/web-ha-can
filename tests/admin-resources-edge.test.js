@@ -7,22 +7,23 @@ process.env.ADMIN_UI_SESSION_SECRET = 'test-secret-admin-ui';
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const resources = require('../dha-cms/src/api/admin-ui/services/resources');
-const { buildCtx, createFakeStrapi } = require('./helpers/admin-ui-harness');
+const resources = require('../dha-api/src/services/resources');
+const { buildCtx, createFakeStore } = require('./helpers/admin-ui-harness');
+const { setStore } = require('../dha-api/src/sanity/store-registry');
 
-const NEWS = 'api::news.news';
-const PRODUCTS = 'api::product.product';
-const SETTINGS = 'api::site-setting.site-setting';
-const ORDERS = 'api::order-request.order-request';
+const NEWS = 'news';
+const PRODUCTS = 'product';
+const SETTINGS = 'siteSetting';
+const ORDERS = 'orderRequest';
 
 function useStrapi(seed) {
-  const fake = createFakeStrapi(seed);
-  global.strapi = fake;
+  const fake = createFakeStore(seed);
+  setStore(fake);
   return fake;
 }
 
 test.beforeEach(() => {
-  global.strapi = undefined;
+  setStore(null);
 });
 
 // --- kiểm soát truy cập ------------------------------------------------------

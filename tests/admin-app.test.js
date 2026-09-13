@@ -70,7 +70,7 @@ test('cloudinary-image fields capture the sibling public ID field on select', ()
 test('contact-inquiries and order-requests expose lead data as read-only fields', () => {
   const config = read('admin/src/config/resources.js');
   const fieldRenderer = read('admin/src/components/FieldRenderer.jsx');
-  const configSource = read('dha-cms/src/api/admin-ui/services/resource-config.js');
+  const configSource = read('dha-api/src/services/resource-config.js');
 
   assert.match(configSource, /readFields:\s*\[[^\]]*email[^\]]*address[^\]]*message[^\]]*\]/, 'backend whitelists contact detail read fields');
   assert.match(configSource, /readFields:\s*\[[^\]]*product_uid[^\]]*email[^\]]*unit[^\]]*note[^\]]*\]/, 'backend whitelists order detail read fields');

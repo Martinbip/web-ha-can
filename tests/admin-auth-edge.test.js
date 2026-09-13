@@ -8,18 +8,31 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const test = require('node:test');
 
-const auth = require('../dha-cms/src/api/admin-ui/services/auth');
+const auth = require('../dha-api/src/services/auth');
 const { buildCtx, signSession, COOKIE_NAME } = require('./helpers/admin-ui-harness');
 
-function fakeStrapiWithUser(user, { passwordOk = true } = {}) {
-  return {
-    db: { query: () => ({ findOne: async ({ where }) => (user && where.email === user.email && where.isActive ? user : null) }) },
-    admin: { services: { user: { validatePassword: async () => passwordOk } } },
-  };
+const bcrypt = require('../dha-api/node_modules/bcryptjs');
+const { setStore } = require('../dha-api/src/sanity/store-registry');
+const { createFakeStore } = require('./helpers/admin-ui-harness');
+
+// Hash thật (cost 4 cho nhanh) để test đi đúng đường bcrypt.compare như production.
+const ADMIN = {
+  documentId: 'adminUser.u1',
+  email: 'admin@dha.vn',
+  passwordHash: bcrypt.hashSync('dung', 4),
+  isActive: true,
+  firstname: 'A',
+  lastname: 'B',
+};
+
+function useAdminUsers(users) {
+  const fake = createFakeStore({ adminUser: users });
+  setStore(fake);
+  return fake;
 }
 
 test.beforeEach(() => {
-  global.strapi = undefined;
+  setStore(null);
 });
 
 // --- phiên đăng nhập ---------------------------------------------------------
@@ -89,7 +102,7 @@ test('me chỉ trả thông tin công khai, không lộ dữ liệu khác trong 
 // --- đăng nhập ---------------------------------------------------------------
 
 test('đăng nhập thiếu email hoặc mật khẩu trả lỗi 400 chứ không đụng tới CSDL', async () => {
-  global.strapi = fakeStrapiWithUser(null);
+  useAdminUsers([]);
   for (const body of [{}, { email: 'a@b.vn' }, { password: 'x' }, { email: '', password: '' }]) {
     const ctx = buildCtx({ body, cookie: null });
     await auth.login(ctx);
@@ -99,20 +112,19 @@ test('đăng nhập thiếu email hoặc mật khẩu trả lỗi 400 chứ khô
 });
 
 test('đăng nhập body rỗng (không phải object) không làm sập server', async () => {
-  global.strapi = fakeStrapiWithUser(null);
+  useAdminUsers([]);
   const ctx = buildCtx({ body: null, cookie: null });
   await auth.login(ctx);
   assert.equal(ctx.status, 400);
 });
 
 test('email không tồn tại và mật khẩu sai trả về cùng một thông báo', async () => {
-  const user = { id: 1, email: 'admin@dha.vn', password: 'hash', firstname: 'A', lastname: 'B' };
 
-  global.strapi = fakeStrapiWithUser(null);
+  useAdminUsers([]);
   const unknown = buildCtx({ body: { email: 'lam@dha.vn', password: 'x' }, cookie: null });
   await auth.login(unknown);
 
-  global.strapi = fakeStrapiWithUser(user, { passwordOk: false });
+  useAdminUsers([ADMIN]);
   const wrongPassword = buildCtx({ body: { email: 'admin@dha.vn', password: 'sai' }, cookie: null });
   await auth.login(wrongPassword);
 
@@ -122,8 +134,7 @@ test('email không tồn tại và mật khẩu sai trả về cùng một thôn
 });
 
 test('email viết hoa hay dư khoảng trắng vẫn đăng nhập được', async () => {
-  const user = { id: 1, email: 'admin@dha.vn', password: 'hash', firstname: 'A', lastname: 'B' };
-  global.strapi = fakeStrapiWithUser(user);
+  useAdminUsers([ADMIN]);
   const ctx = buildCtx({ body: { email: '  ADMIN@DHA.VN ', password: 'dung' }, cookie: null });
   await auth.login(ctx);
   assert.equal(ctx.status, 200);
@@ -131,8 +142,7 @@ test('email viết hoa hay dư khoảng trắng vẫn đăng nhập được', a
 });
 
 test('cookie phiên là httpOnly và có hạn dùng', async () => {
-  const user = { id: 1, email: 'admin@dha.vn', password: 'hash' };
-  global.strapi = fakeStrapiWithUser(user);
+  useAdminUsers([ADMIN]);
   const ctx = buildCtx({ body: { email: 'admin@dha.vn', password: 'dung' }, cookie: null });
   await auth.login(ctx);
 
@@ -195,4 +205,20 @@ test('origin cấu hình qua biến môi trường được nhận, có hay khô
     if (previous === undefined) delete process.env.ADMIN_UI_ALLOWED_ORIGINS;
     else process.env.ADMIN_UI_ALLOWED_ORIGINS = previous;
   }
+});
+
+test('tài khoản bị khoá hoặc không có hash thì không đăng nhập được', async () => {
+  for (const user of [{ ...ADMIN, isActive: false }, { ...ADMIN, passwordHash: undefined }]) {
+    useAdminUsers([user]);
+    const ctx = buildCtx({ body: { email: 'admin@dha.vn', password: 'dung' }, cookie: null });
+    await auth.login(ctx);
+    assert.equal(ctx.status, 401, JSON.stringify({ isActive: user.isActive, hasHash: Boolean(user.passwordHash) }));
+  }
+});
+
+test('phiên đăng nhập mang documentId của adminUser', async () => {
+  useAdminUsers([ADMIN]);
+  const ctx = buildCtx({ body: { email: 'admin@dha.vn', password: 'dung' }, cookie: null });
+  await auth.login(ctx);
+  assert.equal(ctx.body.user.id, 'adminUser.u1');
 });

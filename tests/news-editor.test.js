@@ -86,7 +86,7 @@ test('bài viết có trang chi tiết riêng và nội dung được lọc trư
 });
 
 test('slug trùng nhau được thêm hậu tố thay vì báo lỗi unique của Strapi', () => {
-  const service = read('dha-cms/src/api/admin-ui/services/resources.js');
+  const service = read('dha-api/src/services/resources.js');
 
   assert.match(service, /ensureUniqueSlugs/, 'có bước bảo đảm slug duy nhất');
   assert.match(service, /\$\{base\}-\$\{suffix\}/, 'slug trùng được thêm hậu tố số');

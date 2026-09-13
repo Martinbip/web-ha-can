@@ -159,7 +159,7 @@ test('hero slides come from the CMS, not from hardcoded markup', () => {
 // the old published version to the website after an editor pressed Lưu — the
 // admin showed the new image, the site showed the old one.
 test('saving in the custom admin republishes so the website matches', () => {
-  const resources = read('dha-cms/src/api/admin-ui/services/resources.js');
+  const resources = read('dha-api/src/services/resources.js');
 
   assert.match(resources, /async function publishAfterWrite/, 'writes go through a republish helper');
   const helper = resources.split('async function publishAfterWrite')[1].split('\n}')[0];

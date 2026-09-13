@@ -5,7 +5,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
-const { normalizeTree, normalizeUrl } = require('../dha-cms/src/api/admin-ui/services/navigation');
+const { normalizeTree, normalizeUrl } = require('../dha-api/src/services/navigation');
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), 'utf8');
@@ -220,12 +220,12 @@ test('menu mặc định nằm trong dha-cms chứ không đọc file ngoài', (
 });
 
 test('admin thấy menu mặc định khi CMS chưa có bản ghi nào', () => {
-  const service = read('dha-cms/src/api/admin-ui/services/navigation.js');
+  const service = read('dha-api/src/services/navigation.js');
   assert.match(service, /items\.length \? items : getDefaultNavItems\(\)/, 'GET trả menu mặc định khi rỗng');
 });
 
 test('admin có trang sửa thanh menu và gọi đúng endpoint', () => {
-  const routes = read('dha-cms/src/api/admin-ui/routes/admin-ui.js');
+  const routes = read('dha-api/src/routes/admin-ui.js');
   const shell = read('admin/src/layout/AdminShell.jsx');
   const app = read('admin/src/App.jsx');
   const page = read('admin/src/pages/MenuPage.jsx');
