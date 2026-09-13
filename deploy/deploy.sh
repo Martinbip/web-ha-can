@@ -10,7 +10,7 @@ VPS_USER="root"
 VPS_HOST="183.81.39.14"
 VPS_PORT="22"
 FRONTEND_DIR="/var/www/dhakimloaimau.vn"
-CMS_DIR="/var/www/dha-cms"
+API_DIR="/var/www/dha-api"
 # ──────────────────────────────────────────────────────────
 
 SSH="ssh -p $VPS_PORT $VPS_USER@$VPS_HOST"
@@ -41,6 +41,8 @@ echo "▸ Sync frontend..."
 rsync -a --delete \
     --exclude="deploy/" \
     --exclude="dha-cms/" \
+    --exclude="dha-api/" \
+    --exclude="docs/" \
     --exclude="design-system/" \
     --exclude="admin/" \
     --exclude=".git/" \
@@ -74,28 +76,34 @@ else
     echo "▸ Admin không đổi → bỏ qua build admin (deploy nhanh)."
 fi
 
-# Chỉ đụng tới Strapi khi thư mục dha-cms/ thật sự có thay đổi
-if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^dha-cms/'; then
-    echo "▸ Phát hiện thay đổi CMS → sync + build Strapi..."
-    rsync -a \
+# Chỉ đụng tới dha-api khi thư mục dha-api/ thật sự có thay đổi. Chưa có
+# /var/www/dha-api/.env nghĩa là chưa tới ngày chuyển (docs/runbooks): chỉ chép
+# code, không khởi động — Strapi vẫn đang giữ cổng 1337.
+if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^dha-api/'; then
+    echo "▸ Phát hiện thay đổi API → sync dha-api..."
+    mkdir -p /var/www/dha-api
+    rsync -a --delete \
         --exclude=".env" \
-        --exclude=".tmp/" \
         --exclude="node_modules/" \
-        /var/www/web-ha-can/dha-cms/ \
-        /var/www/dha-cms/
+        --exclude="out/" \
+        /var/www/web-ha-can/dha-api/ \
+        /var/www/dha-api/
 
-    cd /var/www/dha-cms
+    cd /var/www/dha-api
     npm ci --omit=dev
-    NODE_ENV=production npm run build
 
-    if pm2 describe dha-cms > /dev/null 2>&1; then
-        pm2 restart dha-cms
+    if [ ! -f /var/www/dha-api/.env ]; then
+        echo "⚠️  Chưa có /var/www/dha-api/.env — bỏ qua khởi động dha-api (xem runbook chuyển Strapi → Sanity)."
+    elif pm2 describe dha-api > /dev/null 2>&1; then
+        pm2 restart dha-api
+        pm2 save
     else
         pm2 start /var/www/web-ha-can/deploy/ecosystem.config.js
+        pm2 save
     fi
-    pm2 save
+    cd /var/www/web-ha-can
 else
-    echo "▸ CMS không đổi → bỏ qua build Strapi (deploy nhanh)."
+    echo "▸ API không đổi → bỏ qua dha-api (deploy nhanh)."
 fi
 
 # Cảnh báo nếu nginx config thay đổi (không tự ghi đè vì Certbot quản lý SSL)

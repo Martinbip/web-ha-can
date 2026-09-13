@@ -1,82 +1,66 @@
 # Hướng dẫn Vận hành Headless CMS - DHA Minerals
 
-Hệ thống quản trị nội dung (Headless CMS) đã được tích hợp thành công bằng cách sử dụng **Strapi v5** (chạy SQLite cục bộ). 
+Nội dung website nằm trên **Sanity** (Content Lake, dataset private). Máy chủ
+nhỏ **`dha-api/`** (Koa) đứng giữa: phục vụ API công khai `/api/*` đúng dạng
+Strapi 5 mà `app.js` đang đọc, nhận form liên hệ/đặt mẫu, và phục vụ khu quản
+trị riêng `/admin`. Ảnh nằm ở Cloudinary. Thiết kế: `docs/superpowers/specs/2026-09-13-strapi-to-sanity-design.md`.
 
-## 1. Khởi chạy dự án ở môi trường phát triển (Local)
+## 1. Chạy ở máy phát triển
 
-Để chạy ứng dụng ở máy của bạn, hãy mở terminal và khởi động 2 máy chủ:
-
-### Bước 1: Chạy Strapi CMS
-Mở một cửa sổ Terminal mới và chạy:
 ```bash
-cd dha-cms
-npm run develop
+npm run api:install
+cp dha-api/.env.example dha-api/.env   # điền SANITY_* (dataset development) + ADMIN_UI_SESSION_SECRET
+./start.sh                             # dha-api :1337 + frontend :3000
+npm run admin:dev                      # khu quản trị :5173 (proxy /api sang :1337)
 ```
-*   **Địa chỉ CMS:** `http://localhost:1337`
-*   **Trang Quản trị Strapi (built-in Admin Panel):** `http://localhost:1337/strapi-admin`
 
-### Bước 2: Chạy trang Web Frontend
-Mở một cửa sổ Terminal khác ở thư mục gốc của trang web và chạy:
+Dataset dev trống thì nạp dữ liệu mẫu từ `data/`:
+
 ```bash
-npx serve -p 3000
+node dha-api/scripts/seed-from-json.js > dha-api/out/seed.ndjson
+SANITY_AUTH_TOKEN=... npx sanity@latest datasets import dha-api/out/seed.ndjson development \
+  --project-id "$SANITY_PROJECT_ID" --replace
 ```
-*   **Địa chỉ Web chính:** `http://localhost:3000`
 
----
+## 2. Tài khoản quản trị
 
-## 2. Truy cập Bảng Quản trị & Nhập liệu
+Không còn trang tạo tài khoản kiểu Strapi. Dùng CLI (mật khẩu nhập ẩn, không qua đối số):
 
-1.  Truy cập vào trang quản trị: `http://localhost:1337/strapi-admin`
-2.  Khi truy cập lần đầu tiên, Strapi sẽ yêu cầu bạn đăng ký tài khoản quản trị (Administrator). Hãy điền Tên, Email, và Mật khẩu của bạn để tạo tài khoản.
-3.  Sau khi đăng nhập, chọn mục **Content Manager** ở thanh menu bên trái.
-4.  Tại đây, bạn sẽ thấy danh sách các Content Types được tạo sẵn và đã tự động nạp dữ liệu mặc định (auto-seed) từ thư mục `data/`:
-    *   **Quặng Mẫu (Ores):** Chứa giá và nhóm quặng phục vụ bộ dự tính chi phí (Estimator).
-    *   **Gói Quặng Mẫu (Pricing Packages):** Chứa các gói quặng ở trang báo giá.
-    *   **Biểu phí Phân tích (Biểu Phí Phân Tích):** Đơn giá dịch vụ đo đạc phòng thí nghiệm.
-    *   **Biểu phí Khảo sát (Biểu Phí Khảo Sát):** Giá dịch vụ khảo sát thực địa.
-    *   **Dự án (Projects):** Danh sách các dự án địa chất.
-5.  Bạn có thể bấm **Create new entry** để thêm mới, hoặc click trực tiếp vào một dòng dữ liệu để sửa và lưu. Nhấn **Publish** để áp dụng thay đổi lên website.
+```bash
+cd dha-api
+node --env-file=.env scripts/admin-user.js create ten@dhakimloaimau.vn --first=Tên --last=Họ
+node --env-file=.env scripts/admin-user.js set-password ten@dhakimloaimau.vn
+node --env-file=.env scripts/admin-user.js disable ten@dhakimloaimau.vn
+```
 
----
+## 3. Dự phòng khi API lỗi (Static Fallback)
 
-## 3. Cơ chế hoạt động & Triển khai (Static Fallback)
-
-*   **Tải ảnh động:** Khi thêm mới một dự án trong trang quản trị, hãy bấm tải ảnh lên thư viện Media của Strapi. Hệ thống sẽ tự động tạo URL ảnh và trả về cho frontend hiển thị.
-*   **Cơ chế dự phòng (Static Fallback):**
-    *   Khi bạn chạy server Strapi ở cổng `1337`, Frontend (`app.js`) sẽ tự động gọi API lấy dữ liệu động mới nhất từ Strapi.
-    *   Nếu Strapi tắt (offline) hoặc khi bạn triển khai trang web này lên các hosting tĩnh (như GitHub Pages, Vercel tĩnh), mã nguồn Javascript sẽ tự động chuyển sang đọc các file JSON tĩnh tương ứng trong thư mục `data/` mà không gây lỗi giao diện. Điều này đảm bảo trang web luôn hiển thị đầy đủ thông tin ở mọi môi trường.
+Khi `/api` không trả lời, `app.js` tự đọc các file JSON tĩnh trong `data/`
+(trừ slide trang chủ, cố ý không có bản dự phòng). Dataset Sanity gói free bị
+**chặn cứng** khi hết hạn mức tháng — dha-api cache đọc 5 phút và xoá cache mỗi
+lần ghi để giữ số request thấp. Hạn mức thực tế của project ghi ở đây khi tạo:
+_(điền ở runbook bước 1)_.
 
 ---
 
 ## Custom Admin tại `/admin`
 
-Admin riêng được xây bằng React/Vite trong thư mục `admin/`.
+Admin riêng được xây bằng React/Vite trong thư mục `admin/`, gọi `/api/admin-ui/*`
+của `dha-api`.
 
-> **Lưu ý về route:** `/admin` trước đây trỏ tới trang quản trị built-in của Strapi. Để tránh xung đột với admin riêng mới, trang quản trị built-in của Strapi đã được **chuyển sang `/strapi-admin`** (xem `dha-cms/config/admin.js`, biến `url`). Từ nay:
-> *   `/admin` → Admin riêng (React/Vite, build tĩnh từ `admin/dist`).
-> *   `/strapi-admin` → Trang quản trị built-in của Strapi (dùng để quản lý Content-Type Builder, users & permissions, v.v.).
-
-Chạy local:
-
-```bash
-cd dha-cms
-npm run develop
-```
-
-```bash
-npm run admin:dev
-```
-
-Biến môi trường cần có trong Strapi:
+Biến môi trường của `dha-api` (xem `dha-api/.env.example`):
 
 ```env
-ADMIN_URL=/strapi-admin
+SANITY_PROJECT_ID=...
+SANITY_DATASET=production
+SANITY_API_TOKEN=...          # quyền Editor, chỉ nằm trên máy chủ
 ADMIN_UI_SESSION_SECRET=replace-with-random-secret
 CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
 FRONTEND_URL=http://localhost:3000
+HOST=127.0.0.1                # trên VPS: chỉ nghe nội bộ, nginx đứng trước
 ```
 
-Không đưa `CLOUDINARY_URL`, `CLOUDINARY_API_SECRET`, hoặc token Strapi vào frontend.
+Không đưa `SANITY_API_TOKEN`, `CLOUDINARY_URL`, `CLOUDINARY_API_SECRET` vào frontend.
 
 ### Hướng dẫn sử dụng ngay trong admin
 
@@ -108,11 +92,9 @@ website: sửa tên hiển thị và đường dẫn, kéo thả để sắp x�
 xoá mục, và tạo menu con hai cấp (nút `→` biến một mục thành mục con của mục ngay
 trên nó, nút `←` đưa nó trở lại cấp 1).
 
-Dữ liệu nằm trong single type `navigation` (`items` kiểu JSON), đọc công khai qua
+Dữ liệu nằm trong document `navigation` (`items` kiểu JSON), đọc công khai qua
 `GET /api/navigation` và ghi qua `GET|PUT /api/admin-ui/navigation`. Menu mặc định
-nằm trong `dha-cms/src/api/navigation/default-items.js` chứ không nằm ở `data/`:
-deploy chỉ rsync thư mục `dha-cms/` sang máy chủ Strapi nên seed đọc file ở gốc
-repo sẽ không tìm thấy gì. Backend chỉ
+nằm trong `dha-api/src/defaults/default-items.js` chứ không nằm ở `data/`. Backend chỉ
 chấp nhận đường dẫn nội bộ (`/...`, `#...`) hoặc `http(s)://...`, tối đa 2 cấp.
 
 Menu 8 mục viết sẵn trong các file HTML vẫn giữ nguyên và đóng vai trò dự phòng:
@@ -122,10 +104,11 @@ hướng nếu CMS lỗi. Đổi đường dẫn của một mục **không** t�
 
 ### Triển khai (Production)
 
-*   Nginx phục vụ `/admin` như static site (`try_files $uri $uri/ /admin/index.html;`), trỏ vào thư mục `admin/dist` đã build, được rsync vào `/var/www/dhakimloaimau.vn/admin/`.
-*   Nginx proxy `/strapi-admin` sang Strapi built-in admin panel (`http://127.0.0.1:1337`), thay cho `/admin` trước đây.
-*   `deploy/deploy.sh` chỉ build & sync `admin/` khi phát hiện thay đổi trong thư mục đó (tương tự cơ chế đã áp dụng cho `dha-cms/`), giữ deploy nhanh khi không đổi gì ở admin.
-*   Scripts hữu ích ở root `package.json`: `npm run admin:install`, `npm run admin:dev`, `npm run admin:build`.
+*   Nginx phục vụ `/admin` như static site (`try_files $uri $uri/ /admin/index.html;`), trỏ vào `admin/dist` đã build, được rsync vào `/var/www/dhakimloaimau.vn/admin/`.
+*   Nginx proxy `/api/` sang `dha-api` (`http://127.0.0.1:1337`, pm2 app `dha-api`, cấu hình ở `/var/www/dha-api/.env`).
+*   `deploy/deploy.sh` chỉ build & sync `admin/` hoặc `dha-api/` khi thư mục đó đổi. Chưa có `/var/www/dha-api/.env` thì chỉ chép code, không khởi động.
+*   Sao lưu: `deploy/backup-sanity.sh` (cron hằng tuần) xuất dataset vào `/var/backups/dha-sanity`.
+*   Chuyển từ Strapi và rollback: `docs/runbooks/2026-09-strapi-to-sanity-cutover.md`.
 
 ## Test tự động (Playwright)
 
@@ -147,7 +130,7 @@ npm run test:e2e
 Để chạy thêm các test cần đăng nhập admin (đăng nhập/đăng xuất, tạo-sửa-xóa một bài tin tức test, upload/xóa một ảnh test trong `ha-can/settings`):
 
 1.  Sao chép `.env.e2e.example` thành `.env.e2e` (đã gitignore, không commit).
-2.  Điền `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` bằng một tài khoản Strapi admin thật.
+2.  Điền `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` bằng một tài khoản quản trị thật (tạo bằng `dha-api/scripts/admin-user.js`).
 3.  Chạy lại `npm run test:e2e`.
 
 Các test có ghi dữ liệu (tạo tin tức, upload ảnh) luôn tự xóa dữ liệu test ngay sau khi chạy — kể cả khi assertion phía trên bị fail — để không để lại rác `[E2E TEST] ...` hay ảnh test trên production. Muốn nhắm vào môi trường khác, đặt `E2E_BASE_URL` trong `.env.e2e`.

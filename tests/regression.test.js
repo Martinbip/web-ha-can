@@ -88,14 +88,14 @@ test('dynamic service links are validated before navigation', () => {
 test('deployment scripts avoid accidental commits and destructive port kills', () => {
   const deploy = read('deploy/deploy.sh');
   const start = read('start.sh');
-  const backup = read('deploy/backup-strapi.sh');
+  const backup = read('deploy/backup-sanity.sh');
   const rootPackage = schema('package.json');
 
   assert.doesNotMatch(deploy, /git add -A/, 'deploy should not stage every local file');
   assert.match(deploy, /git diff --quiet/, 'deploy should require a clean working tree');
   assert.doesNotMatch(start, /kill -9/, 'dev startup should not force kill unrelated processes');
-  assert.match(backup, /dha-cms\/\.tmp\/data\.db/, 'backup script includes Strapi sqlite database');
-  assert.match(backup, /public\/uploads/, 'backup script includes Strapi uploads');
+  assert.match(backup, /datasets export/, 'backup script exports the Sanity dataset');
+  assert.match(backup, /chmod 700/, 'backups (password hashes, customer data) stay private');
   // Chốt cứng cả chuỗi lệnh khiến test này đỏ mỗi lần thêm một file test mới.
   // Điều thực sự cần bảo vệ là: không có file test nào bị bỏ quên ngoài `npm test`.
   const testScript = rootPackage.scripts.test;
@@ -248,4 +248,24 @@ test('services and workflow fall back to seed content only while the CMS is empt
   assert.match(helper, /items\.length > 0/, 'CMS content wins whenever it exists');
   assert.match(appJs, /fetchWithSeedContent\('services/, 'services use seed content');
   assert.match(appJs, /fetchWithSeedContent\('workflow-steps/, 'workflow steps use seed content');
+});
+
+test('deploy chạy dha-api thay cho Strapi', () => {
+  const deploy = read('deploy/deploy.sh');
+  const nginx = read('deploy/nginx.conf');
+  const [app] = require('../deploy/ecosystem.config.js').apps;
+
+  assert.equal(app.name, 'dha-api');
+  assert.equal(app.instances, 1, 'cache xoá-khi-ghi chỉ đúng khi có đúng một tiến trình');
+  assert.equal((app.env || {}).PORT, undefined, 'cổng lấy từ .env để chạy song song ở 1338 được');
+
+  assert.match(deploy, /--exclude="dha-api\/"/, 'không chép mã dha-api vào thư mục web công khai');
+  assert.match(deploy, /--exclude="docs\/"/, 'không công khai spec/plan/runbook');
+  assert.match(deploy, /\/var\/www\/dha-api\/\.env/, 'chưa có .env thì không khởi động dha-api');
+  assert.doesNotMatch(deploy, /pm2 restart dha-cms/, 'không còn khởi động lại Strapi');
+
+  for (const location of ['/strapi-admin', '/content-manager/', '/content-type-builder/', '/i18n/', '/users-permissions/', '/upload/', '/uploads/']) {
+    assert.ok(!nginx.includes(`location ${location} `), `nginx bỏ ${location}`);
+  }
+  assert.match(nginx, /location \/api\/ \{\s*proxy_pass\s+http:\/\/127\.0\.0\.1:1337;/);
 });
