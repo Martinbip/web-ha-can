@@ -2113,12 +2113,12 @@ a.product-card {
     background-color: #C5A059;
     color: #FFFFFF;
     border-color: #C5A059;
+}
 
 /* Nút chưa có link được ẩn bằng thuộc tính hidden (app.js và prerender) —
    display: flex ở trên sẽ đè mất nó nếu không nói rõ ở đây. */
 .social-link[hidden] {
     display: none;
-}
 }
 
 .social-link svg {

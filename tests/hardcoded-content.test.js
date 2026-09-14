@@ -333,5 +333,13 @@ test('không còn link /#about trỏ vào khu không tồn tại', () => {
 // .social-link đặt display: flex, đè mất tác dụng của thuộc tính hidden — nút
 // mạng xã hội chưa có link vẫn hiện và dẫn khách tới tài khoản mẫu.
 test('nút mạng xã hội bị ẩn thì không hiện dù .social-link đặt display', () => {
-  assert.match(read('styles.css'), /\.social-link\[hidden\]\s*\{\s*display:\s*none;\s*\}/);
+  const { document } = new JSDOM(`<style>${read('styles.css')}</style>`).window;
+  const topLevel = [...document.styleSheets[0].cssRules];
+  const hiddenRule = topLevel.find((rule) => rule.selectorText === '.social-link[hidden]');
+  assert.ok(hiddenRule, '.social-link[hidden] phải là quy tắc cấp ngoài cùng, không lồng trong khối khác');
+  assert.equal(hiddenRule.style.display, 'none');
+  const hover = topLevel.find((rule) => rule.selectorText === '.social-link:hover');
+  assert.ok(hover, 'vẫn còn khối .social-link:hover');
+  assert.equal(hover.style.borderColor, 'rgb(197, 160, 89)', '.social-link:hover phải giữ nguyên border-color: #C5A059');
+  assert.equal(hover.cssRules?.length || 0, 0, '.social-link:hover không được chứa quy tắc lồng');
 });
