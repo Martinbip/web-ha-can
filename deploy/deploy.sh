@@ -54,6 +54,13 @@ echo "▸ Sinh sitemap từ CMS..."
 node /var/www/web-ha-can/scripts/generate-sitemap.js /var/www/dhakimloaimau.vn/sitemap.xml \
     || echo "⚠️  Không sinh được sitemap — giữ nguyên bản cũ."
 
+# Lượt 1: rsync vừa ghi đè HTML bằng bản mẫu trong repo — ghi ngay dữ liệu từ
+# Strapi đang chạy, để website không nằm ở nội dung mẫu trong lúc build (hay mãi
+# nếu build lỗi và set -e dừng script).
+echo "▸ Ghi cài đặt website, danh mục và menu từ CMS vào HTML tĩnh (lượt 1)..."
+node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn \
+    || echo "⚠️  Không ghi được cài đặt vào HTML — trang vẫn tự áp bằng JS như trước."
+
 # Chỉ build & sync admin khi thư mục admin/ thật sự có thay đổi
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^admin/'; then
     echo "▸ Phát hiện thay đổi Admin → build & sync admin tĩnh..."
@@ -90,26 +97,27 @@ else
     echo "▸ CMS không đổi → bỏ qua build Strapi (deploy nhanh)."
 fi
 
-# Prerender đọc Strapi qua localhost nên phải chạy sau khi Strapi (có thể vừa
-# build lại ở trên) đã lên hẳn — chạy sớm hơn thì trường mới của lần deploy này
-# chưa có trong API. HTML trong repo chứa nội dung mẫu, nội dung thật nằm trong
-# CMS; không ghi sẵn thì khách vào lần đầu thấy nội dung mẫu chớp qua. Ghi thẳng
-# vào thư mục nginx phục vụ, không ghi vào repo — hệt như sitemap.
+# Lượt 2: Strapi vừa được build & khởi động lại ở trên có thể mang trường mới
+# mà lượt 1 (chạy trước khi build) chưa thấy — ghi lại để HTML tĩnh có đủ dữ
+# liệu mới nhất. Dò /_health thay vì /api/site-setting vì bản ghi site-setting
+# có thể chưa tồn tại (API trả 404), khi đó cả danh mục lẫn menu cũng bị bỏ qua
+# theo; --max-time 5 để một Strapi nhận kết nối nhưng treo không làm deploy treo
+# mãi. Ghi thẳng vào thư mục nginx phục vụ, không ghi vào repo — hệt như sitemap.
 echo "▸ Đợi Strapi sẵn sàng..."
 STRAPI_READY=0
 for _ in $(seq 1 30); do
-    if curl -sf -o /dev/null http://127.0.0.1:1337/api/site-setting; then
+    if curl -sf -o /dev/null --max-time 5 http://127.0.0.1:1337/_health; then
         STRAPI_READY=1
         break
     fi
     sleep 2
 done
 if [ "$STRAPI_READY" = 1 ]; then
-    echo "▸ Ghi cài đặt website, danh mục và menu từ CMS vào HTML tĩnh..."
+    echo "▸ Ghi cài đặt website, danh mục và menu từ CMS vào HTML tĩnh (lượt 2)..."
     node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn \
         || echo "⚠️  Không ghi được cài đặt vào HTML — trang vẫn tự áp bằng JS như trước."
 else
-    echo "⚠️  Strapi chưa trả lời sau 60 giây — bỏ qua prerender, HTML giữ bản cũ."
+    echo "⚠️  Strapi chưa trả lời sau 60 giây — bỏ qua prerender lượt 2, HTML giữ dữ liệu từ lượt 1."
 fi
 
 # Cảnh báo nếu nginx config thay đổi (không tự ghi đè vì Certbot quản lý SSL)
