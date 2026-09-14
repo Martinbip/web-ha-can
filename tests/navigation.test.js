@@ -236,3 +236,20 @@ test('admin có trang sửa thanh menu và gọi đúng endpoint', () => {
   assert.match(page, /draggable/, 'các mục kéo thả được');
   assert.match(page, /saveNavigation/, 'trang lưu được menu');
 });
+
+test('lưu thanh menu thì ghi lại HTML tĩnh ngay', () => {
+  const prerender = require('../dha-cms/src/api/site-setting/prerender');
+  const original = prerender.schedulePrerender;
+  let calls = 0;
+  prerender.schedulePrerender = () => {
+    calls += 1;
+  };
+  try {
+    const lifecycles = require('../dha-cms/src/api/navigation/content-types/navigation/lifecycles');
+    lifecycles.afterCreate();
+    lifecycles.afterUpdate();
+    assert.equal(calls, 2, 'tạo và sửa menu đều ghi lại HTML');
+  } finally {
+    prerender.schedulePrerender = original;
+  }
+});
