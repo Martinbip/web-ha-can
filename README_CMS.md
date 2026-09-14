@@ -18,7 +18,7 @@ Dataset dev trống thì nạp dữ liệu mẫu từ `data/`:
 
 ```bash
 node dha-api/scripts/seed-from-json.js > dha-api/out/seed.ndjson
-SANITY_AUTH_TOKEN=... npx sanity@latest datasets import dha-api/out/seed.ndjson development \
+SANITY_AUTH_TOKEN=... npx sanity@6.13.2 datasets import dha-api/out/seed.ndjson development \
   --project-id "$SANITY_PROJECT_ID" --replace
 ```
 
