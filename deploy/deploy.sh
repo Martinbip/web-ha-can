@@ -54,14 +54,6 @@ echo "▸ Sinh sitemap từ CMS..."
 node /var/www/web-ha-can/scripts/generate-sitemap.js /var/www/dhakimloaimau.vn/sitemap.xml \
     || echo "⚠️  Không sinh được sitemap — giữ nguyên bản cũ."
 
-# HTML trong repo chứa nội dung mẫu (hotline, địa chỉ, câu chữ), nội dung thật
-# nằm trong CMS. Không ghi sẵn vào HTML thì khách vào lần đầu thấy nội dung mẫu
-# chớp qua trước khi app.js kịp thay. Ghi thẳng vào thư mục nginx phục vụ, không
-# ghi vào repo — hệt như sitemap ở trên.
-echo "▸ Ghi cài đặt website và danh mục từ CMS vào HTML tĩnh..."
-node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn \
-    || echo "⚠️  Không ghi được cài đặt vào HTML — trang vẫn tự áp bằng JS như trước."
-
 # Chỉ build & sync admin khi thư mục admin/ thật sự có thay đổi
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^admin/'; then
     echo "▸ Phát hiện thay đổi Admin → build & sync admin tĩnh..."
@@ -96,6 +88,28 @@ if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^dha-cms/'; then
     pm2 save
 else
     echo "▸ CMS không đổi → bỏ qua build Strapi (deploy nhanh)."
+fi
+
+# Prerender đọc Strapi qua localhost nên phải chạy sau khi Strapi (có thể vừa
+# build lại ở trên) đã lên hẳn — chạy sớm hơn thì trường mới của lần deploy này
+# chưa có trong API. HTML trong repo chứa nội dung mẫu, nội dung thật nằm trong
+# CMS; không ghi sẵn thì khách vào lần đầu thấy nội dung mẫu chớp qua. Ghi thẳng
+# vào thư mục nginx phục vụ, không ghi vào repo — hệt như sitemap.
+echo "▸ Đợi Strapi sẵn sàng..."
+STRAPI_READY=0
+for _ in $(seq 1 30); do
+    if curl -sf -o /dev/null http://127.0.0.1:1337/api/site-setting; then
+        STRAPI_READY=1
+        break
+    fi
+    sleep 2
+done
+if [ "$STRAPI_READY" = 1 ]; then
+    echo "▸ Ghi cài đặt website, danh mục và menu từ CMS vào HTML tĩnh..."
+    node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn \
+        || echo "⚠️  Không ghi được cài đặt vào HTML — trang vẫn tự áp bằng JS như trước."
+else
+    echo "⚠️  Strapi chưa trả lời sau 60 giây — bỏ qua prerender, HTML giữ bản cũ."
 fi
 
 # Cảnh báo nếu nginx config thay đổi (không tự ghi đè vì Certbot quản lý SSL)
