@@ -85,6 +85,28 @@ function runDocumentStoreContract(label, makeStore) {
     await news.create({ data: { title: 'Không ngày', slug: 'khong-ngay' } });
     assert.equal(await news.count({ filters: { date: { $gte: '1960-01-01' } } }), 1);
   });
+
+  test(`[${label}] patchMany: sửa nhiều bản ghi trong một lần gọi`, async () => {
+    const news = makeStore().documents('news');
+    const a = await news.create({ data: { title: 'A', slug: 'a' } });
+    const b = await news.create({ data: { title: 'B', slug: 'b' } });
+
+    await news.patchMany([
+      { documentId: a.documentId, data: { title: 'A2' } },
+      { documentId: b.documentId, data: { title: 'B2' } },
+    ]);
+
+    assert.equal((await news.findOne({ documentId: a.documentId })).title, 'A2');
+    assert.equal((await news.findOne({ documentId: b.documentId })).title, 'B2');
+  });
+
+  test(`[${label}] patchMany: danh sách rỗng không lỗi, không ghi gì`, async () => {
+    await makeStore().documents('news').patchMany([]);
+  });
+
+  test(`[${label}] patchMany: documentId không tồn tại thì báo lỗi`, async () => {
+    await assert.rejects(makeStore().documents('news').patchMany([{ documentId: 'khong-co', data: { title: 'x' } }]));
+  });
 }
 
 module.exports = { runDocumentStoreContract };

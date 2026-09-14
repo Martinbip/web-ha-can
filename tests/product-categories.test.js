@@ -136,7 +136,13 @@ test('đổi mã danh mục thì sản phẩm đã gán đi theo mã mới', asy
   const rows = fake.__rows('product');
   assert.deepEqual(rows[0].categories, ['kim-loai-mau']);
   assert.deepEqual(rows[1].categories, ['kim-loai-mau', 'black-metal']);
-  assert.equal(fake.__calls.filter((call) => call.method === 'update').length, 2, 'sản phẩm không liên quan thì không bị ghi lại');
+  // Ghi gộp: một lần patchMany cho cả lô thay vì một update() mỗi sản phẩm
+  // (mục 5, xem dha-api/src/hooks/product-category.js). p3 không có mã liên
+  // quan nên không nằm trong lô sửa.
+  const patchCalls = fake.__calls.filter((call) => call.method === 'patchMany');
+  assert.equal(patchCalls.length, 1, 'ghi trong đúng một lần gọi patchMany');
+  assert.equal(patchCalls[0].changes.length, 2, 'sản phẩm không liên quan thì không bị ghi lại');
+  assert.ok(!fake.__calls.some((call) => call.method === 'update'), 'không còn gọi update() từng sản phẩm một');
   setStore(null);
 });
 

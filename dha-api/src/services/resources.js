@@ -321,6 +321,19 @@ async function isSlugTaken(service, field, value, documentId) {
   return matches.some((entry) => entry.documentId !== documentId);
 }
 
+// Hook (dọn dẹp phụ, vd rewriteProductCategories) chạy SAU khi bản ghi chính
+// đã lưu thành công. Hook lỗi không được biến một lượt lưu thành công thành
+// 500: log đủ để vận hành viên tra được (type + documentId + thông điệp) rồi
+// vẫn trả kết quả của lượt ghi chính, không thêm trường cảnh báo mới vào
+// response (giữ đúng hợp đồng admin hiện có).
+async function runHookSafely(run, config, documentId) {
+  try {
+    await run();
+  } catch (err) {
+    console.error(`[dha-api] hook lỗi: type=${config.sanityType} documentId=${documentId || ''} - ${err.message}`);
+  }
+}
+
 async function create(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
@@ -329,7 +342,7 @@ async function create(ctx) {
   const payload = await ensureUniqueSlugs(config, cleanData(config, ctx.request.body));
   const data = await getService(config).create({ data: payload });
   await publishAfterWrite(config, data?.documentId);
-  await hooks.afterCreate(config, data);
+  await runHookSafely(() => hooks.afterCreate(config, data), config, data?.documentId);
   ctx.body = { data: normalizeEntry(data, config) };
 }
 
@@ -368,8 +381,8 @@ async function update(ctx) {
   }
 
   await publishAfterWrite(config, data?.documentId, { wasPublished });
-  if (created) await hooks.afterCreate(config, data);
-  else await hooks.afterUpdate(config, before, data);
+  if (created) await runHookSafely(() => hooks.afterCreate(config, data), config, data?.documentId);
+  else await runHookSafely(() => hooks.afterUpdate(config, before, data), config, data?.documentId);
 
   ctx.body = { data: normalizeEntry(data, config) };
 }
@@ -382,7 +395,7 @@ async function remove(ctx) {
   const service = getService(config);
   const before = await hooks.snapshot(config, service, ctx.params.id);
   await service.delete({ documentId: ctx.params.id });
-  await hooks.afterDelete(config, before);
+  await runHookSafely(() => hooks.afterDelete(config, before), config, ctx.params.id);
   ctx.body = { ok: true };
 }
 

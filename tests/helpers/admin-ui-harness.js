@@ -204,6 +204,17 @@ function createFakeStore(seed = {}) {
         Object.assign(entry, data, { updatedAt: '2026-02-02T00:00:00.000Z' });
         return { ...entry };
       },
+      // Ghi gộp: một lời gọi cho nhiều documentId, ghi lại đúng MỘT bản ghi
+      // trong __calls — store Sanity thật (dha-api/src/sanity/store.js) cũng
+      // phải qua cùng bộ test hợp đồng cho thao tác này.
+      async patchMany(changes) {
+        calls.push({ type, method: 'patchMany', changes });
+        for (const { documentId, data } of changes || []) {
+          const entry = rowsOf(type).find((row) => row.documentId === documentId);
+          if (!entry) throw new Error(`Không có bản ghi ${documentId}`);
+          Object.assign(entry, data, { updatedAt: '2026-02-02T00:00:00.000Z' });
+        }
+      },
       async delete({ documentId } = {}) {
         calls.push({ type, method: 'delete', documentId });
         const rows = rowsOf(type);

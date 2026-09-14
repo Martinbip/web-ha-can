@@ -32,6 +32,13 @@ test('admin đổi mã danh mục thì sản phẩm đi theo mã mới', async (
   assert.equal(ctx.status, 200);
   assert.deepEqual(fake.__rows('product')[0].categories, ['kim-loai-mau', 'rare-earth']);
   assert.deepEqual(fake.__rows('product')[1].categories, ['black-metal']);
+
+  // Một lần ghi gộp (patchMany) cho cả sản phẩm cần sửa, không phải K lần
+  // update() — đúng nội dung mục 5: tránh K commit + K lần nạp lại cache.
+  const productCalls = fake.__calls.filter((call) => call.type === 'product');
+  assert.deepEqual(productCalls.map((call) => call.method), ['findMany', 'patchMany']);
+  assert.equal(productCalls[1].changes.length, 1, 'chỉ sản phẩm có mã cũ mới nằm trong lô sửa');
+  assert.equal(productCalls[1].changes[0].documentId, 'p1');
 });
 
 test('admin xoá danh mục thì mã của nó được gỡ khỏi sản phẩm', async () => {
@@ -71,4 +78,32 @@ test('module khác không kích hoạt hook nào', async (t) => {
   use({ news: [] });
   await resources.create(buildCtx({ params: { type: 'news' }, body: { data: { title: 'A', slug: 'a' } } }));
   assert.equal(calls.mock.callCount(), 0);
+});
+
+test('hook lỗi được log, không biến một lượt lưu thành công thành lỗi 500 (T5)', async (t) => {
+  const productCategory = require('../dha-api/src/hooks/product-category');
+  const boom = new Error('sập khi ghi gộp sản phẩm');
+  t.mock.method(productCategory, 'afterUpdate', () => {
+    throw boom;
+  });
+  const loggedErrors = t.mock.method(console, 'error', () => {});
+
+  const fake = use({
+    productCategory: [{ documentId: 'cat-1', name: 'Kim loại màu', slug: 'color-metal' }],
+    product: [{ documentId: 'p1', name: 'Đồng', categories: ['color-metal'] }],
+  });
+  const ctx = buildCtx({ params: { type: 'product-categories', id: 'cat-1' }, body: { data: { slug: 'kim-loai-mau' } } });
+  await resources.update(ctx);
+
+  // Bản ghi chính (danh mục) vẫn được lưu và trả về như lượt lưu thành công.
+  assert.equal(ctx.status, 200);
+  assert.equal(ctx.body.data.slug, 'kim-loai-mau');
+  assert.equal(fake.__rows('productCategory')[0].slug, 'kim-loai-mau');
+
+  // Lỗi hook được log (type + documentId + thông điệp), không bị nuốt im lặng.
+  assert.equal(loggedErrors.mock.callCount(), 1);
+  const [logged] = loggedErrors.mock.calls[0].arguments;
+  assert.match(String(logged), /productCategory/);
+  assert.match(String(logged), /cat-1/);
+  assert.match(String(logged), /sập khi ghi gộp sản phẩm/);
 });

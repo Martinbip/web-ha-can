@@ -194,6 +194,41 @@ function createSanityStore({ client, ttlMs } = {}) {
         return api.findOne({ documentId });
       },
 
+      // Ghi gộp nhiều documentId trong MỘT transaction + MỘT lần xoá cache —
+      // dùng khi một sự kiện (vd đổi mã danh mục) phải sửa hàng loạt bản ghi
+      // cùng type, để không phải K lần commit + K lần nạp lại cache như gọi
+      // update() trong vòng lặp (spec mục 5). Theo đúng luật nháp-trước như
+      // update(): type có nháp thì tạo nháp từ bản xuất bản nếu còn thiếu rồi
+      // vá vào nháp; type không có nháp thì vá thẳng vào bản xuất bản.
+      async patchMany(changes) {
+        if (!changes || !changes.length) return;
+
+        const pairs = new Map();
+        for (const { documentId } of changes) {
+          if (pairs.has(documentId)) continue;
+          // eslint-disable-next-line no-await-in-loop
+          const pair = await loadPair(documentId);
+          if (!pair) throw new Error(`Không có bản ghi ${documentId}`);
+          pairs.set(documentId, pair);
+        }
+
+        await commit((tx) => {
+          for (const { documentId, data } of changes) {
+            const pair = pairs.get(documentId);
+            const cleaned = cleanInput(data);
+            if (!Object.keys(cleaned).length) continue;
+
+            if (options.drafts) {
+              const draftId = DRAFT_PREFIX + documentId;
+              if (!pair.draft) tx.createIfNotExists({ ...withoutPublishedAt(pair.published), _id: draftId, _type: type });
+              tx.patch(draftId, { set: cleaned });
+            } else {
+              tx.patch((pair.published || pair.draft)._id, { set: cleaned });
+            }
+          }
+        });
+      },
+
       async delete({ documentId } = {}) {
         await commit((tx) => {
           tx.delete(documentId);
