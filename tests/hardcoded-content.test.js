@@ -329,3 +329,9 @@ test('không còn link /#about trỏ vào khu không tồn tại', () => {
     assert.ok(!read(file).includes('/#about'), `${file} còn link /#about`);
   }
 });
+
+// .social-link đặt display: flex, đè mất tác dụng của thuộc tính hidden — nút
+// mạng xã hội chưa có link vẫn hiện và dẫn khách tới tài khoản mẫu.
+test('nút mạng xã hội bị ẩn thì không hiện dù .social-link đặt display', () => {
+  assert.match(read('styles.css'), /\.social-link\[hidden\]\s*\{\s*display:\s*none;\s*\}/);
+});
