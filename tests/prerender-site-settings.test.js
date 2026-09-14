@@ -73,6 +73,7 @@ const DYNAMIC_SELECTORS = [
   '.stat-label',
   'a[href^="tel:"]',
   'a[aria-label]',
+  '[data-category-list]',
 ];
 
 function snapshot(window) {
@@ -81,17 +82,23 @@ function snapshot(window) {
   );
 }
 
-function runAppJs(html, settings) {
+function runAppJs(html, settings, categories = null) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
     url: 'https://dhakimloaimau.vn/',
     virtualConsole: new VirtualConsole(),
   });
   const { window } = dom;
-  window.fetch = (url) =>
-    String(url).includes('/api/site-setting')
-      ? Promise.resolve({ ok: true, json: async () => ({ data: settings }) })
-      : Promise.reject(new Error('network disabled in tests'));
+  window.fetch = (url) => {
+    const target = String(url);
+    if (target.includes('/api/site-setting')) {
+      return Promise.resolve({ ok: true, json: async () => ({ data: settings }) });
+    }
+    if (categories && target.includes('/api/product-categories')) {
+      return Promise.resolve({ ok: true, json: async () => ({ data: categories }) });
+    }
+    return Promise.reject(new Error('network disabled in tests'));
+  };
   const script = window.document.createElement('script');
   script.textContent = APP_JS;
   window.document.body.appendChild(script);
@@ -110,10 +117,12 @@ const PAGES = fs
 
 for (const file of PAGES) {
   test(`${file}: prerender xong thì app.js không phải sửa gì nữa`, async () => {
-    const window = runAppJs(applySettingsToHtml(readPage(file), SETTINGS), SETTINGS);
+    const html = applyCategoriesToHtml(applySettingsToHtml(readPage(file), SETTINGS), CATEGORIES);
+    const window = runAppJs(html, SETTINGS, CATEGORIES);
 
     const before = snapshot(window);
     await window.initSiteSettings();
+    await window.initCategoryLinks();
     const after = snapshot(window);
 
     for (const [index, selector] of DYNAMIC_SELECTORS.entries()) {
@@ -258,4 +267,66 @@ test('đọc danh mục lỗi thì vẫn ghi cài đặt, và ngược lại', a
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// Bản sao sang realm của test để so sánh — mảng tạo trong jsdom mang prototype khác.
+function plain(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+test('app.js dựng danh sách danh mục ra cùng một DOM với prerender', () => {
+  const window = runAppJs(readPage('index.html'), SETTINGS);
+  const visible = pickVisibleCategories(CATEGORIES);
+  const fromJs = window.document.createElement('ul');
+  fromJs.innerHTML = window.renderCategoryLinks(visible);
+  const fromPrerender = window.document.createElement('ul');
+  fromPrerender.innerHTML = renderCategoryLinks(visible);
+
+  assert.equal(fromJs.innerHTML, fromPrerender.innerHTML);
+});
+
+test('app.js và prerender dùng chung quy tắc chọn danh mục', () => {
+  const window = runAppJs(readPage('index.html'), SETTINGS);
+  assert.deepEqual(plain(window.eval('DEFAULT_PRODUCT_CATEGORIES')), DEFAULT_CATEGORIES);
+  for (const items of [CATEGORIES, [], [{ slug: 'x', name: 'X', visible: false }]]) {
+    assert.deepEqual(plain(window.pickVisibleCategories(items)), plain(pickVisibleCategories(items)));
+  }
+});
+
+test('CMS lỗi thì app.js giữ nguyên danh sách danh mục đã prerender', async () => {
+  const html = applyCategoriesToHtml(readPage('index.html'), CATEGORIES);
+  const window = runAppJs(html, SETTINGS); // không trả danh mục = CMS lỗi
+  const lists = () => [...window.document.querySelectorAll('[data-category-list]')].map((el) => el.outerHTML);
+
+  const before = lists();
+  await window.initCategoryLinks();
+
+  assert.deepEqual(lists(), before);
+  assert.ok(before[0].includes('filter=kim-loai-mau'), 'vẫn là bản prerender, không phải file dự phòng');
+});
+
+test('CMS trả lời thì app.js thay danh sách mặc định bằng danh mục thật', async () => {
+  const window = runAppJs(readPage('contact.html'), SETTINGS, CATEGORIES);
+  await window.initCategoryLinks();
+
+  const hrefs = [...window.document.querySelectorAll('footer [data-category-list] a')].map((a) => a.getAttribute('href'));
+  assert.deepEqual(hrefs, ['/products?filter=kim-loai-mau', '/products?filter=quang-%26-mau']);
+});
+
+test('CMS lỗi thì tab lọc dùng danh mục prerender đã ghi sẵn', async () => {
+  const html = applyCategoriesToHtml(readPage('products.html'), CATEGORIES);
+  const window = runAppJs(html, SETTINGS);
+
+  const tabs = await window.resolveTabCategories(window.document.getElementById('product-filter-tabs'));
+
+  assert.deepEqual(plain(tabs), [
+    { slug: 'kim-loai-mau', name: 'Kim Loại Màu' },
+    { slug: 'quang-&-mau', name: 'Quặng <Mẫu> & "Chuẩn"' },
+  ]);
+});
+
+test('CMS lỗi và HTML chưa prerender thì tab lọc dùng danh mục mặc định', async () => {
+  const window = runAppJs(readPage('products.html'), SETTINGS);
+  const tabs = await window.resolveTabCategories(window.document.getElementById('product-filter-tabs'));
+  assert.deepEqual(plain(tabs).map((tab) => tab.slug), ['color-metal', 'black-metal', 'rare-earth']);
 });

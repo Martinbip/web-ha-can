@@ -77,3 +77,41 @@ test('trang nào cũng có danh sách danh mục ở chân trang, trang chủ c�
   }
   assert.ok(load('index.html').querySelector('aside [data-category-list]'), 'trang chủ có khối danh mục bên hông');
 });
+
+const APP_JS = read('app.js');
+
+// Mở trang chi tiết sản phẩm với một sản phẩm giả, trả về href của nút quay lại.
+async function backLinkFor(product) {
+  const dom = new JSDOM(read('product-detail.html'), {
+    runScripts: 'dangerously',
+    url: `https://dhakimloaimau.vn/product-detail?id=${product.uid}`,
+    virtualConsole: new VirtualConsole(),
+  });
+  const { window } = dom;
+  window.fetch = (url) =>
+    String(url).includes('/api/products')
+      ? Promise.resolve({ ok: true, json: async () => ({ data: [product] }) })
+      : Promise.reject(new Error('network disabled in tests'));
+  const script = window.document.createElement('script');
+  script.textContent = APP_JS;
+  window.document.body.appendChild(script);
+
+  await window.initProductDetailPage();
+  const link = [...window.document.querySelectorAll('#product-detail-content a')]
+    .find((a) => a.textContent.includes('Quay Lại Danh Mục'));
+  return link.getAttribute('href');
+}
+
+test('nút "Quay Lại Danh Mục" trỏ tới danh mục đầu tiên của sản phẩm', async () => {
+  const base = { uid: 'quang-dong', name: 'Quặng Đồng', group: 'dong', price: 1000 };
+  assert.equal(await backLinkFor({ ...base, categories: ['black-metal', 'color-metal'] }), '/products?filter=black-metal');
+  assert.equal(await backLinkFor({ ...base, categories: [] }), '/products', 'chưa có danh mục thì về trang Sản phẩm');
+});
+
+test('HTML nạp app.js và styles.css bản mới', () => {
+  for (const file of fs.readdirSync(root).filter((name) => name.endsWith('.html'))) {
+    const html = read(file);
+    assert.match(html, /app\.js\?v=3\.4"/, `${file} còn app.js bản cũ`);
+    assert.match(html, /styles\.css\?v=1\.1\.8"/, `${file} còn styles.css bản cũ`);
+  }
+});
