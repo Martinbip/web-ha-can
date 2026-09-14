@@ -571,3 +571,16 @@ test('CMS lỗi thì app.js giữ menu đã prerender', async () => {
   assert.equal(window.document.querySelector('.nav-links').outerHTML, before);
   assert.ok(before.includes('Quặng &lt;Mẫu&gt;'), 'vẫn là menu prerender, không phải menu tĩnh');
 });
+
+test('CMS lỗi thì menu con đã prerender vẫn mở được bằng nút', async () => {
+  const html = applyNavigationToHtml(readPage('news.html'), NAV_ITEMS, '/news');
+  const window = runAppJs(html, SETTINGS, null, { url: 'https://dhakimloaimau.vn/news' }); // không trả menu = CMS lỗi
+  await window.initNavigationMenu();
+  await window.initNavigationMenu(); // lần gọi thứ hai không được gắn thêm sự kiện
+
+  const toggle = window.document.querySelector('.has-submenu .nav-submenu-toggle');
+  toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+  assert.ok(toggle.closest('.has-submenu').classList.contains('submenu-open'), 'bấm một lần là mở menu con');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+});

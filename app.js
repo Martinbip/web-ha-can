@@ -839,6 +839,7 @@ async function initNavigationMenu() {
         items = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
     } catch (err) {
         console.warn('[CMS] Giữ menu tĩnh trong HTML:', err.message);
+        initNavSubmenus(list);
         markActiveNavLink();
         return;
     }
@@ -886,8 +887,16 @@ function renderNavItems(items) {
 }
 
 // Trên desktop menu con mở bằng hover (CSS); trên mobile cần bấm vào mũi tên.
+// DOMContentLoaded và lời gọi trực tiếp có thể cùng chạy initNavigationMenu()
+// trên cùng một menu (nhánh CMS lỗi không dựng lại DOM) — WeakSet chống gắn
+// listener hai lần, để một cú bấm không mở rồi đóng ngay. Không dùng
+// dataset/thuộc tính DOM vì test so khớp DOM giữa prerender và app.js sẽ vỡ
+// nếu DOM có thêm thuộc tính.
+const boundSubmenuToggles = new WeakSet();
 function initNavSubmenus(list) {
     list.querySelectorAll('.nav-submenu-toggle').forEach(toggle => {
+        if (boundSubmenuToggles.has(toggle)) return;
+        boundSubmenuToggles.add(toggle);
         toggle.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
