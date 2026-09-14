@@ -212,3 +212,159 @@ test('mã lọc hợp lệ (?filter=black-metal) vẫn lọc đúng và tô sán
   const activeBtn = window.document.querySelector('.product-filter-btn.active');
   assert.equal(activeBtn?.dataset.filter, 'black-metal', 'phải tô sáng đúng tab black-metal');
 });
+
+// Đợt 2: trường đầu trang/chân trang trong Cài đặt website.
+const CHROME_FIELDS = {
+  header_cta_label: ['string', 40, 'Yêu Cầu Mẫu'],
+  header_cta_url: ['string', 300, '/contact'],
+  footer_categories_title: ['string', 60, 'DANH MỤC SẢN PHẨM'],
+  footer_links_title: ['string', 60, 'HỖ TRỢ KHÁCH HÀNG'],
+  copyright_text: ['string', 200, 'Kim Loại Màu DHA. Bản quyền được bảo lưu.'],
+};
+
+test('Cài đặt website có các trường đầu trang/chân trang và admin sửa được', () => {
+  const schema = JSON.parse(read('dha-cms/src/api/site-setting/content-types/site-setting/schema.json'));
+  for (const [name, [type, maxLength, fallback]] of Object.entries(CHROME_FIELDS)) {
+    const attribute = schema.attributes[name];
+    assert.ok(attribute, `schema thiếu ${name}`);
+    assert.equal(attribute.type, type, `${name} sai kiểu`);
+    assert.equal(attribute.maxLength, maxLength, `${name} sai độ dài tối đa`);
+    assert.equal(attribute.default, fallback, `${name} sai mặc định`);
+  }
+  assert.equal(schema.attributes.footer_links.type, 'json');
+
+  const config = getResourceConfig('site-setting');
+  for (const name of [...Object.keys(CHROME_FIELDS), 'footer_links']) {
+    assert.ok(config.editableFields.includes(name), `CMS chưa cho ghi ${name}`);
+    assert.ok(config.fields[name], `CMS thiếu khai báo ${name}`);
+  }
+
+  const adminConfig = read('admin/src/config/resources.js');
+  for (const name of Object.keys(CHROME_FIELDS)) {
+    assert.match(adminConfig, new RegExp(`${name}: \\{ label: '`), `admin thiếu ô ${name}`);
+  }
+  assert.match(adminConfig, /footer_links: \{ label: 'Liên kết chân trang', type: 'link-list'/);
+  assert.match(read('admin/src/components/FieldRenderer.jsx'), /case 'link-list':/);
+});
+
+// Đợt 2: đầu trang, menu và chân trang dùng chung cho 9 trang.
+const CHROME_REGIONS = ['.top-header', 'header.site-header', 'nav.main-navigation', 'footer.footer'];
+
+function chromeOf(file) {
+  const doc = load(file);
+  // Dấu "đang xem" của menu khác nhau theo trang là đúng — bỏ đi trước khi so.
+  doc.querySelectorAll('nav.main-navigation .active').forEach((el) => el.classList.remove('active'));
+  return CHROME_REGIONS.map((selector) => {
+    const region = doc.querySelector(selector);
+    assert.ok(region, `${file} thiếu ${selector}`);
+    return region.outerHTML.replace(/\s+/g, ' ');
+  });
+}
+
+test('9 trang dùng chung một đầu trang, menu và chân trang', () => {
+  const reference = chromeOf('index.html');
+  for (const file of PAGES) {
+    chromeOf(file).forEach((html, index) => {
+      assert.equal(html, reference[index], `${file}: ${CHROME_REGIONS[index]} lệch so với index.html`);
+    });
+  }
+});
+
+// Vùng đã nối CMS trong đầu trang/chân trang — chữ trong đó do admin quyết định.
+const CHROME_CMS = [
+  '.site-hotline', '.site-email', '.site-address', '.site-office-name', '.site-tax-code', '.site-brand-bio',
+  '.logo-accent', '.logo-text', '[data-site-text]', '[data-category-list]', '[data-footer-links]',
+  '[data-copyright]', 'ul.nav-links', 'a[aria-label]',
+].join(', ');
+
+// Nhãn giao diện được phép giữ trong code (nhóm 6 của lộ trình).
+const CHROME_ALLOWED_TEXT = new Set(['📞', 'Hotline:', 'Email:', 'Tìm']);
+
+test('đầu trang, menu và chân trang không còn chữ viết cứng ngoài nhãn giao diện', () => {
+  for (const file of PAGES) {
+    const doc = load(file);
+    for (const selector of CHROME_REGIONS) {
+      const region = doc.querySelector(selector);
+      region.querySelectorAll(CHROME_CMS).forEach((el) => el.remove());
+      const walker = doc.createTreeWalker(region, 4 /* SHOW_TEXT */);
+      let node;
+      while ((node = walker.nextNode())) {
+        const value = node.textContent.trim();
+        if (!value) continue;
+        assert.ok(CHROME_ALLOWED_TEXT.has(value), `${file} ${selector}: "${value}" viết cứng`);
+      }
+    }
+  }
+});
+
+test('chân trang mặc định: 5 liên kết đúng thứ tự, đủ 4 mạng xã hội, có email và bản quyền', () => {
+  const footer = load('index.html').querySelector('footer.footer');
+  assert.deepEqual(
+    [...footer.querySelectorAll('[data-footer-links] a')].map((a) => [a.textContent, a.getAttribute('href')]),
+    [
+      ['Dự Tính Giá Đơn Hàng', '/estimator'],
+      ['Đơn Giá Phân Tích', '/pricing'],
+      ['Tin Tức Thị Trường', '/news'],
+      ['Quy Trình Giao Nhận', '/#workflow'],
+      ['Liên Hệ Báo Giá', '/contact'],
+    ],
+  );
+  assert.deepEqual(
+    [...footer.querySelectorAll('a.social-link')].map((a) => a.getAttribute('aria-label')),
+    ['Facebook', 'YouTube', 'Twitter/X', 'Zalo'],
+  );
+  assert.ok(footer.querySelector('.site-email'), 'cột liên hệ có email');
+  assert.equal(footer.querySelector('[data-site-text="footer_categories_title"]').textContent, 'DANH MỤC SẢN PHẨM');
+  assert.equal(footer.querySelector('[data-site-text="footer_links_title"]').textContent, 'HỖ TRỢ KHÁCH HÀNG');
+  assert.match(footer.querySelector('[data-copyright]').textContent, /^© \d{4} Kim Loại Màu DHA\. Bản quyền được bảo lưu\.$/);
+
+  const cta = load('index.html').querySelector('.btn-contact');
+  assert.equal(cta.dataset.siteText, 'header_cta_label');
+  assert.equal(cta.textContent, 'Yêu Cầu Mẫu');
+  assert.equal(cta.getAttribute('href'), '/contact');
+});
+
+test('không còn link /#about trỏ vào khu không tồn tại', () => {
+  for (const file of PAGES) {
+    assert.ok(!read(file).includes('/#about'), `${file} còn link /#about`);
+  }
+});
+
+// .social-link đặt display: flex, đè mất tác dụng của thuộc tính hidden — nút
+// mạng xã hội chưa có link vẫn hiện và dẫn khách tới tài khoản mẫu.
+test('nút mạng xã hội bị ẩn thì không hiện dù .social-link đặt display', () => {
+  const { document } = new JSDOM(`<style>${read('styles.css')}</style>`).window;
+  const topLevel = [...document.styleSheets[0].cssRules];
+  const hiddenRule = topLevel.find((rule) => rule.selectorText === '.social-link[hidden]');
+  assert.ok(hiddenRule, '.social-link[hidden] phải là quy tắc cấp ngoài cùng, không lồng trong khối khác');
+  assert.equal(hiddenRule.style.display, 'none');
+  const hover = topLevel.find((rule) => rule.selectorText === '.social-link:hover');
+  assert.ok(hover, 'vẫn còn khối .social-link:hover');
+  assert.equal(hover.style.borderColor, 'rgb(197, 160, 89)', '.social-link:hover phải giữ nguyên border-color: #C5A059');
+  assert.equal(hover.cssRules?.length || 0, 0, '.social-link:hover không được chứa quy tắc lồng');
+});
+
+// Prerender ghi tại chỗ vào HTML đang phục vụ, nên "bỏ trống" thực chất là
+// giữ nội dung của lần ghi trước (không phải quay lại giá trị mặc định cho
+// tới lần deploy sau) — gợi ý trong admin phải nói đúng điều đó.
+test('gợi ý các trường đầu/chân trang trong admin nói đúng việc bỏ trống giữ nội dung đang hiện', () => {
+  const source = read('admin/src/config/resources.js');
+  const fields = [
+    'header_cta_label',
+    'header_cta_url',
+    'footer_categories_title',
+    'footer_links_title',
+    'footer_links',
+    'copyright_text',
+  ];
+
+  for (const name of fields) {
+    const match = source.match(new RegExp(`${name}: \\{[^}]*\\}`));
+    assert.ok(match, `không tìm thấy khai báo trường ${name}`);
+    const declaration = match[0];
+    assert.match(declaration, /đang hiện|đang dùng/, `${name}: hint phải nói giữ nội dung đang hiện/đang dùng`);
+    assert.doesNotMatch(declaration, /5 link mặc định/, `${name}: hint không được hứa "5 link mặc định"`);
+    assert.doesNotMatch(declaration, /giữ dòng mặc định/, `${name}: hint không được hứa "giữ dòng mặc định"`);
+    assert.doesNotMatch(declaration, /vẫn dẫn tới \/contact/, `${name}: hint không được hứa "vẫn dẫn tới /contact"`);
+  }
+});

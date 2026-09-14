@@ -186,6 +186,9 @@ function renderInput({ id, field, value, onChange, setField, values }) {
     case 'text-list':
       return <TextListField id={id} value={value} onChange={onChange} />;
 
+    case 'link-list':
+      return <LinkListField id={id} value={value} onChange={onChange} />;
+
     case 'cloudinary-image':
       return (
         <ImagePicker
@@ -342,6 +345,101 @@ function TextListField({ id, value, onChange }) {
       ))}
       <button type="button" className="btn-secondary" onClick={addItem}>
         + Thêm dòng
+      </button>
+    </div>
+  );
+}
+
+// Cùng quy tắc với menu (dha-cms/src/api/admin-ui/services/navigation.js) và
+// safeNavUrl() trên website: đường dẫn nội bộ, neo trong trang, hoặc http(s).
+// "//vi-du.vn" và "/\vi-du.vn" trông như đường dẫn trong website nhưng trình
+// duyệt hiểu là một tên miền khác nên cũng bị cảnh báo, không chỉ riêng "/".
+function linkUrlWarning(item) {
+  const url = String(item.url || '').trim();
+  if (!url) {
+    return String(item.label || '').trim() ? 'Chưa có đường dẫn — liên kết này sẽ không hiện trên website.' : '';
+  }
+  if (/^\/[/\\]/.test(url)) {
+    return 'Đường dẫn phải bắt đầu bằng "/", "#" hoặc "http(s)://" — liên kết này sẽ không hiện trên website.';
+  }
+  if (url.startsWith('/') || url.startsWith('#') || /^https?:\/\/\S+$/i.test(url)) return '';
+  return 'Đường dẫn phải bắt đầu bằng "/", "#" hoặc "http(s)://" — liên kết này sẽ không hiện trên website.';
+}
+
+// Danh sách liên kết { label, url, visible } — dùng cho cột liên kết ở chân trang.
+// Dòng không phải object (dữ liệu cũ hỏng) bị bỏ qua thay vì làm vỡ màn hình.
+function LinkListField({ id, value, onChange }) {
+  const items = Array.isArray(value) ? value.filter((item) => item && typeof item === 'object' && !Array.isArray(item)) : [];
+
+  function updateItem(index, patch) {
+    onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  }
+
+  function moveItem(index, delta) {
+    const target = index + delta;
+    if (target < 0 || target >= items.length) return;
+    const next = items.slice();
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+  }
+
+  function removeItem(index) {
+    onChange(items.filter((_, i) => i !== index));
+  }
+
+  function addItem() {
+    onChange([...items, { label: '', url: '', visible: true }]);
+  }
+
+  return (
+    <div className="link-list" id={id}>
+      {items.map((item, index) => {
+        const warning = linkUrlWarning(item);
+        return (
+          <div className="link-list-row" key={index}>
+            <input
+              type="text"
+              aria-label="Chữ hiển thị"
+              placeholder="Chữ hiển thị"
+              value={item.label || ''}
+              onChange={(event) => updateItem(index, { label: event.target.value })}
+            />
+            <input
+              type="text"
+              aria-label="Đường dẫn"
+              placeholder="/trang hoặc https://..."
+              value={item.url || ''}
+              onChange={(event) => updateItem(index, { url: event.target.value })}
+            />
+            <label className="link-list-visible">
+              <input
+                type="checkbox"
+                checked={item.visible !== false}
+                onChange={(event) => updateItem(index, { visible: event.target.checked })}
+              />
+              Hiện
+            </label>
+            <button type="button" className="btn-secondary" aria-label="Đưa lên" disabled={index === 0} onClick={() => moveItem(index, -1)}>
+              ↑
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              aria-label="Đưa xuống"
+              disabled={index === items.length - 1}
+              onClick={() => moveItem(index, 1)}
+            >
+              ↓
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => removeItem(index)}>
+              Xóa
+            </button>
+            {warning ? <p className="field-hint link-list-warning">{warning}</p> : null}
+          </div>
+        );
+      })}
+      <button type="button" className="btn-secondary" onClick={addItem}>
+        + Thêm liên kết
       </button>
     </div>
   );

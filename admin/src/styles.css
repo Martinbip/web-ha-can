@@ -955,6 +955,37 @@ button:hover {
   gap: 8px;
 }
 
+.link-list {
+  display: grid;
+  gap: 8px;
+}
+
+.link-list-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.link-list-visible {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.link-list-warning {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #b45309;
+}
+
+@media (max-width: 640px) {
+  .link-list-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ── Trình sửa thanh menu ── */
 .menu-page {
   padding-bottom: 96px;

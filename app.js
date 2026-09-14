@@ -447,6 +447,7 @@ function renderSiteSettings(settings) {
     });
 
     applySiteTexts(settings);
+    applySiteChrome(settings);
     applyLogo(settings);
     applyFavicon(settings);
     initHeroContent(settings);
@@ -554,6 +555,37 @@ function applySiteTexts(settings) {
         const value = String(settings[el.dataset.siteText] ?? '').trim();
         if (value) el.textContent = value;
     });
+}
+
+// Liên kết chân trang — cùng quy tắc với renderFooterLinks() trong
+// scripts/prerender-site-settings.js; lệch nhau là chân trang chớp.
+function renderFooterLinks(items) {
+    if (!Array.isArray(items)) return '';
+    return items
+        .filter(item => item && item.visible !== false && String(item.label ?? '').trim() && safeNavUrl(item.url))
+        .map(item => `<li><a href="${escapeHtml(safeNavUrl(item.url))}">${escapeHtml(item.label)}</a></li>`)
+        .join('');
+}
+
+// Phần đầu trang/chân trang không đi qua data-site-text: danh sách liên kết,
+// dòng bản quyền (tự ghép năm) và link của nút đầu trang. Ô nào bỏ trống hoặc
+// sai quy tắc thì giữ nguyên HTML — khớp với bản đã prerender.
+function applySiteChrome(settings) {
+    const footerLinks = renderFooterLinks(settings.footer_links);
+    if (footerLinks) {
+        document.querySelectorAll('[data-footer-links]').forEach(list => { list.innerHTML = footerLinks; });
+    }
+
+    const copyright = String(settings.copyright_text ?? '').trim();
+    if (copyright) {
+        const line = `© ${new Date().getFullYear()} ${copyright}`;
+        document.querySelectorAll('[data-copyright]').forEach(el => { el.textContent = line; });
+    }
+
+    const ctaUrl = safeNavUrl(settings.header_cta_url);
+    if (ctaUrl) {
+        document.querySelectorAll('.btn-contact').forEach(el => { el.setAttribute('href', ctaUrl); });
+    }
 }
 
 // ======================================================
@@ -807,6 +839,7 @@ async function initNavigationMenu() {
         items = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
     } catch (err) {
         console.warn('[CMS] Giữ menu tĩnh trong HTML:', err.message);
+        initNavSubmenus(list);
         markActiveNavLink();
         return;
     }
@@ -818,11 +851,16 @@ async function initNavigationMenu() {
     markActiveNavLink();
 }
 
+// "//vi-du.vn" và "/\vi-du.vn" trông như đường dẫn trong website nhưng trình
+// duyệt hiểu là một tên miền khác nên bị loại riêng — dễ thành link ra ngoài
+// do gõ nhầm "//contact". Cùng quy tắc với safeUrl() trong
+// scripts/prerender-site-settings.js.
 function safeNavUrl(value) {
     const raw = String(value || '').trim();
     if (!raw) return '';
+    if (/^\/[/\\]/.test(raw)) return '';
     if (raw.startsWith('/') || raw.startsWith('#')) return raw;
-    if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^https?:\/\/\S+$/i.test(raw)) return raw;
     return '';
 }
 
@@ -830,10 +868,10 @@ function renderNavItems(items) {
     if (!Array.isArray(items)) return '';
 
     const html = items
-        .filter(item => item && item.visible !== false && item.label && safeNavUrl(item.url))
+        .filter(item => item && item.visible !== false && String(item.label ?? '').trim() && safeNavUrl(item.url))
         .map(item => {
             const children = (Array.isArray(item.children) ? item.children : [])
-                .filter(child => child && child.visible !== false && child.label && safeNavUrl(child.url));
+                .filter(child => child && child.visible !== false && String(child.label ?? '').trim() && safeNavUrl(child.url));
 
             const link = `<a href="${escapeHtml(safeNavUrl(item.url))}" class="nav-link">${escapeHtml(item.label)}</a>`;
             if (!children.length) return `<li>${link}</li>`;
@@ -854,8 +892,16 @@ function renderNavItems(items) {
 }
 
 // Trên desktop menu con mở bằng hover (CSS); trên mobile cần bấm vào mũi tên.
+// DOMContentLoaded và lời gọi trực tiếp có thể cùng chạy initNavigationMenu()
+// trên cùng một menu (nhánh CMS lỗi không dựng lại DOM) — WeakSet chống gắn
+// listener hai lần, để một cú bấm không mở rồi đóng ngay. Không dùng
+// dataset/thuộc tính DOM vì test so khớp DOM giữa prerender và app.js sẽ vỡ
+// nếu DOM có thêm thuộc tính.
+const boundSubmenuToggles = new WeakSet();
 function initNavSubmenus(list) {
     list.querySelectorAll('.nav-submenu-toggle').forEach(toggle => {
+        if (boundSubmenuToggles.has(toggle)) return;
+        boundSubmenuToggles.add(toggle);
         toggle.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();

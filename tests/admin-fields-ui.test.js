@@ -145,3 +145,61 @@ test('trường bắt buộc được đánh dấu sao và trường chỉ đọ
   assert.match(readOnly.view.text(), /chỉ đọc/);
   readOnly.view.unmount();
 });
+
+test('liên kết chân trang: thêm, gõ, đổi thứ tự, ẩn và xoá được', options, async () => {
+  const { view, state } = await renderField({
+    name: 'footer_links',
+    field: { label: 'Liên kết chân trang', type: 'link-list' },
+    value: [{ label: 'Tin Tức', url: '/news', visible: true }],
+  });
+
+  await view.click(view.byText('button', 'Thêm liên kết'));
+  assert.equal(view.all('.link-list-row').length, 2, 'thêm được dòng mới');
+  const [labelInput, urlInput] = view.all('.link-list-row')[1].querySelectorAll('input[type="text"]');
+  await view.type(labelInput, 'Liên Hệ');
+  await view.type(urlInput, '/contact');
+  assert.deepEqual(state.value, [
+    { label: 'Tin Tức', url: '/news', visible: true },
+    { label: 'Liên Hệ', url: '/contact', visible: true },
+  ]);
+
+  await view.click(view.all('.link-list-row')[1].querySelector('button[aria-label="Đưa lên"]'));
+  assert.deepEqual(state.value.map((item) => item.label), ['Liên Hệ', 'Tin Tức']);
+
+  await view.check(view.all('.link-list-row')[0].querySelector('input[type="checkbox"]'), false);
+  assert.equal(state.value[0].visible, false, 'tắt được công tắc hiện');
+
+  await view.click(view.byText('.link-list-row button', 'Xóa'));
+  assert.deepEqual(state.value.map((item) => item.label), ['Tin Tức'], 'xoá đúng dòng đầu');
+  view.unmount();
+});
+
+test('liên kết chân trang: đường dẫn sai quy tắc hiện cảnh báo, dữ liệu hỏng không làm vỡ màn hình', options, async () => {
+  const { view } = await renderField({
+    name: 'footer_links',
+    field: { label: 'Liên kết chân trang', type: 'link-list' },
+    value: [{ label: 'Độc', url: 'javascript:alert(1)', visible: true }],
+  });
+  assert.match(view.one('.link-list-warning').textContent, /bắt đầu bằng/);
+  view.unmount();
+
+  for (const value of [null, 'chuoi', 42, {}, ['chu']]) {
+    const { view: broken } = await renderField({
+      name: 'footer_links',
+      field: { label: 'Liên kết chân trang', type: 'link-list' },
+      value,
+    });
+    assert.ok(broken.one('.link-list'), `value ${JSON.stringify(value)} vẫn dựng được danh sách`);
+    broken.unmount();
+  }
+});
+
+test('liên kết chân trang: URL kiểu "//..." (protocol-relative) cũng bị cảnh báo', options, async () => {
+  const { view } = await renderField({
+    name: 'footer_links',
+    field: { label: 'Liên kết chân trang', type: 'link-list' },
+    value: [{ label: 'Ngoài', url: '//evil.com', visible: true }],
+  });
+  assert.ok(view.one('.link-list-warning'), '"//evil.com" trông như đường dẫn nội bộ nhưng thực ra dẫn ra ngoài');
+  view.unmount();
+});
