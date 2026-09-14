@@ -447,6 +447,7 @@ function renderSiteSettings(settings) {
     });
 
     applySiteTexts(settings);
+    applySiteChrome(settings);
     applyLogo(settings);
     applyFavicon(settings);
     initHeroContent(settings);
@@ -554,6 +555,37 @@ function applySiteTexts(settings) {
         const value = String(settings[el.dataset.siteText] ?? '').trim();
         if (value) el.textContent = value;
     });
+}
+
+// Liên kết chân trang — cùng quy tắc với renderFooterLinks() trong
+// scripts/prerender-site-settings.js; lệch nhau là chân trang chớp.
+function renderFooterLinks(items) {
+    if (!Array.isArray(items)) return '';
+    return items
+        .filter(item => item && item.visible !== false && item.label && safeNavUrl(item.url))
+        .map(item => `<li><a href="${escapeHtml(safeNavUrl(item.url))}">${escapeHtml(item.label)}</a></li>`)
+        .join('');
+}
+
+// Phần đầu trang/chân trang không đi qua data-site-text: danh sách liên kết,
+// dòng bản quyền (tự ghép năm) và link của nút đầu trang. Ô nào bỏ trống hoặc
+// sai quy tắc thì giữ nguyên HTML — khớp với bản đã prerender.
+function applySiteChrome(settings) {
+    const footerLinks = renderFooterLinks(settings.footer_links);
+    if (footerLinks) {
+        document.querySelectorAll('[data-footer-links]').forEach(list => { list.innerHTML = footerLinks; });
+    }
+
+    const copyright = String(settings.copyright_text ?? '').trim();
+    if (copyright) {
+        const line = `© ${new Date().getFullYear()} ${copyright}`;
+        document.querySelectorAll('[data-copyright]').forEach(el => { el.textContent = line; });
+    }
+
+    const ctaUrl = safeNavUrl(settings.header_cta_url);
+    if (ctaUrl) {
+        document.querySelectorAll('.btn-contact').forEach(el => { el.setAttribute('href', ctaUrl); });
+    }
 }
 
 // ======================================================

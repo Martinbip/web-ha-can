@@ -72,6 +72,15 @@ const SETTINGS = {
   facebook_url: 'https://facebook.com/dha',
   hotline_box_title: 'GỌI KỸ SƯ',
   hotline_box_note: 'Phản hồi trong 15 phút\nHỗ trợ cả Chủ nhật',
+  header_cta_label: 'Báo Giá Ngay',
+  header_cta_url: '/pricing',
+  footer_categories_title: 'DANH MỤC',
+  footer_links_title: 'LIÊN KẾT NHANH',
+  footer_links: [
+    { label: 'Tin Tức', url: '/news', visible: true },
+    { label: 'A & "B"', url: '/contact?x=1&y=2', visible: true },
+  ],
+  copyright_text: 'Công ty DHA.',
 };
 
 // Những chỗ app.js đụng tới khi áp cài đặt — cũng chính là những chỗ có thể chớp.
@@ -95,6 +104,10 @@ const DYNAMIC_SELECTORS = [
   'a[href^="tel:"]',
   'a[aria-label]',
   '[data-category-list]',
+  '.nav-links',
+  '[data-footer-links]',
+  '[data-copyright]',
+  '.btn-contact',
 ];
 
 function snapshot(window) {
@@ -103,20 +116,23 @@ function snapshot(window) {
   );
 }
 
-function runAppJs(html, settings, categories = null) {
+function runAppJs(html, settings, categories = null, { url = 'https://dhakimloaimau.vn/', navigation = null } = {}) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
-    url: 'https://dhakimloaimau.vn/',
+    url,
     virtualConsole: new VirtualConsole(),
   });
   const { window } = dom;
-  window.fetch = (url) => {
-    const target = String(url);
+  window.fetch = (input) => {
+    const target = String(input);
     if (target.includes('/api/site-setting')) {
       return Promise.resolve({ ok: true, json: async () => ({ data: settings }) });
     }
     if (categories && target.includes('/api/product-categories')) {
       return Promise.resolve({ ok: true, json: async () => ({ data: categories }) });
+    }
+    if (navigation && target.includes('/api/navigation')) {
+      return Promise.resolve({ ok: true, json: async () => ({ data: { items: navigation } }) });
     }
     return Promise.reject(new Error('network disabled in tests'));
   };
@@ -138,12 +154,21 @@ const PAGES = fs
 
 for (const file of PAGES) {
   test(`${file}: prerender xong thì app.js không phải sửa gì nữa`, async () => {
-    const html = applyCategoriesToHtml(applySettingsToHtml(readPage(file), SETTINGS), CATEGORIES);
-    const window = runAppJs(html, SETTINGS, CATEGORIES);
+    const pagePath = pagePathForFile(file);
+    const html = applyNavigationToHtml(
+      applyCategoriesToHtml(applySettingsToHtml(readPage(file), SETTINGS), CATEGORIES),
+      NAV_ITEMS,
+      pagePath,
+    );
+    const window = runAppJs(html, SETTINGS, CATEGORIES, {
+      url: `https://dhakimloaimau.vn${pagePath}`,
+      navigation: NAV_ITEMS,
+    });
 
     const before = snapshot(window);
     await window.initSiteSettings();
     await window.initCategoryLinks();
+    await window.initNavigationMenu();
     const after = snapshot(window);
 
     for (const [index, selector] of DYNAMIC_SELECTORS.entries()) {
@@ -189,7 +214,9 @@ test('chạy prerender nhiều lần cho ra cùng một kết quả', () => {
 // bỏ trống thì giữ nguyên chữ có sẵn (giống cách logo và data-site-text vẫn làm).
 test('CMS bỏ trống ô nào thì app.js cũng không xóa chữ mẫu của ô đó', async () => {
   const partial = { hotline: '0912345678' };
-  const window = runAppJs(applySettingsToHtml(readPage('contact.html'), partial), partial);
+  const window = runAppJs(applySettingsToHtml(readPage('contact.html'), partial), partial, null, {
+    url: 'https://dhakimloaimau.vn/contact',
+  });
 
   const before = snapshot(window);
   await window.initSiteSettings();
@@ -492,4 +519,55 @@ test('cả ba nguồn cùng lỗi thì báo đủ ba lý do', async () => {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('app.js dựng liên kết chân trang ra cùng một DOM với prerender', () => {
+  const window = runAppJs(readPage('index.html'), SETTINGS);
+  const items = [
+    { label: 'A & "B" <c>', url: '/a?x=1&y=2', visible: true },
+    { label: 'Ẩn', url: '/x', visible: false },
+    { label: 'Độc', url: 'javascript:alert(1)', visible: true },
+  ];
+  const fromJs = window.document.createElement('ul');
+  fromJs.innerHTML = window.renderFooterLinks(items);
+  const fromPrerender = window.document.createElement('ul');
+  fromPrerender.innerHTML = renderFooterLinks(items);
+
+  assert.equal(fromJs.innerHTML, fromPrerender.innerHTML);
+  assert.equal(fromJs.children.length, 1);
+});
+
+test('app.js áp liên kết chân trang, bản quyền và link nút đầu trang từ cài đặt', async () => {
+  const window = runAppJs(readPage('contact.html'), SETTINGS, null, { url: 'https://dhakimloaimau.vn/contact' });
+  await window.initSiteSettings();
+  const doc = window.document;
+
+  assert.deepEqual(
+    [...doc.querySelectorAll('[data-footer-links] a')].map((a) => [a.textContent, a.getAttribute('href')]),
+    [['Tin Tức', '/news'], ['A & "B"', '/contact?x=1&y=2']],
+  );
+  assert.equal(doc.querySelector('[data-copyright]').textContent, `© ${new Date().getFullYear()} Công ty DHA.`);
+  assert.equal(doc.querySelector('.btn-contact').getAttribute('href'), '/pricing');
+  assert.equal(doc.querySelector('.btn-contact').textContent, 'Báo Giá Ngay');
+});
+
+test('cài đặt bỏ trống thì app.js giữ nguyên chân trang và nút đầu trang', async () => {
+  const partial = { hotline: '0912345678', header_cta_url: 'javascript:alert(1)', footer_links: [] };
+  const window = runAppJs(readPage('news.html'), partial, null, { url: 'https://dhakimloaimau.vn/news' });
+  const pick = () => ['[data-footer-links]', '[data-copyright]', '.btn-contact'].map((s) => window.document.querySelector(s).outerHTML);
+
+  const before = pick();
+  await window.initSiteSettings();
+  assert.deepEqual(pick(), before);
+});
+
+test('CMS lỗi thì app.js giữ menu đã prerender', async () => {
+  const html = applyNavigationToHtml(readPage('news.html'), NAV_ITEMS, '/news');
+  const window = runAppJs(html, SETTINGS, null, { url: 'https://dhakimloaimau.vn/news' }); // không trả menu = CMS lỗi
+  const before = window.document.querySelector('.nav-links').outerHTML;
+
+  await window.initNavigationMenu();
+
+  assert.equal(window.document.querySelector('.nav-links').outerHTML, before);
+  assert.ok(before.includes('Quặng &lt;Mẫu&gt;'), 'vẫn là menu prerender, không phải menu tĩnh');
 });
