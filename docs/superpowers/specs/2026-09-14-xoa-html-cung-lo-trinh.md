@@ -67,3 +67,19 @@ thật.
 - **Test chống tái phát.** Mỗi đợt mở rộng một test quét HTML: chữ khách nhìn
   thấy phải nằm trong vùng đã nối CMS hoặc trong danh sách cho phép của nhóm 6.
   Sau đợt 3 danh sách cho phép chỉ còn nhóm 6.
+
+## Việc còn nợ
+
+`scripts/prerender-site-settings.js` ghi tại chỗ vào thư mục đang phục vụ
+(`/var/www/dhakimloaimau.vn`), không đọc từ bản mẫu trong repo
+(`/var/www/web-ha-can/*.html`). Vì vậy một ô để trống trong admin không quay
+về giá trị mặc định — nó giữ nguyên nội dung của lần ghi trước, cho tới lần
+deploy kế tiếp (khi `deploy.sh` chạy `rsync` ghi đè bằng bản mẫu trong repo
+rồi prerender lại). Gợi ý trong admin (đợt sửa 2026-09-14, nhóm 3) đã đổi
+chữ cho đúng thực tế này thay vì hứa "về mặc định".
+
+Cách sửa triệt để: cho prerender nhận riêng tham số nguồn (bản mẫu trong
+repo, `/var/www/web-ha-can/*.html`) và tham số đích (thư mục phục vụ), luôn
+đọc từ nguồn rồi ghi sang đích — khi đó "bỏ trống" sẽ thật sự quay về mặc
+định ngay lần lưu tiếp theo, không cần đợi deploy. Nên làm trước hoặc trong
+đợt 3.

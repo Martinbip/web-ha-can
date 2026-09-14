@@ -343,3 +343,28 @@ test('nút mạng xã hội bị ẩn thì không hiện dù .social-link đặt
   assert.equal(hover.style.borderColor, 'rgb(197, 160, 89)', '.social-link:hover phải giữ nguyên border-color: #C5A059');
   assert.equal(hover.cssRules?.length || 0, 0, '.social-link:hover không được chứa quy tắc lồng');
 });
+
+// Prerender ghi tại chỗ vào HTML đang phục vụ, nên "bỏ trống" thực chất là
+// giữ nội dung của lần ghi trước (không phải quay lại giá trị mặc định cho
+// tới lần deploy sau) — gợi ý trong admin phải nói đúng điều đó.
+test('gợi ý các trường đầu/chân trang trong admin nói đúng việc bỏ trống giữ nội dung đang hiện', () => {
+  const source = read('admin/src/config/resources.js');
+  const fields = [
+    'header_cta_label',
+    'header_cta_url',
+    'footer_categories_title',
+    'footer_links_title',
+    'footer_links',
+    'copyright_text',
+  ];
+
+  for (const name of fields) {
+    const match = source.match(new RegExp(`${name}: \\{[^}]*\\}`));
+    assert.ok(match, `không tìm thấy khai báo trường ${name}`);
+    const declaration = match[0];
+    assert.match(declaration, /đang hiện|đang dùng/, `${name}: hint phải nói giữ nội dung đang hiện/đang dùng`);
+    assert.doesNotMatch(declaration, /5 link mặc định/, `${name}: hint không được hứa "5 link mặc định"`);
+    assert.doesNotMatch(declaration, /giữ dòng mặc định/, `${name}: hint không được hứa "giữ dòng mặc định"`);
+    assert.doesNotMatch(declaration, /vẫn dẫn tới \/contact/, `${name}: hint không được hứa "vẫn dẫn tới /contact"`);
+  }
+});
