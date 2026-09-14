@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Ghi cài đặt website và danh mục sản phẩm của CMS thẳng vào các file HTML tĩnh.
+// Ghi cài đặt website, danh mục sản phẩm và menu của CMS thẳng vào các file HTML tĩnh.
 //
 //   node scripts/prerender-site-settings.js [thư/mục/html]
 //
@@ -128,7 +128,26 @@ function text(settings, key) {
   return value || null;
 }
 
-function applySettingsToHtml(html, settings) {
+// Cùng quy tắc với safeNavUrl() trong app.js: chỉ nhận đường dẫn nội bộ, neo
+// trong trang hoặc http(s) — chặn javascript:, data:... do CMS gửi xuống.
+function safeUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('/') || raw.startsWith('#')) return raw;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return '';
+}
+
+// Phải cho ra cùng một DOM với renderFooterLinks() trong app.js.
+function renderFooterLinks(items) {
+  if (!Array.isArray(items)) return '';
+  return items
+    .filter((item) => item && item.visible !== false && item.label && safeUrl(item.url))
+    .map((item) => `<li><a href="${escapeAttr(safeUrl(item.url))}">${escapeText(item.label)}</a></li>`)
+    .join('');
+}
+
+function applySettingsToHtml(html, settings, { year = new Date().getFullYear() } = {}) {
   const hotline = text(settings, 'hotline');
   const hotlineClean = hotline ? hotline.replace(/[.\s\-()]/g, '') : null;
   const email = text(settings, 'email');
@@ -222,6 +241,34 @@ function applySettingsToHtml(html, settings) {
       },
     },
     {
+      // Nút đầu trang: chữ qua data-site-text, link qua header_cta_url. Một
+      // handler lo cả hai vì mỗi phần tử chỉ được một handler nhận.
+      match: byClass('btn-contact'),
+      apply: ({ attrs, rawAttrs }) => {
+        const label = 'data-site-text' in attrs ? text(settings, attrs['data-site-text']) : null;
+        const url = safeUrl(settings.header_cta_url);
+        if (!label && !url) return null;
+        return {
+          ...(label ? { inner: escapeText(label) } : {}),
+          ...(url ? { rawAttrs: setAttr(rawAttrs, 'href', url) } : {}),
+        };
+      },
+    },
+    {
+      match: (tagName, attrs) => 'data-footer-links' in attrs,
+      apply: () => {
+        const links = renderFooterLinks(settings.footer_links);
+        return links ? { inner: links } : null;
+      },
+    },
+    {
+      match: (tagName, attrs) => 'data-copyright' in attrs,
+      apply: () => {
+        const value = text(settings, 'copyright_text');
+        return value ? { inner: escapeText(`© ${year} ${value}`) } : null;
+      },
+    },
+    {
       match: (tagName, attrs) => 'data-site-text' in attrs,
       apply: ({ attrs }) => {
         const value = text(settings, attrs['data-site-text']);
@@ -290,6 +337,96 @@ function applyCategoriesToHtml(html, items) {
   ]);
 }
 
+function normalizeNavPath(value) {
+  return String(value || '').replace(/\.html$/, '').replace(/\/+$/, '') || '/';
+}
+
+// Trang phục vụ ở /x (nginx thử $uri.html), trang chủ ở /.
+function pagePathForFile(file) {
+  const name = path.basename(file, '.html');
+  return name === 'index' ? '/' : `/${name}`;
+}
+
+// Cùng thang điểm với markActiveNavLink() trong app.js. Trang tĩnh không có
+// #hash nên currentHash luôn rỗng.
+function navScore(href, currentPath) {
+  if (/^https?:\/\//i.test(href)) return 0;
+  const [rawPath, rawHash] = href.split('#');
+  const linkPath = rawPath ? normalizeNavPath(rawPath) : currentPath;
+  const linkHash = rawHash ? `#${rawHash}` : '';
+  if (linkPath === currentPath && !linkHash) return 3;
+  if (linkPath !== '/' && currentPath.startsWith(`${linkPath}/`)) return 1;
+  return 0;
+}
+
+const SUBMENU_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+
+// Phải cho ra cùng một DOM với renderNavItems() + markActiveNavLink() trong
+// app.js: cùng mẫu thẻ, cùng cách lọc, cùng chọn mục đang xem (mục điểm cao
+// nhất, hoà thì mục đứng trước; mục con khớp thì làm sáng cả mục cha).
+function renderNavigation(items, currentPath) {
+  if (!Array.isArray(items)) return '';
+  const usable = (item) => item && item.visible !== false && item.label && safeUrl(item.url);
+  const entries = items.filter(usable).map((item) => ({
+    item,
+    children: (Array.isArray(item.children) ? item.children : []).filter(usable),
+  }));
+  if (!entries.length) return '';
+
+  let best = null;
+  let bestScore = 0;
+  entries.forEach((entry, entryIndex) => {
+    [entry.item, ...entry.children].forEach((link, position) => {
+      const score = navScore(safeUrl(link.url), currentPath);
+      if (score > bestScore) {
+        best = { entryIndex, childIndex: position - 1 };
+        bestScore = score;
+      }
+    });
+  });
+
+  return entries
+    .map(({ item, children }, entryIndex) => {
+      const topActive = best && best.entryIndex === entryIndex;
+      const link = `<a href="${escapeAttr(safeUrl(item.url))}" class="nav-link${topActive ? ' active' : ''}">${escapeText(item.label)}</a>`;
+      if (!children.length) return `<li>${link}</li>`;
+
+      const submenu = children
+        .map((child, childIndex) => {
+          const childActive = topActive && best.childIndex === childIndex;
+          return `<li><a href="${escapeAttr(safeUrl(child.url))}" class="nav-link nav-sublink${childActive ? ' active' : ''}">${escapeText(child.label)}</a></li>`;
+        })
+        .join('');
+
+      return `<li class="has-submenu">${link}`
+        + `<button type="button" class="nav-submenu-toggle" aria-expanded="false" aria-label="Mở menu con ${escapeAttr(item.label)}">`
+        + `${SUBMENU_ICON}</button>`
+        + `<ul class="nav-submenu">${submenu}</ul></li>`;
+    })
+    .join('');
+}
+
+function applyNavigationToHtml(html, items, currentPath) {
+  const inner = renderNavigation(items, currentPath);
+  if (!inner) return html;
+  return transformHtml(html, [
+    {
+      match: (tagName, attrs) => tagName === 'ul' && classList(attrs).includes('nav-links'),
+      apply: () => ({ inner }),
+    },
+  ]);
+}
+
+async function fetchNavigation() {
+  const res = await fetch(`${CMS}/api/navigation`, { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw new Error(`CMS trả về ${res.status} khi đọc menu`);
+  const json = await res.json();
+  const record = json.data?.attributes || json.data;
+  const raw = record?.items;
+  return Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
+}
+
 async function fetchCategories() {
   const res = await fetch(`${CMS}/api/product-categories?sort=sort_order:asc&pagination[limit]=100`, {
     signal: AbortSignal.timeout(10000),
@@ -309,19 +446,28 @@ async function fetchSettings() {
   return settings;
 }
 
-// Cài đặt và danh mục đọc độc lập: một bên lỗi thì vẫn ghi bên kia, vì HTML
-// ghi được phần nào đỡ chớp phần đó. Chỉ bỏ cuộc khi cả hai cùng lỗi.
+const SOURCE_LABELS = ['cài đặt website', 'danh mục', 'menu'];
+
+// Ba nguồn đọc độc lập: nguồn nào lỗi thì bỏ qua riêng phần đó, vì HTML ghi
+// được phần nào đỡ chớp phần đó. Chỉ bỏ cuộc khi cả ba cùng lỗi — và khi đó báo
+// đủ ba lý do, không nuốt mất lý do nào.
 async function prerenderDirectory(
   target,
-  { loadSettings = fetchSettings, loadCategories = fetchCategories, log = console } = {},
+  {
+    loadSettings = fetchSettings,
+    loadCategories = fetchCategories,
+    loadNavigation = fetchNavigation,
+    log = console,
+  } = {},
 ) {
-  const [settingsResult, categoriesResult] = await Promise.allSettled([loadSettings(), loadCategories()]);
-  const settings = settingsResult.status === 'fulfilled' ? settingsResult.value : null;
-  const categories = categoriesResult.status === 'fulfilled' ? categoriesResult.value : null;
+  const results = await Promise.allSettled([loadSettings(), loadCategories(), loadNavigation()]);
+  const [settings, categories, navigation] = results.map((result) => (result.status === 'fulfilled' ? result.value : null));
+  const failures = results.map((result, index) =>
+    result.status === 'rejected' ? `${SOURCE_LABELS[index]}: ${result.reason?.message || result.reason}` : null,
+  );
 
-  if (!settings && !categories) throw settingsResult.reason;
-  if (!settings) log.warn(`⚠️  Bỏ qua cài đặt website: ${settingsResult.reason.message}`);
-  if (!categories) log.warn(`⚠️  Bỏ qua danh mục: ${categoriesResult.reason.message}`);
+  if (failures.every(Boolean)) throw new Error(`Không đọc được gì từ CMS — ${failures.join('; ')}`);
+  failures.filter(Boolean).forEach((failure) => log.warn(`⚠️  Bỏ qua ${failure}`));
 
   const files = fs.readdirSync(target).filter((file) => file.endsWith('.html'));
   let changed = 0;
@@ -331,18 +477,25 @@ async function prerenderDirectory(
     let out = html;
     if (settings) out = applySettingsToHtml(out, settings);
     if (categories) out = applyCategoriesToHtml(out, categories);
+    if (navigation) out = applyNavigationToHtml(out, navigation, pagePathForFile(file));
     if (out !== html) {
       fs.writeFileSync(full, out, 'utf8');
       changed += 1;
     }
   }
-  return { changed, total: files.length, settings: Boolean(settings), categories: Boolean(categories) };
+  return {
+    changed,
+    total: files.length,
+    settings: Boolean(settings),
+    categories: Boolean(categories),
+    navigation: Boolean(navigation),
+  };
 }
 
 async function main() {
   const target = path.resolve(process.argv[2] || path.join(__dirname, '..'));
   const result = await prerenderDirectory(target);
-  const parts = [result.settings && 'cài đặt website', result.categories && 'danh mục']
+  const parts = [result.settings && 'cài đặt website', result.categories && 'danh mục', result.navigation && 'menu']
     .filter(Boolean)
     .join(' + ');
   console.log(`✓ ${parts} đã ghi vào ${result.changed}/${result.total} trang trong ${target}`);
@@ -351,9 +504,14 @@ async function main() {
 module.exports = {
   applySettingsToHtml,
   applyCategoriesToHtml,
+  applyNavigationToHtml,
   renderCategoryLinks,
+  renderFooterLinks,
+  renderNavigation,
   pickVisibleCategories,
+  pagePathForFile,
   prerenderDirectory,
+  safeUrl,
   DEFAULT_CATEGORIES,
 };
 

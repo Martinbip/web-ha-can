@@ -14,8 +14,11 @@ const os = require('node:os');
 const {
   applySettingsToHtml,
   applyCategoriesToHtml,
+  applyNavigationToHtml,
   renderCategoryLinks,
+  renderFooterLinks,
   pickVisibleCategories,
+  pagePathForFile,
   prerenderDirectory,
   DEFAULT_CATEGORIES,
 } = require('../scripts/prerender-site-settings.js');
@@ -25,6 +28,24 @@ const CATEGORIES = [
   { slug: 'kim-loai-mau', name: 'Kim Loại Màu', visible: true, sort_order: 1 },
   { slug: 'an-di', name: 'Ẩn đi', visible: false, sort_order: 2 },
   { slug: 'quang-&-mau', name: 'Quặng <Mẫu> & "Chuẩn"', visible: true, sort_order: 3 },
+];
+
+// Có menu con, một mục ẩn, một mục con ẩn và một URL độc hại.
+const NAV_ITEMS = [
+  { id: 'home', label: 'Trang Chủ', url: '/', visible: true, children: [] },
+  {
+    id: 'products',
+    label: 'Sản Phẩm',
+    url: '/products',
+    visible: true,
+    children: [
+      { id: 'mau', label: 'Quặng <Mẫu>', url: '/products?filter=color-metal', visible: true },
+      { id: 'an', label: 'Ẩn', url: '/an', visible: false },
+    ],
+  },
+  { id: 'news', label: 'Tin Tức', url: '/news', visible: true, children: [] },
+  { id: 'evil', label: 'Độc', url: 'javascript:alert(1)', visible: true, children: [] },
+  { id: 'off', label: 'Tắt', url: '/off', visible: false, children: [] },
 ];
 
 const SETTINGS = {
@@ -252,18 +273,18 @@ test('đọc danh mục lỗi thì vẫn ghi cài đặt, và ngược lại', a
 
   try {
     fs.writeFileSync(file, page);
-    await prerenderDirectory(dir, { loadSettings: async () => ({ hotline: '0912345678' }), loadCategories: fail, log: quiet });
+    await prerenderDirectory(dir, { loadSettings: async () => ({ hotline: '0912345678' }), loadCategories: fail, loadNavigation: fail, log: quiet });
     let out = fs.readFileSync(file, 'utf8');
     assert.ok(out.includes('0912345678'), 'cài đặt vẫn được ghi');
     assert.ok(out.includes('<li>cũ</li>'), 'danh mục giữ nguyên khi đọc lỗi');
 
     fs.writeFileSync(file, page);
-    await prerenderDirectory(dir, { loadSettings: fail, loadCategories: async () => CATEGORIES, log: quiet });
+    await prerenderDirectory(dir, { loadSettings: fail, loadCategories: async () => CATEGORIES, loadNavigation: fail, log: quiet });
     out = fs.readFileSync(file, 'utf8');
     assert.ok(out.includes('/products?filter=kim-loai-mau'), 'danh mục vẫn được ghi');
     assert.ok(out.includes('>000<'), 'cài đặt giữ nguyên khi đọc lỗi');
 
-    await assert.rejects(prerenderDirectory(dir, { loadSettings: fail, loadCategories: fail, log: quiet }));
+    await assert.rejects(prerenderDirectory(dir, { loadSettings: fail, loadCategories: fail, loadNavigation: fail, log: quiet }));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -329,4 +350,146 @@ test('CMS lỗi và HTML chưa prerender thì tab lọc dùng danh mục mặc �
   const window = runAppJs(readPage('products.html'), SETTINGS);
   const tabs = await window.resolveTabCategories(window.document.getElementById('product-filter-tabs'));
   assert.deepEqual(plain(tabs).map((tab) => tab.slug), ['color-metal', 'black-metal', 'rare-earth']);
+});
+
+const NAV_HTML = '<nav class="main-navigation"><ul class="nav-links"><li><a href="/" class="nav-link active">Cũ</a></li></ul></nav>';
+
+function navDoc(items, currentPath) {
+  return new JSDOM(applyNavigationToHtml(NAV_HTML, items, currentPath)).window.document;
+}
+
+test('menu được ghi sẵn: bỏ mục ẩn và URL độc hại, giữ menu con', () => {
+  const doc = navDoc(NAV_ITEMS, '/news');
+  const top = [...doc.querySelectorAll('.nav-links > li > a.nav-link')].map((a) => [a.textContent, a.getAttribute('href')]);
+  assert.deepEqual(top, [['Trang Chủ', '/'], ['Sản Phẩm', '/products'], ['Tin Tức', '/news']]);
+
+  const sub = [...doc.querySelectorAll('.nav-submenu a')];
+  assert.equal(sub.length, 1, 'mục con ẩn bị bỏ');
+  assert.equal(sub[0].textContent, 'Quặng <Mẫu>');
+  assert.ok(sub[0].classList.contains('nav-sublink'));
+  assert.equal(doc.querySelector('.has-submenu .nav-submenu-toggle').getAttribute('aria-label'), 'Mở menu con Sản Phẩm');
+  assert.ok(!doc.body.innerHTML.includes('javascript:'), 'URL độc hại không lọt vào HTML');
+});
+
+test('menu đánh dấu đúng mục đang xem theo trang', () => {
+  const active = (items, currentPath) =>
+    [...navDoc(items, currentPath).querySelectorAll('.nav-link.active')].map((a) => a.getAttribute('href'));
+
+  assert.deepEqual(active(NAV_ITEMS, '/'), ['/']);
+  assert.deepEqual(active(NAV_ITEMS, '/news'), ['/news']);
+  assert.deepEqual(active(NAV_ITEMS, '/products'), ['/products']);
+  assert.deepEqual(active(NAV_ITEMS, '/contact'), [], 'không mục nào khớp thì không đánh dấu');
+
+  const nested = [{ label: 'Giới Thiệu', url: '/#services', children: [{ label: 'Dự Án', url: '/projects' }] }];
+  assert.deepEqual(active(nested, '/projects'), ['/#services', '/projects'], 'mục con khớp thì làm sáng cả mục cha');
+});
+
+test('menu rỗng hoặc toàn mục hỏng thì giữ nguyên HTML', () => {
+  assert.equal(applyNavigationToHtml(NAV_HTML, [], '/'), NAV_HTML);
+  assert.equal(applyNavigationToHtml(NAV_HTML, [{ label: 'Độc', url: 'javascript:1' }], '/'), NAV_HTML);
+  assert.equal(applyNavigationToHtml(NAV_HTML, null, '/'), NAV_HTML);
+});
+
+test('đường dẫn trang suy từ tên file', () => {
+  assert.equal(pagePathForFile('index.html'), '/');
+  assert.equal(pagePathForFile('products.html'), '/products');
+  assert.equal(pagePathForFile('news-detail.html'), '/news-detail');
+});
+
+const CHROME_HTML =
+  '<header><a href="/contact" class="btn-contact" data-site-text="header_cta_label">Yêu Cầu Mẫu</a></header>'
+  + '<footer><h4 data-site-text="footer_links_title">HỖ TRỢ</h4>'
+  + '<ul class="footer-list" data-footer-links><li><a href="/cu">Cũ</a></li></ul>'
+  + '<p class="copyright" data-copyright>&copy; 2026 Cũ</p></footer>';
+
+test('liên kết chân trang, bản quyền và nút đầu trang lấy từ cài đặt', () => {
+  const html = applySettingsToHtml(
+    CHROME_HTML,
+    {
+      header_cta_label: 'Báo Giá Ngay',
+      header_cta_url: '/pricing',
+      footer_links_title: 'LIÊN KẾT',
+      footer_links: [
+        { label: 'Tin <Mới>', url: '/news', visible: true },
+        { label: 'Ẩn', url: '/x', visible: false },
+        { label: 'Độc', url: 'javascript:alert(1)', visible: true },
+        { label: '', url: '/y' },
+        { label: 'Ngoài', url: 'https://example.com/a?b=1&c=2', visible: true },
+      ],
+      copyright_text: 'Công ty <DHA>.',
+    },
+    { year: 2031 },
+  );
+  const doc = new JSDOM(html).window.document;
+
+  const cta = doc.querySelector('.btn-contact');
+  assert.equal(cta.textContent, 'Báo Giá Ngay');
+  assert.equal(cta.getAttribute('href'), '/pricing');
+  assert.equal(doc.querySelector('[data-site-text="footer_links_title"]').textContent, 'LIÊN KẾT');
+  assert.deepEqual(
+    [...doc.querySelectorAll('[data-footer-links] a')].map((a) => [a.textContent, a.getAttribute('href')]),
+    [['Tin <Mới>', '/news'], ['Ngoài', 'https://example.com/a?b=1&c=2']],
+  );
+  assert.equal(doc.querySelector('[data-copyright]').textContent, '© 2031 Công ty <DHA>.');
+  assert.ok(!html.includes('javascript:'), 'URL độc hại không lọt vào HTML');
+});
+
+test('cài đặt bỏ trống hoặc hỏng thì giữ nguyên chân trang và nút đầu trang', () => {
+  const out = applySettingsToHtml(CHROME_HTML, {
+    footer_links: [{ label: 'Ẩn', url: '/x', visible: false }],
+    header_cta_url: 'javascript:alert(1)',
+  });
+  assert.equal(out, CHROME_HTML);
+});
+
+test('renderFooterLinks trả chuỗi rỗng khi dữ liệu không phải mảng', () => {
+  for (const value of [null, undefined, 'chuoi', { label: 'A', url: '/a' }]) {
+    assert.equal(renderFooterLinks(value), '');
+  }
+});
+
+test('ghi menu theo từng trang trong thư mục', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-nav-'));
+  const quiet = { warn() {} };
+  const fail = async () => {
+    throw new Error('CMS trả về 500');
+  };
+  try {
+    fs.writeFileSync(path.join(dir, 'index.html'), NAV_HTML);
+    fs.writeFileSync(path.join(dir, 'news.html'), NAV_HTML);
+    const result = await prerenderDirectory(dir, {
+      loadSettings: fail,
+      loadCategories: fail,
+      loadNavigation: async () => NAV_ITEMS,
+      log: quiet,
+    });
+    assert.equal(result.navigation, true);
+    const activeIn = (file) =>
+      [...new JSDOM(fs.readFileSync(path.join(dir, file), 'utf8')).window.document.querySelectorAll('.nav-link.active')]
+        .map((a) => a.getAttribute('href'));
+    assert.deepEqual(activeIn('index.html'), ['/']);
+    assert.deepEqual(activeIn('news.html'), ['/news']);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('cả ba nguồn cùng lỗi thì báo đủ ba lý do', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-fail-'));
+  const reason = (label) => async () => {
+    throw new Error(`hỏng ${label}`);
+  };
+  try {
+    await assert.rejects(
+      prerenderDirectory(dir, {
+        loadSettings: reason('A'),
+        loadCategories: reason('B'),
+        loadNavigation: reason('C'),
+        log: { warn() {} },
+      }),
+      (err) => /cài đặt website: hỏng A/.test(err.message) && /danh mục: hỏng B/.test(err.message) && /menu: hỏng C/.test(err.message),
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
