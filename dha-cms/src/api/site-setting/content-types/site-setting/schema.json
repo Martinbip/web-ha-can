@@ -180,6 +180,34 @@
       "maxLength": 300,
       "default": "Kỹ sư phản hồi trong 30 phút\nHỗ trợ 7:30 – 17:30 các ngày trong tuần"
     },
+    "header_cta_label": {
+      "type": "string",
+      "maxLength": 40,
+      "default": "Yêu Cầu Mẫu"
+    },
+    "header_cta_url": {
+      "type": "string",
+      "maxLength": 300,
+      "default": "/contact"
+    },
+    "footer_categories_title": {
+      "type": "string",
+      "maxLength": 60,
+      "default": "DANH MỤC SẢN PHẨM"
+    },
+    "footer_links_title": {
+      "type": "string",
+      "maxLength": 60,
+      "default": "HỖ TRỢ KHÁCH HÀNG"
+    },
+    "footer_links": {
+      "type": "json"
+    },
+    "copyright_text": {
+      "type": "string",
+      "maxLength": 200,
+      "default": "Kim Loại Màu DHA. Bản quyền được bảo lưu."
+    },
     "admin_labels": {
       "type": "json",
       "private": true

@@ -212,3 +212,37 @@ test('mã lọc hợp lệ (?filter=black-metal) vẫn lọc đúng và tô sán
   const activeBtn = window.document.querySelector('.product-filter-btn.active');
   assert.equal(activeBtn?.dataset.filter, 'black-metal', 'phải tô sáng đúng tab black-metal');
 });
+
+// Đợt 2: trường đầu trang/chân trang trong Cài đặt website.
+const CHROME_FIELDS = {
+  header_cta_label: ['string', 40, 'Yêu Cầu Mẫu'],
+  header_cta_url: ['string', 300, '/contact'],
+  footer_categories_title: ['string', 60, 'DANH MỤC SẢN PHẨM'],
+  footer_links_title: ['string', 60, 'HỖ TRỢ KHÁCH HÀNG'],
+  copyright_text: ['string', 200, 'Kim Loại Màu DHA. Bản quyền được bảo lưu.'],
+};
+
+test('Cài đặt website có các trường đầu trang/chân trang và admin sửa được', () => {
+  const schema = JSON.parse(read('dha-cms/src/api/site-setting/content-types/site-setting/schema.json'));
+  for (const [name, [type, maxLength, fallback]] of Object.entries(CHROME_FIELDS)) {
+    const attribute = schema.attributes[name];
+    assert.ok(attribute, `schema thiếu ${name}`);
+    assert.equal(attribute.type, type, `${name} sai kiểu`);
+    assert.equal(attribute.maxLength, maxLength, `${name} sai độ dài tối đa`);
+    assert.equal(attribute.default, fallback, `${name} sai mặc định`);
+  }
+  assert.equal(schema.attributes.footer_links.type, 'json');
+
+  const config = getResourceConfig('site-setting');
+  for (const name of [...Object.keys(CHROME_FIELDS), 'footer_links']) {
+    assert.ok(config.editableFields.includes(name), `CMS chưa cho ghi ${name}`);
+    assert.ok(config.fields[name], `CMS thiếu khai báo ${name}`);
+  }
+
+  const adminConfig = read('admin/src/config/resources.js');
+  for (const name of Object.keys(CHROME_FIELDS)) {
+    assert.match(adminConfig, new RegExp(`${name}: \\{ label: '`), `admin thiếu ô ${name}`);
+  }
+  assert.match(adminConfig, /footer_links: \{ label: 'Liên kết chân trang', type: 'link-list'/);
+  assert.match(read('admin/src/components/FieldRenderer.jsx'), /case 'link-list':/);
+});
