@@ -34,6 +34,8 @@ const SETTINGS = {
   stat3_label: 'Sai số tối đa',
   price_intro_home: 'Giá cập nhật mỗi sáng.',
   facebook_url: 'https://facebook.com/dha',
+  hotline_box_title: 'GỌI KỸ SƯ',
+  hotline_box_note: 'Phản hồi trong 15 phút\nHỗ trợ cả Chủ nhật',
 };
 
 // Những chỗ app.js đụng tới khi áp cài đặt — cũng chính là những chỗ có thể chớp.
@@ -151,4 +153,11 @@ test('CMS bỏ trống ô nào thì app.js cũng không xóa chữ mẫu của �
   for (const [index, selector] of DYNAMIC_SELECTORS.entries()) {
     assert.equal(after[index], before[index], `${selector} bị app.js xóa trắng → còn chớp`);
   }
+});
+
+test('mô tả khung hotline giữ nguyên chỗ xuống dòng khi prerender', () => {
+  const note = 'Dòng một\nDòng hai';
+  const html = applySettingsToHtml(readPage('index.html'), { hotline: '0912345678', hotline_box_note: note });
+  const box = new JSDOM(html).window.document.querySelector('.widget-hotline-desc');
+  assert.equal(box.textContent, note);
 });

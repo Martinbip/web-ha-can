@@ -855,6 +855,8 @@ textarea:focus-visible {
 .widget-hotline-desc {
     font-size: 13px;
     color: #CCCCCC;
+    /* Mô tả do quản trị gõ nhiều dòng trong admin — giữ chỗ xuống dòng của họ. */
+    white-space: pre-line;
 }
 
 /* News list with thumbnails (sidebar) */
