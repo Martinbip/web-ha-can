@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Ghi cài đặt website của CMS thẳng vào các file HTML tĩnh.
+// Ghi cài đặt website và danh mục sản phẩm của CMS thẳng vào các file HTML tĩnh.
 //
 //   node scripts/prerender-site-settings.js [thư/mục/html]
 //
@@ -233,6 +233,72 @@ function applySettingsToHtml(html, settings) {
   return transformHtml(html, handlers);
 }
 
+// Danh mục mặc định: phải trùng DEFAULT_PRODUCT_CATEGORIES trong app.js và
+// data/product_categories.json — có test giữ ba nơi khớp nhau.
+const DEFAULT_CATEGORIES = [
+  { slug: 'color-metal', name: 'Kim Loại Màu' },
+  { slug: 'black-metal', name: 'Kim Loại Đen' },
+  { slug: 'rare-earth', name: 'Đất Hiếm' },
+];
+
+// Cùng quy tắc với pickVisibleCategories() trong app.js: bỏ mục ẩn, hết mục thì
+// về mặc định — để tab, khối bên hông và chân trang luôn giống nhau.
+function pickVisibleCategories(items) {
+  const usable = (items || []).filter((item) => item && item.slug && item.visible !== false);
+  return usable.length ? usable : DEFAULT_CATEGORIES;
+}
+
+// Phải cho ra cùng một DOM với renderCategoryLinks() trong app.js — lệch nhau
+// là danh sách chớp khi app.js dựng lại.
+function renderCategoryLinks(categories) {
+  return categories
+    .map((category) => {
+      const href = `/products?filter=${encodeURIComponent(category.slug)}`;
+      return `<li><a href="${escapeAttr(href)}">${escapeText(category.name)}</a></li>`;
+    })
+    .join('');
+}
+
+// Thanh tab chỉ được ghi tên; số lượng sản phẩm do app.js điền sau khi tải xong
+// danh sách sản phẩm (xem renderCategoryTabs trong app.js).
+const TAB_BARS = {
+  'home-filter-tabs': { buttonClass: 'home-filter-btn', countHtml: '<em></em>' },
+  'product-filter-tabs': { buttonClass: 'product-filter-btn', countHtml: '<span class="filter-count"></span>' },
+};
+
+function renderCategoryTabs(categories, { buttonClass, countHtml }) {
+  return [{ slug: 'all', name: 'Tất Cả' }, ...categories]
+    .map((tab, index) => {
+      const active = index === 0;
+      return `<button class="${buttonClass}${active ? ' active' : ''}" data-filter="${escapeAttr(tab.slug)}"`
+        + ` role="tab" aria-selected="${active}">${escapeText(tab.name)} ${countHtml}</button>`;
+    })
+    .join('');
+}
+
+function applyCategoriesToHtml(html, items) {
+  const categories = pickVisibleCategories(items);
+  return transformHtml(html, [
+    {
+      match: (tagName, attrs) => 'data-category-list' in attrs,
+      apply: () => ({ inner: renderCategoryLinks(categories) }),
+    },
+    {
+      match: (tagName, attrs) => Object.hasOwn(TAB_BARS, attrs.id || ''),
+      apply: ({ attrs }) => ({ inner: renderCategoryTabs(categories, TAB_BARS[attrs.id]) }),
+    },
+  ]);
+}
+
+async function fetchCategories() {
+  const res = await fetch(`${CMS}/api/product-categories?sort=sort_order:asc&pagination[limit]=100`, {
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) throw new Error(`CMS trả về ${res.status} khi đọc danh mục`);
+  const json = await res.json();
+  return (json.data || []).map((item) => item.attributes || item);
+}
+
 async function fetchSettings() {
   const res = await fetch(`${CMS}/api/site-setting`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`CMS trả về ${res.status}`);
@@ -243,25 +309,53 @@ async function fetchSettings() {
   return settings;
 }
 
-async function main() {
-  const target = path.resolve(process.argv[2] || path.join(__dirname, '..'));
-  const settings = await fetchSettings();
+// Cài đặt và danh mục đọc độc lập: một bên lỗi thì vẫn ghi bên kia, vì HTML
+// ghi được phần nào đỡ chớp phần đó. Chỉ bỏ cuộc khi cả hai cùng lỗi.
+async function prerenderDirectory(
+  target,
+  { loadSettings = fetchSettings, loadCategories = fetchCategories, log = console } = {},
+) {
+  const [settingsResult, categoriesResult] = await Promise.allSettled([loadSettings(), loadCategories()]);
+  const settings = settingsResult.status === 'fulfilled' ? settingsResult.value : null;
+  const categories = categoriesResult.status === 'fulfilled' ? categoriesResult.value : null;
+
+  if (!settings && !categories) throw settingsResult.reason;
+  if (!settings) log.warn(`⚠️  Bỏ qua cài đặt website: ${settingsResult.reason.message}`);
+  if (!categories) log.warn(`⚠️  Bỏ qua danh mục: ${categoriesResult.reason.message}`);
 
   const files = fs.readdirSync(target).filter((file) => file.endsWith('.html'));
   let changed = 0;
   for (const file of files) {
     const full = path.join(target, file);
     const html = fs.readFileSync(full, 'utf8');
-    const out = applySettingsToHtml(html, settings);
+    let out = html;
+    if (settings) out = applySettingsToHtml(out, settings);
+    if (categories) out = applyCategoriesToHtml(out, categories);
     if (out !== html) {
       fs.writeFileSync(full, out, 'utf8');
       changed += 1;
     }
   }
-  console.log(`✓ cài đặt website đã ghi vào ${changed}/${files.length} trang trong ${target}`);
+  return { changed, total: files.length, settings: Boolean(settings), categories: Boolean(categories) };
 }
 
-module.exports = { applySettingsToHtml };
+async function main() {
+  const target = path.resolve(process.argv[2] || path.join(__dirname, '..'));
+  const result = await prerenderDirectory(target);
+  const parts = [result.settings && 'cài đặt website', result.categories && 'danh mục']
+    .filter(Boolean)
+    .join(' + ');
+  console.log(`✓ ${parts} đã ghi vào ${result.changed}/${result.total} trang trong ${target}`);
+}
+
+module.exports = {
+  applySettingsToHtml,
+  applyCategoriesToHtml,
+  renderCategoryLinks,
+  pickVisibleCategories,
+  prerenderDirectory,
+  DEFAULT_CATEGORIES,
+};
 
 if (require.main === module) {
   main().catch((err) => {

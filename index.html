@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1.1.7">
+    <link rel="stylesheet" href="styles.css?v=1.1.8">
 </head>
 <body>
 
@@ -205,18 +205,17 @@
                     <aside class="sidebar">
                         <div class="widget">
                             <h2 class="widget-title">DANH MỤC SẢN PHẨM</h2>
-                            <ul class="widget-categories">
-                                <li><a href="/products?filter=dong">Quặng Mẫu Đồng</a></li>
-                                <li><a href="/products?filter=quang">Quặng Mẫu Sắt</a></li>
-                                <li><a href="/products?filter=nhom">Mẫu Bauxit Nhôm</a></li>
-                                <li><a href="/products?filter=chi">Mẫu Chì - Kẽm</a></li>
-                                <li><a href="/products?filter=thiec">Thiếc Tiêu Chuẩn</a></li>
+                            <ul class="widget-categories" data-category-list>
+                                <li><a href="/products?filter=color-metal">Kim Loại Màu</a></li>
+                                <li><a href="/products?filter=black-metal">Kim Loại Đen</a></li>
+                                <li><a href="/products?filter=rare-earth">Đất Hiếm</a></li>
                             </ul>
                         </div>
                         <div class="widget widget-hotline">
-                            <h2 class="widget-title">HOTLINE TƯ VẤN</h2>
+                            <h2 class="widget-title" data-site-text="hotline_box_title">HOTLINE TƯ VẤN</h2>
                             <span class="widget-hotline-number site-hotline">086.725.9078</span>
-                            <p class="widget-hotline-desc">Kỹ sư phản hồi trong 30 phút<br>Hỗ trợ 7:30 – 17:30 các ngày trong tuần</p>
+                            <p class="widget-hotline-desc" data-site-text="hotline_box_note">Kỹ sư phản hồi trong 30 phút
+Hỗ trợ 7:30 – 17:30 các ngày trong tuần</p>
                         </div>
                     </aside>
 
@@ -332,12 +331,10 @@
 
                     <div class="footer-links">
                         <h4 class="footer-title font-accent">DANH MỤC SẢN PHẨM</h4>
-                        <ul class="footer-list">
-                            <li><a href="/products?filter=color-metal">Quặng Mẫu Đồng</a></li>
-                            <li><a href="/products?filter=black-metal">Quặng Mẫu Sắt</a></li>
-                            <li><a href="/products?filter=color-metal">Mẫu Bauxit Nhôm</a></li>
-                            <li><a href="/products?filter=rare-earth">Mẫu Khoáng Sản Quý</a></li>
-                            <li><a href="/products?filter=rare-earth">Đất Hiếm Tiêu Chuẩn</a></li>
+                        <ul class="footer-list" data-category-list>
+                            <li><a href="/products?filter=color-metal">Kim Loại Màu</a></li>
+                            <li><a href="/products?filter=black-metal">Kim Loại Đen</a></li>
+                            <li><a href="/products?filter=rare-earth">Đất Hiếm</a></li>
                         </ul>
                     </div>
 
@@ -375,6 +372,6 @@
     </button>
 
     <script>window.__STRAPI_URL=location.origin;</script>
-    <script src="app.js?v=3.3"></script>
+    <script src="app.js?v=3.4"></script>
 </body>
 </html>

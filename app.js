@@ -125,13 +125,73 @@ const DEFAULT_PRODUCT_CATEGORIES = [
     { slug: 'rare-earth', name: 'Đất Hiếm' },
 ];
 
-async function fetchProductCategories() {
-    const items = await fetchFromCMS(
-        'product-categories?sort=sort_order:asc&pagination[limit]=100',
-        '/data/product_categories.json',
-    );
+const PRODUCT_CATEGORIES_ENDPOINT = 'product-categories?sort=sort_order:asc&pagination[limit]=100';
+
+// Bỏ mục ẩn; không còn mục nào thì về mặc định. Cùng quy tắc với
+// pickVisibleCategories() trong scripts/prerender-site-settings.js.
+function pickVisibleCategories(items) {
     const usable = (items || []).filter(item => item && item.slug && item.visible !== false);
     return usable.length ? usable : DEFAULT_PRODUCT_CATEGORIES;
+}
+
+// HTML phục vụ cho khách đã được prerender ghi sẵn danh mục mới nhất, nên phải
+// biết dữ liệu đến từ CMS thật hay từ file dự phòng: bản dự phòng có thể cũ hơn
+// HTML, dùng nó ghi đè là kéo trang lùi về dữ liệu cũ. Mỗi lượt tải trang chỉ
+// gọi CMS một lần — tab lọc và danh sách danh mục dùng chung kết quả.
+let productCategoriesPromise = null;
+
+function loadProductCategories() {
+    if (!productCategoriesPromise) {
+        productCategoriesPromise = (async () => {
+            try {
+                const res = await fetch(`${CMS_API}/${PRODUCT_CATEGORIES_ENDPOINT}`, { signal: AbortSignal.timeout(3000) });
+                if (!res.ok) throw new Error(`CMS responded ${res.status}`);
+                const json = await res.json();
+                const items = (json.data || []).map(item => item.attributes || item);
+                return { categories: pickVisibleCategories(items), fromCMS: true };
+            } catch (err) {
+                console.warn('[CMS] product-categories failed, keeping prerendered HTML:', err);
+                try {
+                    const res = await fetch('/data/product_categories.json');
+                    if (!res.ok) throw new Error(`Fallback ${res.status}`);
+                    return { categories: pickVisibleCategories(await res.json()), fromCMS: false };
+                } catch {
+                    return { categories: DEFAULT_PRODUCT_CATEGORIES, fromCMS: false };
+                }
+            }
+        })();
+    }
+    return productCategoriesPromise;
+}
+
+// Phải cho ra cùng một DOM với renderCategoryLinks() trong
+// scripts/prerender-site-settings.js — lệch nhau là danh sách chớp.
+function renderCategoryLinks(categories) {
+    return categories
+        .map(category => `<li><a href="/products?filter=${encodeURIComponent(category.slug)}">${escapeHtml(category.name)}</a></li>`)
+        .join('');
+}
+
+// Khối danh mục bên hông trang chủ và cột danh mục ở chân trang mọi trang.
+async function initCategoryLinks() {
+    const lists = document.querySelectorAll('[data-category-list]');
+    if (!lists.length) return;
+    const { categories, fromCMS } = await loadProductCategories();
+    if (!fromCMS) return;
+    const html = renderCategoryLinks(categories);
+    lists.forEach(list => { list.innerHTML = html; });
+}
+
+// Tab lọc cần số lượng sản phẩm nên luôn được dựng lại. Khi CMS lỗi, lấy danh
+// mục từ chính các tab prerender đã ghi sẵn (mới hơn file dự phòng); HTML chưa
+// qua prerender (máy dev) thì mới dùng file dự phòng.
+async function resolveTabCategories(container) {
+    const { categories, fromCMS } = await loadProductCategories();
+    if (fromCMS || !container) return categories;
+    const prerendered = [...container.querySelectorAll('[data-filter]:not([data-filter="all"])')]
+        .map(btn => ({ slug: btn.dataset.filter, name: (btn.firstChild?.textContent || '').trim() }))
+        .filter(tab => tab.slug && tab.name);
+    return prerendered.length ? prerendered : categories;
 }
 
 function getProductCategorySlugs(product) {
@@ -246,6 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigationMenu();
     initScrollTopButton();
     initSiteSettings();
+    initCategoryLinks();
     initDynamicContent();
     initContactForm();
     initEstimator();
@@ -1042,7 +1103,7 @@ async function initHomeProducts() {
     }
 
     const tabsContainer = document.getElementById('home-filter-tabs');
-    const categories = await fetchProductCategories();
+    const categories = await resolveTabCategories(tabsContainer);
     renderCategoryTabs(tabsContainer, categories, allProducts, {
         buttonClass: 'home-filter-btn',
         wrapCount: false,
@@ -1401,7 +1462,7 @@ async function initProductsPage() {
     }
 
     const tabsContainer = document.getElementById('product-filter-tabs');
-    const categories = await fetchProductCategories();
+    const categories = await resolveTabCategories(tabsContainer);
     renderCategoryTabs(tabsContainer, categories, allProducts, {
         buttonClass: 'product-filter-btn',
         countClass: 'filter-count',
@@ -1424,25 +1485,19 @@ async function initProductsPage() {
         container.innerHTML = filtered.map(buildProductCard).join('');
     };
 
-    const initialFilter = preFilter || 'all';
+    // Mã lọc trên URL có thể là mã cũ không còn tồn tại (bookmark, Google index
+    // cũ) — chỉ dùng nó khi khớp đúng một tab đang có, nếu không thì về "Tất Cả"
+    // và tô sáng đúng nút "Tất Cả" để tránh cảnh lưới trống dưới tab đang sáng.
+    const filterButtons = [...document.querySelectorAll('.product-filter-btn')];
+    const matched = !!preFilter && filterButtons.some(btn => btn.dataset.filter === preFilter);
+    const initialFilter = matched ? preFilter : 'all';
     renderProducts(initialFilter);
 
-    if (preFilter) {
-        let matched = false;
-        document.querySelectorAll('.product-filter-btn').forEach(btn => {
-            const isActive = btn.dataset.filter === preFilter;
-            if (isActive) matched = true;
-            btn.classList.toggle('active', isActive);
-            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        });
-        if (!matched) {
-            const allBtn = document.querySelector('.product-filter-btn[data-filter="all"]');
-            if (allBtn) {
-                allBtn.classList.add('active');
-                allBtn.setAttribute('aria-selected', 'true');
-            }
-        }
-    }
+    filterButtons.forEach(btn => {
+        const isActive = btn.dataset.filter === initialFilter;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
 
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (e) => {
@@ -1507,6 +1562,13 @@ async function initProductDetailPage() {
             }).join('');
         }
 
+        // Quay về đúng danh mục đầu tiên của sản phẩm. `group` giờ chỉ lo nhãn
+        // màu ở góc ảnh nên không dùng làm mã lọc được nữa.
+        const [firstCategory] = getProductCategorySlugs(product);
+        const backToCategoryHref = firstCategory
+            ? `/products?filter=${encodeURIComponent(firstCategory)}`
+            : '/products';
+
         contentEl.innerHTML = `
             <div class="detail-image-box">
                 <img src="${imgSrc}" alt="${escapeHtml(product.name)}" class="detail-img">
@@ -1532,7 +1594,7 @@ async function initProductDetailPage() {
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;margin-right:6px;" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                             Liên Hệ Nhận Báo Giá
                         </a>
-                        <a href="/products?filter=${encodeURIComponent(product.group)}" class="btn-secondary" style="flex:1;text-align:center;">← Quay Lại Danh Mục</a>
+                        <a href="${backToCategoryHref}" class="btn-secondary" style="flex:1;text-align:center;">← Quay Lại Danh Mục</a>
                     </div>
                     <form id="order-form" class="detail-order-form">
                         <h3 class="detail-specs-title">Gửi Yêu Cầu Đặt Mẫu</h3>

@@ -58,7 +58,7 @@ node /var/www/web-ha-can/scripts/generate-sitemap.js /var/www/dhakimloaimau.vn/s
 # nằm trong CMS. Không ghi sẵn vào HTML thì khách vào lần đầu thấy nội dung mẫu
 # chớp qua trước khi app.js kịp thay. Ghi thẳng vào thư mục nginx phục vụ, không
 # ghi vào repo — hệt như sitemap ở trên.
-echo "▸ Ghi cài đặt website từ CMS vào HTML tĩnh..."
+echo "▸ Ghi cài đặt website và danh mục từ CMS vào HTML tĩnh..."
 node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn \
     || echo "⚠️  Không ghi được cài đặt vào HTML — trang vẫn tự áp bằng JS như trước."
 
