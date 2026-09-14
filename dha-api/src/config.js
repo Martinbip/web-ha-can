@@ -23,7 +23,10 @@ function loadConfig(env = process.env) {
 
   return {
     port,
-    host: env.HOST || '0.0.0.0',
+    // Production nghe nội bộ, nginx đứng trước — lỡ quên đặt HOST thì vẫn an
+    // toàn thay vì nghe ra ngoài Internet. Môi trường khác (dev) vẫn 0.0.0.0
+    // để truy cập được từ máy khác trong mạng LAN/container.
+    host: env.HOST || (env.NODE_ENV === 'production' ? '127.0.0.1' : '0.0.0.0'),
     // nginx đứng trước ở production. Không tin proxy thì mọi khách mang IP của
     // nginx và mọi rate limit dồn chung một bucket (xem spec mục 5).
     isBehindProxy: parseBoolean(env.IS_BEHIND_PROXY, env.NODE_ENV === 'production'),

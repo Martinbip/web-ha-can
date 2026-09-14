@@ -34,6 +34,13 @@ test('production tin proxy mặc định, IS_BEHIND_PROXY ghi đè được', ()
   assert.equal(loadConfig({ ...BASE_ENV, IS_BEHIND_PROXY: 'true' }).isBehindProxy, true);
 });
 
+test('HOST mặc định 127.0.0.1 ở production (nghe nội bộ, sau nginx), 0.0.0.0 nơi khác; HOST ghi đè được', () => {
+  assert.equal(loadConfig(BASE_ENV).host, '0.0.0.0');
+  assert.equal(loadConfig({ ...BASE_ENV, NODE_ENV: 'production' }).host, '127.0.0.1');
+  assert.equal(loadConfig({ ...BASE_ENV, NODE_ENV: 'production', HOST: '0.0.0.0' }).host, '0.0.0.0');
+  assert.equal(loadConfig({ ...BASE_ENV, HOST: '10.0.0.5' }).host, '10.0.0.5');
+});
+
 test('PORT không phải số thì báo lỗi thay vì nghe cổng rác', () => {
   assert.throws(() => loadConfig({ ...BASE_ENV, PORT: 'abc' }), /PORT/);
 });
