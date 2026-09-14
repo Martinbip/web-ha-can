@@ -57,3 +57,23 @@ test('Cài đặt website có hai trường của khung hotline và admin sửa 
   assert.match(adminConfig, /hotline_box_title: \{ label: 'Tiêu đề khung hotline'/);
   assert.match(adminConfig, /hotline_box_note: \{ label: 'Mô tả khung hotline', type: 'textarea'/);
 });
+
+const DEFAULT_SLUGS = new Set(JSON.parse(read('data/product_categories.json')).map((category) => category.slug));
+
+test('mọi link lọc danh mục nằm trong vùng lấy từ CMS và dùng mã có thật', () => {
+  for (const file of PAGES) {
+    for (const link of load(file).querySelectorAll('a[href*="/products?filter="]')) {
+      const label = link.textContent.trim();
+      assert.ok(link.closest('[data-category-list]'), `${file}: link "${label}" viết cứng ngoài [data-category-list]`);
+      const slug = new URL(link.getAttribute('href'), 'https://dhakimloaimau.vn').searchParams.get('filter');
+      assert.ok(DEFAULT_SLUGS.has(slug), `${file}: link "${label}" dùng mã lọc "${slug}" không có trong danh mục`);
+    }
+  }
+});
+
+test('trang nào cũng có danh sách danh mục ở chân trang, trang chủ có thêm khối bên hông', () => {
+  for (const file of PAGES) {
+    assert.ok(load(file).querySelector('footer [data-category-list]'), `${file} thiếu danh sách danh mục ở chân trang`);
+  }
+  assert.ok(load('index.html').querySelector('aside [data-category-list]'), 'trang chủ có khối danh mục bên hông');
+});
