@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('node:fs');
 const cloudinary = require('cloudinary').v2;
 const auth = require('./auth');
 const { RESOURCE_CONFIG } = require('./resource-config');
@@ -157,21 +158,30 @@ async function upload(ctx) {
     return sendError(ctx, 400, 'NO_FILE', 'Vui lòng chọn ảnh để tải lên.');
   }
 
-  const validation = validateUploadFile(file);
-  if (!validation.ok) {
-    return sendError(ctx, validation.status, validation.code, validation.message);
+  const tempPath = file.filepath || file.path;
+  try {
+    const validation = validateUploadFile(file);
+    if (!validation.ok) {
+      return sendError(ctx, validation.status, validation.code, validation.message);
+    }
+
+    const folder = getScopedPrefix(ctx.request.body.folder, `${DEFAULT_MEDIA_PREFIX}uploads`);
+
+    const result = await cloudinary.uploader.upload(tempPath, {
+      resource_type: 'image',
+      folder,
+      overwrite: false,
+      tags: ['dha-admin'],
+    });
+
+    ctx.body = { data: normalizeAsset(result) };
+    return undefined;
+  } finally {
+    // Formidable luôn ghi ra os.tmpdir(); không unlink thì mỗi lượt upload
+    // (kể cả bị từ chối) để lại rác vĩnh viễn. Tệp có thể đã bị dọn/không
+    // tồn tại — bỏ qua lỗi unlink, không để nó che mất kết quả upload.
+    if (tempPath) await fs.promises.unlink(tempPath).catch(() => {});
   }
-
-  const folder = getScopedPrefix(ctx.request.body.folder, `${DEFAULT_MEDIA_PREFIX}uploads`);
-
-  const result = await cloudinary.uploader.upload(file.filepath || file.path, {
-    resource_type: 'image',
-    folder,
-    overwrite: false,
-    tags: ['dha-admin'],
-  });
-
-  ctx.body = { data: normalizeAsset(result) };
 }
 
 async function findReferences(publicId) {

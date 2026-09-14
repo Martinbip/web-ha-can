@@ -10,6 +10,10 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
+      // Không tới được Sanity lúc khởi động (assertDatasetPrivate ném lỗi) thì
+      // process.exit(1) ngay — không có backoff sẽ crash-loop dày đặc, dồn dập
+      // gọi Sanity trong lúc nó đang sập. pm2 tăng dần độ trễ mỗi lần restart.
+      exp_backoff_restart_delay: 1000,
       watch: false,
       max_memory_restart: '256M',
       // Không đặt PORT ở đây: --env-file không ghi đè biến đã có, cổng phải

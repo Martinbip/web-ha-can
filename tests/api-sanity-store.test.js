@@ -130,6 +130,51 @@ test('cache hết hạn theo TTL và không giữ lỗi', async () => {
   assert.equal(calls, 3);
 });
 
+test('cache ném lỗi khi chưa từng nạp được bản tốt nào (không có gì để phục vụ)', async () => {
+  const cache = createTypeCache({
+    load: async () => {
+      throw new Error('Sanity sập ngay từ lần đầu');
+    },
+  });
+  await assert.rejects(cache.get('news'), /Sanity sập ngay từ lần đầu/);
+});
+
+test('cache phục vụ bản tốt gần nhất khi Sanity sập, không ném lỗi ra ngoài', async () => {
+  let clock = 0;
+  let calls = 0;
+  let mode = 'ok';
+  const cache = createTypeCache({
+    ttlMs: 1000,
+    now: () => clock,
+    load: async () => {
+      calls += 1;
+      if (mode === 'fail') throw new Error('Sanity sập tạm thời');
+      return new Map([['ok', calls]]);
+    },
+  });
+
+  const first = await cache.get('news');
+  assert.equal(calls, 1);
+
+  clock = 1001;
+  mode = 'fail';
+  const second = await cache.get('news');
+  assert.deepEqual(second, first, 'trả đúng bản cache cũ, không ném lỗi');
+  assert.equal(calls, 2, 'đã thử nạp lại một lần');
+
+  // Trong lúc Sanity còn sập, không được gọi lại liên tục cho tới hết TTL —
+  // đúng lỗi ban đầu là "mỗi request lại gọi Sanity thêm lần nữa".
+  const third = await cache.get('news');
+  assert.deepEqual(third, first);
+  assert.equal(calls, 2, 'không gọi lại Sanity mỗi request trong lúc sập');
+
+  clock = 2002;
+  mode = 'ok';
+  const fourth = await cache.get('news');
+  assert.equal(calls, 3, 'hết TTL thì thử nạp lại');
+  assert.notDeepEqual(fourth, first, 'Sanity phục hồi thì đọc được bản mới');
+});
+
 test('publish/unpublish trên type không có nháp là lỗi lập trình', async () => {
   const { store } = setup([{ _id: 'p1', _type: 'product', name: 'A' }]);
   await assert.rejects(store.documents('product').publish({ documentId: 'p1' }), /không có nháp/);
