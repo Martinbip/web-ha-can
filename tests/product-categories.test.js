@@ -171,3 +171,58 @@ test('xoá danh mục thì mã của nó được gỡ khỏi sản phẩm', asy
   assert.deepEqual(products[0].categories, ['color-metal']);
   assert.deepEqual(products[1].categories, ['black-metal']);
 });
+
+// Lifecycle gọi schedulePrerender qua đối tượng module, nên test thay tạm hàm đó
+// để đếm số lần gọi mà không chạy tiến trình thật.
+function spyPrerender(onCall = () => {}) {
+  const prerender = require('../dha-cms/src/api/site-setting/prerender');
+  const original = prerender.schedulePrerender;
+  let calls = 0;
+  prerender.schedulePrerender = () => {
+    calls += 1;
+    onCall();
+  };
+  return {
+    count: () => calls,
+    restore: () => {
+      prerender.schedulePrerender = original;
+    },
+  };
+}
+
+test('tạo, sửa, xoá danh mục đều ghi lại HTML tĩnh', async () => {
+  const lifecycles = require('../dha-cms/src/api/product-category/content-types/product-category/lifecycles');
+  withFakeStrapi([{ id: 7, slug: 'color-metal' }], [{ id: 1, categories: ['color-metal'] }]);
+  const spy = spyPrerender();
+
+  try {
+    await lifecycles.afterCreate({ result: { slug: 'moi' } });
+    assert.equal(spy.count(), 1, 'sau khi tạo');
+
+    await lifecycles.beforeUpdate({ params: { where: { id: 7 } } });
+    await lifecycles.afterUpdate({ params: { where: { id: 7 } }, result: { slug: 'color-metal' } });
+    assert.equal(spy.count(), 2, 'đổi tên hay ẩn/hiện mà không đổi mã cũng phải ghi lại');
+
+    await lifecycles.afterDelete({ result: { slug: 'color-metal' } });
+    assert.equal(spy.count(), 3, 'sau khi xoá');
+  } finally {
+    spy.restore();
+  }
+});
+
+test('HTML được ghi lại sau khi sản phẩm đã dọn xong mã', async () => {
+  const lifecycles = require('../dha-cms/src/api/product-category/content-types/product-category/lifecycles');
+  const products = [{ id: 1, categories: ['rare-earth', 'color-metal'] }];
+  withFakeStrapi([], products);
+  let seen = null;
+  const spy = spyPrerender(() => {
+    seen = [...products[0].categories];
+  });
+
+  try {
+    await lifecycles.afterDelete({ result: { slug: 'rare-earth' } });
+  } finally {
+    spy.restore();
+  }
+  assert.deepEqual(seen, ['color-metal']);
+});

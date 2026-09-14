@@ -7,6 +7,11 @@
 const PRODUCT_UID = 'api::product.product';
 const CATEGORY_UID = 'api::product-category.product-category';
 
+// Danh mục hiện ở tab lọc, khối bên hông trang chủ và chân trang mọi trang — tất
+// cả được prerender ghi sẵn vào HTML tĩnh. Lưu xong là ghi lại, không đợi deploy.
+// Gọi qua đối tượng module (không destructure) để test thay được hàm này.
+const prerender = require('../../../site-setting/prerender');
+
 const slugBeforeUpdate = new Map();
 
 async function loadProducts() {
@@ -28,6 +33,10 @@ async function rewriteProductCategories(mapSlugs) {
 }
 
 module.exports = {
+  afterCreate() {
+    prerender.schedulePrerender();
+  },
+
   async beforeUpdate(event) {
     const id = event.params?.where?.id;
     if (!id) return;
@@ -40,16 +49,20 @@ module.exports = {
     const oldSlug = slugBeforeUpdate.get(id);
     slugBeforeUpdate.delete(id);
     const newSlug = event.result?.slug;
-    if (!oldSlug || !newSlug || oldSlug === newSlug) return;
 
-    await rewriteProductCategories((slugs) =>
-      [...new Set(slugs.map((slug) => (slug === oldSlug ? newSlug : slug)))],
-    );
+    if (oldSlug && newSlug && oldSlug !== newSlug) {
+      await rewriteProductCategories((slugs) =>
+        [...new Set(slugs.map((slug) => (slug === oldSlug ? newSlug : slug)))],
+      );
+    }
+    prerender.schedulePrerender();
   },
 
   async afterDelete(event) {
     const removedSlug = event.result?.slug;
-    if (!removedSlug) return;
-    await rewriteProductCategories((slugs) => slugs.filter((slug) => slug !== removedSlug));
+    if (removedSlug) {
+      await rewriteProductCategories((slugs) => slugs.filter((slug) => slug !== removedSlug));
+    }
+    prerender.schedulePrerender();
   },
 };
