@@ -1485,25 +1485,19 @@ async function initProductsPage() {
         container.innerHTML = filtered.map(buildProductCard).join('');
     };
 
-    const initialFilter = preFilter || 'all';
+    // Mã lọc trên URL có thể là mã cũ không còn tồn tại (bookmark, Google index
+    // cũ) — chỉ dùng nó khi khớp đúng một tab đang có, nếu không thì về "Tất Cả"
+    // và tô sáng đúng nút "Tất Cả" để tránh cảnh lưới trống dưới tab đang sáng.
+    const filterButtons = [...document.querySelectorAll('.product-filter-btn')];
+    const matched = !!preFilter && filterButtons.some(btn => btn.dataset.filter === preFilter);
+    const initialFilter = matched ? preFilter : 'all';
     renderProducts(initialFilter);
 
-    if (preFilter) {
-        let matched = false;
-        document.querySelectorAll('.product-filter-btn').forEach(btn => {
-            const isActive = btn.dataset.filter === preFilter;
-            if (isActive) matched = true;
-            btn.classList.toggle('active', isActive);
-            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        });
-        if (!matched) {
-            const allBtn = document.querySelector('.product-filter-btn[data-filter="all"]');
-            if (allBtn) {
-                allBtn.classList.add('active');
-                allBtn.setAttribute('aria-selected', 'true');
-            }
-        }
-    }
+    filterButtons.forEach(btn => {
+        const isActive = btn.dataset.filter === initialFilter;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
 
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (e) => {

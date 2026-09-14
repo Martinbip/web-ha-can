@@ -142,7 +142,7 @@ export const RESOURCE_CONFIG = {
       price_note_products: { label: 'Ghi chú báo giá (trang sản phẩm)', type: 'textarea', hint: 'Câu nằm trong khối "CẦN BÁO GIÁ CHI TIẾT?" cuối trang sản phẩm.' },
       price_note_pricing: { label: 'Ghi chú dưới bảng giá (trang bảng giá)', type: 'textarea' },
       hotline_box_title: { label: 'Tiêu đề khung hotline', type: 'text', placeholder: 'HOTLINE TƯ VẤN', hint: 'Tiêu đề khung nền xanh bên hông trang chủ. Số điện thoại trong khung lấy từ ô Hotline.' },
-      hotline_box_note: { label: 'Mô tả khung hotline', type: 'textarea', hint: 'Mỗi dòng gõ ở đây là một dòng trên website.' },
+      hotline_box_note: { label: 'Mô tả khung hotline', type: 'textarea', hint: 'Mỗi dòng gõ ở đây là một dòng trên website. Bỏ trống thì website giữ chữ mặc định: "Kỹ sư phản hồi trong 30 phút / Hỗ trợ 7:30 – 17:30 các ngày trong tuần".' },
       admin_labels: { label: 'Nhãn form quản trị', type: 'hidden' },
     },
   },

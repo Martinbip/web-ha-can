@@ -324,7 +324,7 @@ const RESOURCE_CONFIG = {
       price_note_products: { label: 'Ghi chú giá trang sản phẩm', type: 'textarea', maxLength: 500 },
       price_note_pricing: { label: 'Ghi chú giá trang bảng giá', type: 'textarea', maxLength: 500 },
       hotline_box_title: { label: 'Tiêu đề khung hotline', type: 'text', maxLength: 60, default: 'HOTLINE TƯ VẤN' },
-      hotline_box_note: { label: 'Mô tả khung hotline', type: 'textarea', maxLength: 300 },
+      hotline_box_note: { label: 'Mô tả khung hotline', type: 'textarea', maxLength: 300, default: 'Kỹ sư phản hồi trong 30 phút\nHỗ trợ 7:30 – 17:30 các ngày trong tuần' },
       admin_labels: { label: 'Nhãn form quản trị', type: 'json' },
     },
   },

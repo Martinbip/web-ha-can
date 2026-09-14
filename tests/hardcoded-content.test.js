@@ -56,6 +56,34 @@ test('Cài đặt website có hai trường của khung hotline và admin sửa 
   const adminConfig = read('admin/src/config/resources.js');
   assert.match(adminConfig, /hotline_box_title: \{ label: 'Tiêu đề khung hotline'/);
   assert.match(adminConfig, /hotline_box_note: \{ label: 'Mô tả khung hotline', type: 'textarea'/);
+
+  // Bản ghi cũ (trước khi thêm 2 trường này) có hotline_box_note = null trong
+  // khi website vẫn hiện chữ mặc định — hint phải nói rõ bỏ trống thì web vẫn
+  // hiện chữ mặc định, để quản trị viên không tưởng khung đang trống.
+  const noteFieldMatch = adminConfig.match(/hotline_box_note: \{[^}]*\}/);
+  assert.ok(noteFieldMatch, 'không tìm thấy khai báo trường hotline_box_note trong admin');
+  assert.match(noteFieldMatch[0], /bỏ trống/i, 'hint của hotline_box_note phải nói rõ trường hợp bỏ trống');
+  assert.match(
+    noteFieldMatch[0],
+    /Kỹ sư phản hồi trong 30 phút.*Hỗ trợ 7:30.*17:30/s,
+    'hint của hotline_box_note phải nêu đúng chữ mặc định trên website',
+  );
+
+  const titleFieldMatch = adminConfig.match(/hotline_box_title: \{[^}]*\}/);
+  assert.ok(titleFieldMatch, 'không tìm thấy khai báo trường hotline_box_title trong admin');
+  assert.match(titleFieldMatch[0], /HOTLINE TƯ VẤN/, 'hint hoặc placeholder của hotline_box_title phải nêu chữ mặc định');
+
+  // dha-cms: default của hotline_box_note phải khớp đúng schema, nhất quán
+  // với hotline_box_title (đã có default từ trước).
+  const cmsConfigSource = read('dha-cms/src/api/admin-ui/services/resource-config.js');
+  const schemaDefault = schema.attributes.hotline_box_note.default;
+  const cmsNoteMatch = cmsConfigSource.match(/hotline_box_note: \{[^}]*\}/);
+  assert.ok(cmsNoteMatch, 'không tìm thấy khai báo trường hotline_box_note trong resource-config CMS');
+  const literalDefault = schemaDefault.replace(/\n/g, '\\n');
+  assert.ok(
+    cmsNoteMatch[0].includes(`default: '${literalDefault}'`),
+    'default của hotline_box_note trong resource-config CMS phải khớp default trong schema',
+  );
 });
 
 const DEFAULT_SLUGS = new Set(JSON.parse(read('data/product_categories.json')).map((category) => category.slug));
@@ -108,10 +136,79 @@ test('nút "Quay Lại Danh Mục" trỏ tới danh mục đầu tiên của s�
   assert.equal(await backLinkFor({ ...base, categories: [] }), '/products', 'chưa có danh mục thì về trang Sản phẩm');
 });
 
-test('HTML nạp app.js và styles.css bản mới', () => {
+test('mọi HTML dùng cùng một bản app.js và styles.css như index.html', () => {
+  const indexHtml = read('index.html');
+  const appVersion = indexHtml.match(/app\.js\?v=([^"]+)"/);
+  const stylesVersion = indexHtml.match(/styles\.css\?v=([^"]+)"/);
+  assert.ok(appVersion, 'index.html thiếu ?v= của app.js');
+  assert.ok(stylesVersion, 'index.html thiếu ?v= của styles.css');
+
+  const appTag = new RegExp(`app\\.js\\?v=${appVersion[1].replace(/\./g, '\\.')}"`);
+  const stylesTag = new RegExp(`styles\\.css\\?v=${stylesVersion[1].replace(/\./g, '\\.')}"`);
+
   for (const file of fs.readdirSync(root).filter((name) => name.endsWith('.html'))) {
     const html = read(file);
-    assert.match(html, /app\.js\?v=3\.4"/, `${file} còn app.js bản cũ`);
-    assert.match(html, /styles\.css\?v=1\.1\.8"/, `${file} còn styles.css bản cũ`);
+    assert.match(html, appTag, `${file} không dùng app.js?v=${appVersion[1]} như index.html`);
+    assert.match(html, stylesTag, `${file} không dùng styles.css?v=${stylesVersion[1]} như index.html`);
   }
+});
+
+// Dựng trang products.html chạy thật app.js với fetch giả lập CMS.
+async function openProductsPage(url, { products, categories }) {
+  const dom = new JSDOM(read('products.html'), {
+    runScripts: 'dangerously',
+    url,
+    virtualConsole: new VirtualConsole(),
+  });
+  const { window } = dom;
+  window.fetch = (input) => {
+    const url = String(input);
+    if (url.includes('/api/product-categories')) {
+      return Promise.resolve({ ok: true, json: async () => ({ data: categories }) });
+    }
+    if (url.includes('/api/products')) {
+      return Promise.resolve({ ok: true, json: async () => ({ data: products }) });
+    }
+    return Promise.reject(new Error('network disabled in tests'));
+  };
+  const script = window.document.createElement('script');
+  script.textContent = APP_JS;
+  window.document.body.appendChild(script);
+
+  await window.initProductsPage();
+  return window;
+}
+
+test('mã lọc lạ trên URL (?filter=dong) quay về "Tất Cả" thay vì hiện lưới trống', async () => {
+  const products = JSON.parse(read('data/products.json'));
+  const categories = JSON.parse(read('data/product_categories.json'));
+
+  const window = await openProductsPage('https://dhakimloaimau.vn/products?filter=dong', { products, categories });
+
+  const uids = new Set(
+    [...window.document.querySelectorAll('#products-container a[href*="product-detail"]')]
+      .map((a) => new URL(a.getAttribute('href'), 'https://dhakimloaimau.vn').searchParams.get('id'))
+  );
+  assert.equal(uids.size, products.length, 'lưới sản phẩm phải hiện đủ sản phẩm khi mã lọc không khớp tab nào');
+  assert.equal(window.document.getElementById('products-empty').style.display, 'none', 'không được hiện thông báo trống');
+
+  const activeBtn = window.document.querySelector('.product-filter-btn.active');
+  assert.equal(activeBtn?.dataset.filter, 'all', 'phải tô sáng đúng nút "Tất Cả"');
+});
+
+test('mã lọc hợp lệ (?filter=black-metal) vẫn lọc đúng và tô sáng đúng tab', async () => {
+  const products = JSON.parse(read('data/products.json'));
+  const categories = JSON.parse(read('data/product_categories.json'));
+
+  const window = await openProductsPage('https://dhakimloaimau.vn/products?filter=black-metal', { products, categories });
+
+  const expectedUids = new Set(products.filter((p) => (p.categories || []).includes('black-metal')).map((p) => p.uid));
+  const uids = new Set(
+    [...window.document.querySelectorAll('#products-container a[href*="product-detail"]')]
+      .map((a) => new URL(a.getAttribute('href'), 'https://dhakimloaimau.vn').searchParams.get('id'))
+  );
+  assert.deepEqual(uids, expectedUids, 'lưới sản phẩm phải đúng danh mục black-metal');
+
+  const activeBtn = window.document.querySelector('.product-filter-btn.active');
+  assert.equal(activeBtn?.dataset.filter, 'black-metal', 'phải tô sáng đúng tab black-metal');
 });
