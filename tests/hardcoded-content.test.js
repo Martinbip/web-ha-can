@@ -246,3 +246,86 @@ test('Cài đặt website có các trường đầu trang/chân trang và admin 
   assert.match(adminConfig, /footer_links: \{ label: 'Liên kết chân trang', type: 'link-list'/);
   assert.match(read('admin/src/components/FieldRenderer.jsx'), /case 'link-list':/);
 });
+
+// Đợt 2: đầu trang, menu và chân trang dùng chung cho 9 trang.
+const CHROME_REGIONS = ['.top-header', 'header.site-header', 'nav.main-navigation', 'footer.footer'];
+
+function chromeOf(file) {
+  const doc = load(file);
+  // Dấu "đang xem" của menu khác nhau theo trang là đúng — bỏ đi trước khi so.
+  doc.querySelectorAll('nav.main-navigation .active').forEach((el) => el.classList.remove('active'));
+  return CHROME_REGIONS.map((selector) => {
+    const region = doc.querySelector(selector);
+    assert.ok(region, `${file} thiếu ${selector}`);
+    return region.outerHTML.replace(/\s+/g, ' ');
+  });
+}
+
+test('9 trang dùng chung một đầu trang, menu và chân trang', () => {
+  const reference = chromeOf('index.html');
+  for (const file of PAGES) {
+    chromeOf(file).forEach((html, index) => {
+      assert.equal(html, reference[index], `${file}: ${CHROME_REGIONS[index]} lệch so với index.html`);
+    });
+  }
+});
+
+// Vùng đã nối CMS trong đầu trang/chân trang — chữ trong đó do admin quyết định.
+const CHROME_CMS = [
+  '.site-hotline', '.site-email', '.site-address', '.site-office-name', '.site-tax-code', '.site-brand-bio',
+  '.logo-accent', '.logo-text', '[data-site-text]', '[data-category-list]', '[data-footer-links]',
+  '[data-copyright]', 'ul.nav-links', 'a[aria-label]',
+].join(', ');
+
+// Nhãn giao diện được phép giữ trong code (nhóm 6 của lộ trình).
+const CHROME_ALLOWED_TEXT = new Set(['📞', 'Hotline:', 'Email:', 'Tìm']);
+
+test('đầu trang, menu và chân trang không còn chữ viết cứng ngoài nhãn giao diện', () => {
+  for (const file of PAGES) {
+    const doc = load(file);
+    for (const selector of CHROME_REGIONS) {
+      const region = doc.querySelector(selector);
+      region.querySelectorAll(CHROME_CMS).forEach((el) => el.remove());
+      const walker = doc.createTreeWalker(region, 4 /* SHOW_TEXT */);
+      let node;
+      while ((node = walker.nextNode())) {
+        const value = node.textContent.trim();
+        if (!value) continue;
+        assert.ok(CHROME_ALLOWED_TEXT.has(value), `${file} ${selector}: "${value}" viết cứng`);
+      }
+    }
+  }
+});
+
+test('chân trang mặc định: 5 liên kết đúng thứ tự, đủ 4 mạng xã hội, có email và bản quyền', () => {
+  const footer = load('index.html').querySelector('footer.footer');
+  assert.deepEqual(
+    [...footer.querySelectorAll('[data-footer-links] a')].map((a) => [a.textContent, a.getAttribute('href')]),
+    [
+      ['Dự Tính Giá Đơn Hàng', '/estimator'],
+      ['Đơn Giá Phân Tích', '/pricing'],
+      ['Tin Tức Thị Trường', '/news'],
+      ['Quy Trình Giao Nhận', '/#workflow'],
+      ['Liên Hệ Báo Giá', '/contact'],
+    ],
+  );
+  assert.deepEqual(
+    [...footer.querySelectorAll('a.social-link')].map((a) => a.getAttribute('aria-label')),
+    ['Facebook', 'YouTube', 'Twitter/X', 'Zalo'],
+  );
+  assert.ok(footer.querySelector('.site-email'), 'cột liên hệ có email');
+  assert.equal(footer.querySelector('[data-site-text="footer_categories_title"]').textContent, 'DANH MỤC SẢN PHẨM');
+  assert.equal(footer.querySelector('[data-site-text="footer_links_title"]').textContent, 'HỖ TRỢ KHÁCH HÀNG');
+  assert.match(footer.querySelector('[data-copyright]').textContent, /^© \d{4} Kim Loại Màu DHA\. Bản quyền được bảo lưu\.$/);
+
+  const cta = load('index.html').querySelector('.btn-contact');
+  assert.equal(cta.dataset.siteText, 'header_cta_label');
+  assert.equal(cta.textContent, 'Yêu Cầu Mẫu');
+  assert.equal(cta.getAttribute('href'), '/contact');
+});
+
+test('không còn link /#about trỏ vào khu không tồn tại', () => {
+  for (const file of PAGES) {
+    assert.ok(!read(file).includes('/#about'), `${file} còn link /#about`);
+  }
+});
