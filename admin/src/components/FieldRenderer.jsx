@@ -352,10 +352,15 @@ function TextListField({ id, value, onChange }) {
 
 // Cùng quy tắc với menu (dha-cms/src/api/admin-ui/services/navigation.js) và
 // safeNavUrl() trên website: đường dẫn nội bộ, neo trong trang, hoặc http(s).
+// "//vi-du.vn" và "/\vi-du.vn" trông như đường dẫn trong website nhưng trình
+// duyệt hiểu là một tên miền khác nên cũng bị cảnh báo, không chỉ riêng "/".
 function linkUrlWarning(item) {
   const url = String(item.url || '').trim();
   if (!url) {
     return String(item.label || '').trim() ? 'Chưa có đường dẫn — liên kết này sẽ không hiện trên website.' : '';
+  }
+  if (/^\/[/\\]/.test(url)) {
+    return 'Đường dẫn phải bắt đầu bằng "/", "#" hoặc "http(s)://" — liên kết này sẽ không hiện trên website.';
   }
   if (url.startsWith('/') || url.startsWith('#') || /^https?:\/\/\S+$/i.test(url)) return '';
   return 'Đường dẫn phải bắt đầu bằng "/", "#" hoặc "http(s)://" — liên kết này sẽ không hiện trên website.';

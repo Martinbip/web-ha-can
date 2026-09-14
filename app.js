@@ -562,7 +562,7 @@ function applySiteTexts(settings) {
 function renderFooterLinks(items) {
     if (!Array.isArray(items)) return '';
     return items
-        .filter(item => item && item.visible !== false && item.label && safeNavUrl(item.url))
+        .filter(item => item && item.visible !== false && String(item.label ?? '').trim() && safeNavUrl(item.url))
         .map(item => `<li><a href="${escapeHtml(safeNavUrl(item.url))}">${escapeHtml(item.label)}</a></li>`)
         .join('');
 }
@@ -851,11 +851,16 @@ async function initNavigationMenu() {
     markActiveNavLink();
 }
 
+// "//vi-du.vn" và "/\vi-du.vn" trông như đường dẫn trong website nhưng trình
+// duyệt hiểu là một tên miền khác nên bị loại riêng — dễ thành link ra ngoài
+// do gõ nhầm "//contact". Cùng quy tắc với safeUrl() trong
+// scripts/prerender-site-settings.js.
 function safeNavUrl(value) {
     const raw = String(value || '').trim();
     if (!raw) return '';
+    if (/^\/[/\\]/.test(raw)) return '';
     if (raw.startsWith('/') || raw.startsWith('#')) return raw;
-    if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^https?:\/\/\S+$/i.test(raw)) return raw;
     return '';
 }
 
@@ -863,10 +868,10 @@ function renderNavItems(items) {
     if (!Array.isArray(items)) return '';
 
     const html = items
-        .filter(item => item && item.visible !== false && item.label && safeNavUrl(item.url))
+        .filter(item => item && item.visible !== false && String(item.label ?? '').trim() && safeNavUrl(item.url))
         .map(item => {
             const children = (Array.isArray(item.children) ? item.children : [])
-                .filter(child => child && child.visible !== false && child.label && safeNavUrl(child.url));
+                .filter(child => child && child.visible !== false && String(child.label ?? '').trim() && safeNavUrl(child.url));
 
             const link = `<a href="${escapeHtml(safeNavUrl(item.url))}" class="nav-link">${escapeHtml(item.label)}</a>`;
             if (!children.length) return `<li>${link}</li>`;

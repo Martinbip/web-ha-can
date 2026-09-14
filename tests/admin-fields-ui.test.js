@@ -193,3 +193,13 @@ test('liên kết chân trang: đường dẫn sai quy tắc hiện cảnh báo,
     broken.unmount();
   }
 });
+
+test('liên kết chân trang: URL kiểu "//..." (protocol-relative) cũng bị cảnh báo', options, async () => {
+  const { view } = await renderField({
+    name: 'footer_links',
+    field: { label: 'Liên kết chân trang', type: 'link-list' },
+    value: [{ label: 'Ngoài', url: '//evil.com', visible: true }],
+  });
+  assert.ok(view.one('.link-list-warning'), '"//evil.com" trông như đường dẫn nội bộ nhưng thực ra dẫn ra ngoài');
+  view.unmount();
+});

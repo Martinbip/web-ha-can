@@ -128,13 +128,17 @@ function text(settings, key) {
   return value || null;
 }
 
-// Cùng quy tắc với safeNavUrl() trong app.js: chỉ nhận đường dẫn nội bộ, neo
-// trong trang hoặc http(s) — chặn javascript:, data:... do CMS gửi xuống.
+// Cùng quy tắc với safeNavUrl() trong app.js và normalizeUrl() trong
+// dha-cms/src/api/admin-ui/services/navigation.js: chỉ nhận đường dẫn nội bộ,
+// neo trong trang hoặc http(s) — chặn javascript:, data:... do CMS gửi xuống.
+// "//vi-du.vn" và "/\vi-du.vn" trông như đường dẫn trong website nhưng trình
+// duyệt hiểu là một tên miền khác nên bị loại riêng.
 function safeUrl(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
+  if (/^\/[/\\]/.test(raw)) return '';
   if (raw.startsWith('/') || raw.startsWith('#')) return raw;
-  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^https?:\/\/\S+$/i.test(raw)) return raw;
   return '';
 }
 
@@ -142,7 +146,7 @@ function safeUrl(value) {
 function renderFooterLinks(items) {
   if (!Array.isArray(items)) return '';
   return items
-    .filter((item) => item && item.visible !== false && item.label && safeUrl(item.url))
+    .filter((item) => item && item.visible !== false && String(item.label ?? '').trim() && safeUrl(item.url))
     .map((item) => `<li><a href="${escapeAttr(safeUrl(item.url))}">${escapeText(item.label)}</a></li>`)
     .join('');
 }
@@ -367,7 +371,7 @@ const SUBMENU_ICON =
 // nhất, hoà thì mục đứng trước; mục con khớp thì làm sáng cả mục cha).
 function renderNavigation(items, currentPath) {
   if (!Array.isArray(items)) return '';
-  const usable = (item) => item && item.visible !== false && item.label && safeUrl(item.url);
+  const usable = (item) => item && item.visible !== false && String(item.label ?? '').trim() && safeUrl(item.url);
   const entries = items.filter(usable).map((item) => ({
     item,
     children: (Array.isArray(item.children) ? item.children : []).filter(usable),

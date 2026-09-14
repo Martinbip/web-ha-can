@@ -20,6 +20,7 @@ const {
   pickVisibleCategories,
   pagePathForFile,
   prerenderDirectory,
+  safeUrl,
   DEFAULT_CATEGORIES,
 } = require('../scripts/prerender-site-settings.js');
 
@@ -583,4 +584,33 @@ test('CMS lỗi thì menu con đã prerender vẫn mở được bằng nút', a
 
   assert.ok(toggle.closest('.has-submenu').classList.contains('submenu-open'), 'bấm một lần là mở menu con');
   assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+});
+
+test('quy tắc URL khớp nhau giữa app.js và prerender', () => {
+  const window = runAppJs(readPage('news.html'), SETTINGS, null, { url: 'https://dhakimloaimau.vn/news' });
+  const cases = [
+    ['/ok', '/ok'],
+    ['#x', '#x'],
+    ['https://dha.vn/a?b=1', 'https://dha.vn/a?b=1'],
+    ['//evil.com', ''],
+    ['/\\evil.com', ''],
+    ['https://a b', ''],
+    ['javascript:alert(1)', ''],
+    ['', ''],
+    ['  /spaced  ', '/spaced'],
+  ];
+  for (const [input, expected] of cases) {
+    assert.equal(window.safeNavUrl(input), safeUrl(input), `app.js và prerender phải khớp nhau cho ${JSON.stringify(input)}`);
+    assert.equal(safeUrl(input), expected, `giá trị đúng kỳ vọng cho ${JSON.stringify(input)}`);
+  }
+});
+
+test('chữ toàn khoảng trắng hoặc URL kiểu //... bị lọc khỏi liên kết chân trang ở cả hai nơi', () => {
+  const window = runAppJs(readPage('news.html'), SETTINGS, null, { url: 'https://dhakimloaimau.vn/news' });
+  const items = [
+    { label: '   ', url: '/a' },
+    { label: 'B', url: '//evil.com' },
+  ];
+  assert.equal(renderFooterLinks(items), '');
+  assert.equal(window.renderFooterLinks(items), '');
 });
