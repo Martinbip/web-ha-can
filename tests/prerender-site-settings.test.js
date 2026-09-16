@@ -825,3 +825,22 @@ test('app.js và prerender dựng danh sách trong trang ra cùng một DOM', ()
   assert.equal(fromJs.innerHTML, fromPrerender.innerHTML);
   assert.equal(fromJs.children.length, 2);
 });
+
+// initPageContent() gọi fetchSingleFromCMS('page-content') không kèm fallbackFile.
+// Khi CMS lỗi, hàm không được rơi xuống nhánh dự phòng rồi gọi fetch(undefined).
+test('CMS lỗi thì initPageContent không gọi fetch tới địa chỉ undefined', async () => {
+  const window = runAppJs(readPage('index.html'), SETTINGS, null, { url: 'https://dhakimloaimau.vn/' });
+  const calledUrls = [];
+  const originalFetch = window.fetch;
+  window.fetch = (input, ...rest) => {
+    calledUrls.push(String(input));
+    return originalFetch(input, ...rest);
+  };
+
+  await window.initPageContent();
+
+  assert.ok(
+    !calledUrls.some((url) => url.includes('undefined')),
+    `không được gọi fetch tới địa chỉ chứa "undefined", đã gọi: ${JSON.stringify(calledUrls)}`,
+  );
+});

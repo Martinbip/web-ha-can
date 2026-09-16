@@ -267,7 +267,13 @@ async function fetchSingleFromCMS(endpoint, fallbackFile) {
         const json = await res.json();
         const d = json.data;
         return d?.attributes || d || null;
-    } catch {
+    } catch (err) {
+        // Nội dung mà quản trị thay đổi thường xuyên gọi hàm này không kèm
+        // fallbackFile: thà không đổi gì còn hơn tải một địa chỉ không có thật.
+        if (!fallbackFile) {
+            console.error(`[CMS] ${endpoint} failed and has no fallback:`, err);
+            return null;
+        }
         console.warn(`[CMS] Fallback to ${fallbackFile}`);
         try {
             const res = await fetch(fallbackFile);
