@@ -306,6 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigationMenu();
     initScrollTopButton();
     initSiteSettings();
+    initPageContent();
     initCategoryLinks();
     initDynamicContent();
     initContactForm();
@@ -586,6 +587,62 @@ function applySiteChrome(settings) {
     if (ctaUrl) {
         document.querySelectorAll('.btn-contact').forEach(el => { el.setAttribute('href', ctaUrl); });
     }
+}
+
+// ======================================================
+// NỘI DUNG TỪNG TRANG
+// ======================================================
+// Chữ và thẻ SEO của mỗi trang do quản trị đặt (mục "Nội dung trang" trong
+// admin). Prerender đã ghi sẵn vào HTML; đoạn này áp lại khi CMS trả lời, ra
+// đúng cùng một DOM (xem scripts/prerender-site-settings.js).
+function renderPageList(items) {
+    if (!Array.isArray(items)) return '';
+    return items
+        .map(line => (typeof line === 'string' ? line.trim() : ''))
+        .filter(Boolean)
+        .map(line => `<li>${escapeHtml(line)}</li>`)
+        .join('');
+}
+
+function applyPageContent(content) {
+    const page = document.body?.dataset?.page;
+    if (!page) return;
+    const texts = content?.texts?.[page];
+    const seo = content?.seo?.[page];
+    const pageText = key => {
+        const value = texts && typeof texts[key] === 'string' ? texts[key].trim() : '';
+        return value || '';
+    };
+
+    document.querySelectorAll('[data-page-text]').forEach(el => {
+        const value = pageText(el.dataset.pageText);
+        if (value) el.innerHTML = escapeHtml(value).replace(/\n/g, '<br>');
+    });
+
+    document.querySelectorAll('[data-page-href]').forEach(el => {
+        const url = safeNavUrl(pageText(el.dataset.pageHref));
+        if (url) el.setAttribute('href', url);
+    });
+
+    document.querySelectorAll('[data-page-list]').forEach(el => {
+        const html = renderPageList(texts?.[el.dataset.pageList]);
+        if (html) el.innerHTML = html;
+    });
+
+    document.querySelectorAll('[data-page-seo]').forEach(el => {
+        const key = el.dataset.pageSeo;
+        const raw = seo && typeof seo[key] === 'string' ? seo[key].trim() : '';
+        const value = key === 'image' ? safeNavUrl(raw) : raw;
+        if (!value) return;
+        if (el.tagName === 'TITLE') el.textContent = value;
+        else el.setAttribute('content', value);
+    });
+}
+
+async function initPageContent() {
+    if (!document.body?.dataset?.page) return;
+    const content = await fetchSingleFromCMS('page-content');
+    if (content && Object.keys(content).length) applyPageContent(content);
 }
 
 // ======================================================

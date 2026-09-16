@@ -17,6 +17,7 @@ const {
   applyNavigationToHtml,
   applyPageContentToHtml,
   pageCodeFromHtml,
+  renderPageList,
   renderCategoryLinks,
   renderFooterLinks,
   pickVisibleCategories,
@@ -111,6 +112,10 @@ const DYNAMIC_SELECTORS = [
   '[data-footer-links]',
   '[data-copyright]',
   '.btn-contact',
+  '[data-page-text]',
+  '[data-page-list]',
+  '[data-page-seo]',
+  '[data-page-href]',
 ];
 
 function snapshot(window) {
@@ -119,7 +124,7 @@ function snapshot(window) {
   );
 }
 
-function runAppJs(html, settings, categories = null, { url = 'https://dhakimloaimau.vn/', navigation = null } = {}) {
+function runAppJs(html, settings, categories = null, { url = 'https://dhakimloaimau.vn/', navigation = null, pageContent = null } = {}) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
     url,
@@ -136,6 +141,9 @@ function runAppJs(html, settings, categories = null, { url = 'https://dhakimloai
     }
     if (navigation && target.includes('/api/navigation')) {
       return Promise.resolve({ ok: true, json: async () => ({ data: { items: navigation } }) });
+    }
+    if (pageContent && target.includes('/api/page-content')) {
+      return Promise.resolve({ ok: true, json: async () => ({ data: pageContent }) });
     }
     return Promise.reject(new Error('network disabled in tests'));
   };
@@ -158,20 +166,26 @@ const PAGES = fs
 for (const file of PAGES) {
   test(`${file}: prerender xong thì app.js không phải sửa gì nữa`, async () => {
     const pagePath = pagePathForFile(file);
-    const html = applyNavigationToHtml(
-      applyCategoriesToHtml(applySettingsToHtml(readPage(file), SETTINGS), CATEGORIES),
-      NAV_ITEMS,
-      pagePath,
+    const html = applyPageContentToHtml(
+      applyNavigationToHtml(
+        applyCategoriesToHtml(applySettingsToHtml(readPage(file), SETTINGS), CATEGORIES),
+        NAV_ITEMS,
+        pagePath,
+      ),
+      PAGE_CONTENT,
+      file,
     );
     const window = runAppJs(html, SETTINGS, CATEGORIES, {
       url: `https://dhakimloaimau.vn${pagePath}`,
       navigation: NAV_ITEMS,
+      pageContent: PAGE_CONTENT,
     });
 
     const before = snapshot(window);
     await window.initSiteSettings();
     await window.initCategoryLinks();
     await window.initNavigationMenu();
+    await window.initPageContent();
     const after = snapshot(window);
 
     for (const [index, selector] of DYNAMIC_SELECTORS.entries()) {
@@ -774,4 +788,40 @@ test('nội dung trang là nguồn thứ tư, lỗi riêng nó không chặn ba 
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('app.js áp nội dung trang và SEO từ CMS', async () => {
+  const window = runAppJs(readPage('index.html'), SETTINGS, null, {
+    url: 'https://dhakimloaimau.vn/',
+    pageContent: PAGE_CONTENT,
+  });
+  await window.initPageContent();
+  const doc = window.document;
+
+  assert.equal(doc.querySelector('[data-page-text="services_title"]').textContent, 'Dịch vụ <mới>');
+  assert.equal(doc.querySelector('[data-page-text="products_title"]').innerHTML, 'QUẶNG<br>CHUẨN');
+  assert.equal(doc.querySelector('[data-page-href="hero_primary_url"]').getAttribute('href'), '/products?filter=color-metal');
+  assert.equal(doc.querySelector('title').textContent, 'Tiêu đề Google');
+  assert.equal(doc.querySelector('meta[property="og:title"]').getAttribute('content'), 'Tiêu đề Google');
+});
+
+test('CMS lỗi hoặc ô trống thì app.js giữ nguyên nội dung trang đã có', async () => {
+  const window = runAppJs(readPage('contact.html'), SETTINGS, null, { url: 'https://dhakimloaimau.vn/contact' });
+  const pick = () => [...window.document.querySelectorAll('[data-page-text], [data-page-list], title')].map((el) => el.outerHTML);
+
+  const before = pick();
+  await window.initPageContent();
+  assert.deepEqual(pick(), before);
+});
+
+test('app.js và prerender dựng danh sách trong trang ra cùng một DOM', () => {
+  const window = runAppJs(readPage('contact.html'), SETTINGS);
+  const items = ['A & "B"', '   ', '<script>'];
+  const fromJs = window.document.createElement('ul');
+  fromJs.innerHTML = window.renderPageList(items);
+  const fromPrerender = window.document.createElement('ul');
+  fromPrerender.innerHTML = renderPageList(items);
+
+  assert.equal(fromJs.innerHTML, fromPrerender.innerHTML);
+  assert.equal(fromJs.children.length, 2);
 });
