@@ -23,6 +23,7 @@ const {
   pickVisibleCategories,
   pagePathForFile,
   prerenderDirectory,
+  fetchPageContent,
   safeUrl,
   DEFAULT_CATEGORIES,
 } = require('../scripts/prerender-site-settings.js');
@@ -863,4 +864,19 @@ test('product-detail.html không có dấu data-page-* thì initPageContent khô
     !calledUrls.some((url) => url.includes('/api/page-content')),
     `không được gọi CMS nội dung trang, đã gọi: ${JSON.stringify(calledUrls)}`,
   );
+});
+
+// Single type "nội dung trang" chưa có bản ghi thì Strapi trả 404 — đó là
+// trạng thái "chưa có dữ liệu", không phải lỗi cần cảnh báo mỗi lượt prerender.
+test('fetchPageContent: 404 coi là chưa có dữ liệu, các lỗi khác vẫn ném ra', async () => {
+  const originalFetch = global.fetch;
+  try {
+    global.fetch = async () => ({ ok: false, status: 404 });
+    assert.deepEqual(await fetchPageContent(), {});
+
+    global.fetch = async () => ({ ok: false, status: 500 });
+    await assert.rejects(fetchPageContent(), /CMS trả về 500/);
+  } finally {
+    global.fetch = originalFetch;
+  }
 });

@@ -507,6 +507,9 @@ function applyPageContentToHtml(html, content, file) {
 
 async function fetchPageContent() {
   const res = await fetch(`${CMS}/api/page-content`, { signal: AbortSignal.timeout(10000) });
+  // Single type chưa có bản ghi thì Strapi trả 404 — đó là "chưa có dữ liệu",
+  // không phải lỗi, nên đừng cảnh báo mỗi lượt prerender vì nó.
+  if (res.status === 404) return {};
   if (!res.ok) throw new Error(`CMS trả về ${res.status} khi đọc nội dung trang`);
   const json = await res.json();
   const data = json.data;
@@ -627,6 +630,7 @@ module.exports = {
   pickVisibleCategories,
   pagePathForFile,
   prerenderDirectory,
+  fetchPageContent,
   safeUrl,
   DEFAULT_CATEGORIES,
 };
