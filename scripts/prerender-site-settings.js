@@ -631,6 +631,7 @@ module.exports = {
   pagePathForFile,
   prerenderDirectory,
   fetchPageContent,
+  transformHtml,
   safeUrl,
   DEFAULT_CATEGORIES,
 };

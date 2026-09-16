@@ -24,6 +24,7 @@ const {
   pagePathForFile,
   prerenderDirectory,
   fetchPageContent,
+  transformHtml,
   safeUrl,
   DEFAULT_CATEGORIES,
 } = require('../scripts/prerender-site-settings.js');
@@ -879,4 +880,32 @@ test('fetchPageContent: 404 coi là chưa có dữ liệu, các lỗi khác vẫ
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+// Lưới an toàn cho bản vá thẻ tự đóng: handler.apply() cũng được gọi cho thẻ
+// void (vd <meta>). Một handler chỉ trả { inner } (không có ý nghĩa với thẻ
+// không có phần nội dung) không được làm đổi HTML; trả { rawAttrs } thì đổi
+// đúng thuộc tính.
+test('transformHtml với thẻ tự đóng: handler trả inner không đổi gì, trả rawAttrs thì đổi thuộc tính', () => {
+  const voidHtml = '<meta name="description" content="Cũ">';
+
+  const innerOnlyHandler = [
+    {
+      match: (tagName) => tagName === 'meta',
+      apply: () => ({ inner: 'không nên xuất hiện' }),
+    },
+  ];
+  assert.equal(transformHtml(voidHtml, innerOnlyHandler), voidHtml, 'handler chỉ trả inner không được đổi thẻ void');
+
+  const rawAttrsHandler = [
+    {
+      match: (tagName) => tagName === 'meta',
+      apply: ({ rawAttrs }) => ({ rawAttrs: rawAttrs.replace('content="Cũ"', 'content="Mới"') }),
+    },
+  ];
+  assert.equal(
+    transformHtml(voidHtml, rawAttrsHandler),
+    '<meta name="description" content="Mới">',
+    'handler trả rawAttrs phải đổi đúng thuộc tính',
+  );
 });

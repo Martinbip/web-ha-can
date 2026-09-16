@@ -440,7 +440,8 @@ const ALLOWED_UI_TEXT = new Set([
   'Kim Loại', 'Giá LME (USD/tấn)', 'Giá Nội Địa', 'Biến Động', 'Cập Nhật',
   'Tên Dịch Vụ', 'Đơn Giá', 'Mô Tả',
 
-  // Thông báo hệ thống do app.js dựng khi danh sách rỗng (JS chèn text, không đọc từ CMS).
+  // Thông báo hệ thống khi danh sách rỗng — chữ nằm sẵn trong HTML, app.js chỉ
+  // bật/tắt hiện (không chèn text, không đọc từ CMS).
   'Không tìm thấy sản phẩm phù hợp.',
   'Không có sản phẩm nào trong danh mục này.',
 
