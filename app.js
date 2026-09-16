@@ -647,6 +647,9 @@ function applyPageContent(content) {
 
 async function initPageContent() {
     if (!document.body?.dataset?.page) return;
+    // Hai trang chi tiết mang data-page nhưng không có dấu nào (tiêu đề, mô tả
+    // của chúng do JS đặt theo từng sản phẩm/bài viết) — không cần gọi CMS.
+    if (!document.querySelector('[data-page-text], [data-page-href], [data-page-list], [data-page-seo]')) return;
     const content = await fetchSingleFromCMS('page-content');
     if (content && Object.keys(content).length) applyPageContent(content);
 }

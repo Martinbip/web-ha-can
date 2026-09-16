@@ -844,3 +844,23 @@ test('CMS lỗi thì initPageContent không gọi fetch tới địa chỉ undef
     `không được gọi fetch tới địa chỉ chứa "undefined", đã gọi: ${JSON.stringify(calledUrls)}`,
   );
 });
+
+// product-detail.html và news-detail.html mang data-page (tiêu đề, mô tả do JS
+// đặt theo từng sản phẩm/bài viết) nhưng không có dấu [data-page-*] nào — gọi
+// CMS nội dung trang cho hai trang này là vô ích.
+test('product-detail.html không có dấu data-page-* thì initPageContent không gọi CMS', async () => {
+  const window = runAppJs(readPage('product-detail.html'), SETTINGS, null, { url: 'https://dhakimloaimau.vn/product-detail' });
+  const calledUrls = [];
+  const originalFetch = window.fetch;
+  window.fetch = (input, ...rest) => {
+    calledUrls.push(String(input));
+    return originalFetch(input, ...rest);
+  };
+
+  await window.initPageContent();
+
+  assert.ok(
+    !calledUrls.some((url) => url.includes('/api/page-content')),
+    `không được gọi CMS nội dung trang, đã gọi: ${JSON.stringify(calledUrls)}`,
+  );
+});
