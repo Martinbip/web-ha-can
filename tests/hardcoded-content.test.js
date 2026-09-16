@@ -418,3 +418,79 @@ test('7 trang tĩnh có đủ dấu SEO cho cả thẻ Google, Facebook và Twit
     assert.equal(doc.querySelectorAll('[data-page-seo="image"]').length, 2, `${file}: ảnh phải điền cho 2 thẻ`);
   }
 });
+
+// Sau đợt 3, chữ khách nhìn thấy chỉ còn được nằm trong code nếu là nhãn giao
+// diện / thông báo hệ thống (nhóm 6 của lộ trình) hoặc thuộc đợt 4 (form Dự
+// toán, form Liên hệ). Mọi chữ nội dung khác phải nối CMS.
+const PAGE_CMS = [
+  '[data-page-text]', '[data-page-list]', '[data-page-href]', '[data-site-text]',
+  '[data-category-list]', '[data-footer-links]', '[data-copyright]',
+  '.site-hotline', '.site-email', '.site-address', '.site-office-name', '.site-tax-code',
+  '.site-brand-bio', '.logo-accent', '.logo-text', '.hero-title', '.hero-tagline',
+  '.hero-description', '.spec-badge-label', '.spec-badge-value', '.stat-number', '.stat-label',
+  'ul.nav-links', 'a[aria-label]', '.top-header', 'header.site-header', 'nav.main-navigation',
+  'footer.footer', '#home-filter-tabs', '#product-filter-tabs', '#products-container',
+  '#home-products-grid', '#home-news-grid', '#news-full-grid', '#projects-container',
+  '.services-grid', '.workflow-timeline', '#market-price-body', '#pricing-table-body',
+  '#survey-pricing-table-body', '#hero-carousel', 'script', 'style', 'noscript', 'svg', 'title',
+].join(', ');
+
+const ALLOWED_UI_TEXT = new Set([
+  // Tiêu đề cột bảng giá thị trường (index.html) và bảng đơn giá dịch vụ (pricing.html).
+  'Kim Loại', 'Giá LME (USD/tấn)', 'Giá Nội Địa', 'Biến Động', 'Cập Nhật',
+  'Tên Dịch Vụ', 'Đơn Giá', 'Mô Tả',
+
+  // Thông báo hệ thống do app.js dựng khi danh sách rỗng (JS chèn text, không đọc từ CMS).
+  'Không tìm thấy sản phẩm phù hợp.',
+  'Không có sản phẩm nào trong danh mục này.',
+
+  // Nhãn ô nhập và tiêu đề nhóm của form Dự toán (#est-group, #est-ore, #est-method, #est-pack).
+  'Nhóm Khoáng Sản', 'Loại Quặng Cụ Thể', 'Yêu Cầu Kiểm Định', 'Quy Cách Đóng Gói',
+  'Khối Lượng Mẫu (kg)',
+
+  // Nút bấm và tiêu đề khối kết quả của form Dự toán — nhãn cố định, không phải dữ liệu tính toán.
+  'Tính Toán Báo Giá',
+  'Chọn "Tính Toán Báo Giá" để xem chi tiết dự toán.',
+  'KẾT QUẢ DỰ TOÁN MẪU',
+  'Tổng Chi Phí Ước Tính:', 'Tổng khối lượng mẫu đặt hàng:', 'Đơn giá quặng trung bình:',
+  'Chi phí quặng mẫu thô tạm tính:', 'Phí phân tích hóa học kiểm định:',
+  'Chi phí đóng gói & chứng nhận:', 'Chiết khấu số lượng lớn:',
+  // Giá trị số mặc định hiện trước khi khách bấm "Tính Toán Báo Giá" — do JS ghi đè sau khi tính.
+  '0đ', '0 kg', '0 đ/kg',
+  'Lưu ý:',
+
+  // Nhãn ô nhập của form Liên hệ.
+  'Văn phòng:', 'Email:', 'Họ và Tên', 'Số Điện Thoại', 'Email', 'Địa Chỉ', 'Nhu Cầu',
+  'Nội Dung Yêu Cầu', '*',
+  'Gửi Yêu Cầu Báo Giá', 'Đóng',
+
+  // Đợt 4 — các option của form Dự toán (#est-group, #est-ore, #est-method, #est-pack), chưa nối CMS.
+  'Kim Loại Màu (Đồng, Nhôm...)', 'Kim Loại Đen (Sắt, Mangan...)', 'Đất Hiếm & Khoáng Sản Quý',
+  'Quặng Đồng Chalcopyrite', 'Quặng Bauxit Nhôm', 'Quặng Chì - Kẽm Galena',
+  'Chỉ Cung Cấp Mẫu Thô (Không phân tích)', 'Phân Tích Thành Phần XRF Nhanh',
+  'Phân Tích Quang Phổ ICP-MS Cực Nhạy', 'Thử Nghiệm Tuyển Khoáng Mẫu Thử',
+  'Hộp Nhựa Kín Khí Tiêu Chuẩn', 'Bao Chống Ẩm Chuyên Dụng', 'Thùng Phuy Bảo Quản Đặc Biệt',
+  // Đợt 4 — nhãn checkbox #est-permit của form Dự toán, chưa nối CMS.
+  'Yêu cầu giấy chứng nhận nguồn gốc (CO)',
+
+  // Đợt 4 — các option của form Liên hệ (#contact-service), chưa nối CMS.
+  'Cung cấp mẫu kim loại/quặng', 'Phân tích & kiểm định', 'Khảo sát mỏ', 'Tuyển khoáng',
+]);
+
+test('trong thân trang chỉ còn nhãn giao diện và phần để dành đợt 4 là viết cứng', () => {
+  const leftovers = new Map();
+  for (const file of Object.keys(PAGE_FILES)) {
+    const doc = load(file);
+    doc.querySelectorAll(PAGE_CMS).forEach((el) => el.remove());
+    const walker = doc.createTreeWalker(doc.body, 4 /* SHOW_TEXT */);
+    let node;
+    while ((node = walker.nextNode())) {
+      const value = node.textContent.replace(/\s+/g, ' ').trim();
+      if (!value) continue;
+      if (!leftovers.has(value)) leftovers.set(value, file);
+    }
+  }
+
+  const unexpected = [...leftovers].filter(([value]) => !ALLOWED_UI_TEXT.has(value));
+  assert.deepEqual(unexpected, [], `chữ viết cứng chưa nối CMS: ${unexpected.map(([v, f]) => `${f}: "${v}"`).join('; ')}`);
+});
