@@ -84,11 +84,21 @@ function transformHtml(html, handlers) {
 
   while ((match = openTag.exec(html))) {
     const [full, tagName, rawAttrs] = match;
-    if (VOID_TAGS.has(tagName.toLowerCase()) || rawAttrs.endsWith('/')) continue;
+    const isVoid = VOID_TAGS.has(tagName.toLowerCase()) || rawAttrs.endsWith('/');
 
     const attrs = parseAttrs(rawAttrs);
     const handler = handlers.find((each) => each.match(tagName.toLowerCase(), attrs));
     if (!handler) continue;
+
+    // Thẻ tự đóng (vd <meta>) không có phần nội dung để đóng — chỉ thuộc tính
+    // có thể sửa, xong việc luôn tại đây, không dò tiếp thẻ đóng.
+    if (isVoid) {
+      const result = handler.apply({ tagName, attrs, rawAttrs, inner: '' });
+      if (result?.rawAttrs != null && result.rawAttrs !== rawAttrs) {
+        edits.push({ start: match.index, end: match.index + full.length, html: `<${tagName}${result.rawAttrs}>` });
+      }
+      continue;
+    }
 
     const openEnd = match.index + full.length;
     const closeIndex = findCloseIndex(html, tagName, openEnd);
@@ -422,6 +432,87 @@ function applyNavigationToHtml(html, items, currentPath) {
   ]);
 }
 
+const PAGE_CODE_BY_FILE = {
+  'index.html': 'home',
+  'products.html': 'products',
+  'projects.html': 'projects',
+  'news.html': 'news',
+  'pricing.html': 'pricing',
+  'estimator.html': 'estimator',
+  'contact.html': 'contact',
+};
+
+// Mã trang nằm trên thẻ body (`<body data-page="home">`); tên file chỉ là phương
+// án dự phòng cho HTML chưa kịp đánh dấu.
+function pageCodeFromHtml(html, file) {
+  const match = String(html).match(/<body[^>]*\sdata-page="([^"]+)"/i);
+  if (match) return match[1];
+  return PAGE_CODE_BY_FILE[path.basename(file || '')] || null;
+}
+
+// Phải cho ra cùng một DOM với renderPageList() trong app.js.
+function renderPageList(items) {
+  if (!Array.isArray(items)) return '';
+  return items
+    .map((line) => (typeof line === 'string' ? line.trim() : ''))
+    .filter(Boolean)
+    .map((line) => `<li>${escapeText(line)}</li>`)
+    .join('');
+}
+
+// Một ô SEO điền cho nhiều thẻ: title → <title> + og:title + twitter:title...
+function applyPageContentToHtml(html, content, file) {
+  const page = pageCodeFromHtml(html, file);
+  if (!page) return html;
+  const texts = content?.texts?.[page];
+  const seo = content?.seo?.[page];
+  const pageText = (key) => {
+    const value = texts && typeof texts[key] === 'string' ? texts[key].trim() : '';
+    return value || null;
+  };
+
+  return transformHtml(html, [
+    {
+      match: (tagName, attrs) => 'data-page-text' in attrs || 'data-page-href' in attrs,
+      apply: ({ attrs, rawAttrs }) => {
+        const label = 'data-page-text' in attrs ? pageText(attrs['data-page-text']) : null;
+        const url = 'data-page-href' in attrs ? safeUrl(pageText(attrs['data-page-href'])) : '';
+        if (!label && !url) return null;
+        return {
+          ...(label ? { inner: escapeText(label).replace(/\n/g, '<br>') } : {}),
+          ...(url ? { rawAttrs: setAttr(rawAttrs, 'href', url) } : {}),
+        };
+      },
+    },
+    {
+      match: (tagName, attrs) => 'data-page-list' in attrs,
+      apply: ({ attrs }) => {
+        const list = renderPageList(texts?.[attrs['data-page-list']]);
+        return list ? { inner: list } : null;
+      },
+    },
+    {
+      match: (tagName, attrs) => 'data-page-seo' in attrs,
+      apply: ({ tagName, attrs, rawAttrs }) => {
+        const key = attrs['data-page-seo'];
+        const raw = seo && typeof seo[key] === 'string' ? seo[key].trim() : '';
+        const value = key === 'image' ? safeUrl(raw) : raw;
+        if (!value) return null;
+        if (tagName === 'title') return { inner: escapeText(value) };
+        return { rawAttrs: setAttr(rawAttrs, 'content', value) };
+      },
+    },
+  ]);
+}
+
+async function fetchPageContent() {
+  const res = await fetch(`${CMS}/api/page-content`, { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw new Error(`CMS trả về ${res.status} khi đọc nội dung trang`);
+  const json = await res.json();
+  const data = json.data;
+  return data?.attributes || data || {};
+}
+
 async function fetchNavigation() {
   const res = await fetch(`${CMS}/api/navigation`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`CMS trả về ${res.status} khi đọc menu`);
@@ -450,11 +541,11 @@ async function fetchSettings() {
   return settings;
 }
 
-const SOURCE_LABELS = ['cài đặt website', 'danh mục', 'menu'];
+const SOURCE_LABELS = ['cài đặt website', 'danh mục', 'menu', 'nội dung trang'];
 
-// Ba nguồn đọc độc lập: nguồn nào lỗi thì bỏ qua riêng phần đó, vì HTML ghi
-// được phần nào đỡ chớp phần đó. Chỉ bỏ cuộc khi cả ba cùng lỗi — và khi đó báo
-// đủ ba lý do, không nuốt mất lý do nào.
+// Bốn nguồn đọc độc lập: nguồn nào lỗi thì bỏ qua riêng phần đó, vì HTML ghi
+// được phần nào đỡ chớp phần đó. Chỉ bỏ cuộc khi cả bốn cùng lỗi — và khi đó báo
+// đủ bốn lý do, không nuốt mất lý do nào.
 async function prerenderDirectory(
   target,
   {
@@ -462,6 +553,7 @@ async function prerenderDirectory(
     loadSettings = fetchSettings,
     loadCategories = fetchCategories,
     loadNavigation = fetchNavigation,
+    loadPageContent = fetchPageContent,
     log = console,
   } = {},
 ) {
@@ -470,8 +562,8 @@ async function prerenderDirectory(
   // của lần ghi trước tới tận lần deploy sau.
   if (!fs.existsSync(sourceDir)) throw new Error(`không tìm thấy thư mục nguồn ${sourceDir}`);
 
-  const results = await Promise.allSettled([loadSettings(), loadCategories(), loadNavigation()]);
-  const [settings, categories, navigation] = results.map((result) => (result.status === 'fulfilled' ? result.value : null));
+  const results = await Promise.allSettled([loadSettings(), loadCategories(), loadNavigation(), loadPageContent()]);
+  const [settings, categories, navigation, pageContent] = results.map((result) => (result.status === 'fulfilled' ? result.value : null));
   const failures = results.map((result, index) =>
     result.status === 'rejected' ? `${SOURCE_LABELS[index]}: ${result.reason?.message || result.reason}` : null,
   );
@@ -487,6 +579,7 @@ async function prerenderDirectory(
     if (settings) out = applySettingsToHtml(out, settings);
     if (categories) out = applyCategoriesToHtml(out, categories);
     if (navigation) out = applyNavigationToHtml(out, navigation, pagePathForFile(file));
+    if (pageContent) out = applyPageContentToHtml(out, pageContent, file);
 
     const destFile = path.join(target, file);
     const current = fs.existsSync(destFile) ? fs.readFileSync(destFile, 'utf8') : null;
@@ -501,6 +594,7 @@ async function prerenderDirectory(
     settings: Boolean(settings),
     categories: Boolean(categories),
     navigation: Boolean(navigation),
+    pageContent: Boolean(pageContent),
   };
 }
 
@@ -508,7 +602,12 @@ async function main() {
   const target = path.resolve(process.argv[2] || path.join(__dirname, '..'));
   const sourceDir = path.resolve(process.argv[3] || target);
   const result = await prerenderDirectory(target, { sourceDir });
-  const parts = [result.settings && 'cài đặt website', result.categories && 'danh mục', result.navigation && 'menu']
+  const parts = [
+    result.settings && 'cài đặt website',
+    result.categories && 'danh mục',
+    result.navigation && 'menu',
+    result.pageContent && 'nội dung trang',
+  ]
     .filter(Boolean)
     .join(' + ');
   const from = sourceDir !== target ? ` từ ${sourceDir}` : '';
@@ -519,6 +618,9 @@ module.exports = {
   applySettingsToHtml,
   applyCategoriesToHtml,
   applyNavigationToHtml,
+  applyPageContentToHtml,
+  pageCodeFromHtml,
+  renderPageList,
   renderCategoryLinks,
   renderFooterLinks,
   renderNavigation,

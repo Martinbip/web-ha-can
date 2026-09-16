@@ -15,6 +15,8 @@ const {
   applySettingsToHtml,
   applyCategoriesToHtml,
   applyNavigationToHtml,
+  applyPageContentToHtml,
+  pageCodeFromHtml,
   renderCategoryLinks,
   renderFooterLinks,
   pickVisibleCategories,
@@ -502,7 +504,7 @@ test('ghi menu theo từng trang trong thư mục', async () => {
   }
 });
 
-test('cả ba nguồn cùng lỗi thì báo đủ ba lý do', async () => {
+test('cả bốn nguồn cùng lỗi thì báo đủ bốn lý do', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-fail-'));
   const reason = (label) => async () => {
     throw new Error(`hỏng ${label}`);
@@ -513,9 +515,14 @@ test('cả ba nguồn cùng lỗi thì báo đủ ba lý do', async () => {
         loadSettings: reason('A'),
         loadCategories: reason('B'),
         loadNavigation: reason('C'),
+        loadPageContent: reason('D'),
         log: { warn() {} },
       }),
-      (err) => /cài đặt website: hỏng A/.test(err.message) && /danh mục: hỏng B/.test(err.message) && /menu: hỏng C/.test(err.message),
+      (err) =>
+        /cài đặt website: hỏng A/.test(err.message)
+        && /danh mục: hỏng B/.test(err.message)
+        && /menu: hỏng C/.test(err.message)
+        && /nội dung trang: hỏng D/.test(err.message),
     );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -669,5 +676,102 @@ test('thiếu thư mục nguồn thì báo lỗi rõ, không ghi gì', async () 
     );
   } finally {
     fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+const PAGE_CONTENT = {
+  texts: {
+    home: {
+      services_title: 'Dịch vụ <mới>',
+      products_title: 'QUẶNG\nCHUẨN',
+      hero_primary_label: 'Xem ngay',
+      hero_primary_url: '/products?filter=color-metal',
+    },
+    contact: { commitments: ['Nhanh & gọn', '  ', 'Đúng hẹn'] },
+  },
+  seo: {
+    home: { title: 'Tiêu đề Google', description: 'Mô tả Google', image: 'https://dha.vn/a.png', image_alt: 'Ảnh mẫu' },
+    contact: { image: 'javascript:alert(1)' },
+  },
+};
+
+const PAGE_HTML = '<html><head><title data-page-seo="title">Cũ</title>'
+  + '<meta name="description" data-page-seo="description" content="Cũ">'
+  + '<meta property="og:title" data-page-seo="title" content="Cũ">'
+  + '<meta property="og:image" data-page-seo="image" content="/cu.png">'
+  + '<meta property="og:image:alt" data-page-seo="image_alt" content="Cũ"></head>'
+  + '<body data-page="home"><a href="/cu" data-page-text="hero_primary_label" data-page-href="hero_primary_url">Cũ</a>'
+  + '<h2 data-page-text="products_title">CŨ</h2><p data-page-text="services_title">Cũ</p>'
+  + '<p data-page-text="khong_co">Giữ nguyên</p></body></html>';
+
+test('nội dung trang và SEO được ghi theo đúng mã trang', () => {
+  const doc = new JSDOM(applyPageContentToHtml(PAGE_HTML, PAGE_CONTENT, 'index.html')).window.document;
+
+  assert.equal(doc.querySelector('[data-page-text="services_title"]').textContent, 'Dịch vụ <mới>');
+  assert.equal(doc.querySelector('[data-page-text="products_title"]').innerHTML, 'QUẶNG<br>CHUẨN');
+  const link = doc.querySelector('[data-page-href="hero_primary_url"]');
+  assert.equal(link.textContent, 'Xem ngay');
+  assert.equal(link.getAttribute('href'), '/products?filter=color-metal');
+  assert.equal(doc.querySelector('[data-page-text="khong_co"]').textContent, 'Giữ nguyên', 'khoá không có dữ liệu thì giữ HTML');
+
+  assert.equal(doc.querySelector('title').textContent, 'Tiêu đề Google');
+  assert.equal(doc.querySelector('meta[name="description"]').getAttribute('content'), 'Mô tả Google');
+  assert.equal(doc.querySelector('meta[property="og:title"]').getAttribute('content'), 'Tiêu đề Google');
+  assert.equal(doc.querySelector('meta[property="og:image"]').getAttribute('content'), 'https://dha.vn/a.png');
+  assert.equal(doc.querySelector('meta[property="og:image:alt"]').getAttribute('content'), 'Ảnh mẫu');
+});
+
+test('danh sách trong trang: bỏ dòng trống, escape, hết dòng thì giữ HTML', () => {
+  const html = '<body data-page="contact"><ul data-page-list="commitments"><li>Cũ</li></ul></body>';
+  const doc = new JSDOM(applyPageContentToHtml(html, PAGE_CONTENT, 'contact.html')).window.document;
+  assert.deepEqual([...doc.querySelectorAll('[data-page-list] li')].map((li) => li.textContent), ['Nhanh & gọn', 'Đúng hẹn']);
+
+  const empty = applyPageContentToHtml(html, { texts: { contact: { commitments: ['  ', 42] } } }, 'contact.html');
+  assert.equal(empty, html, 'không còn dòng dùng được thì giữ nguyên');
+});
+
+test('ảnh SEO sai quy tắc URL bị bỏ, trang không có dữ liệu thì giữ HTML', () => {
+  const html = '<head><meta property="og:image" data-page-seo="image" content="/cu.png"></head><body data-page="contact"></body>';
+  assert.equal(applyPageContentToHtml(html, PAGE_CONTENT, 'contact.html'), html);
+  assert.equal(applyPageContentToHtml(PAGE_HTML, {}, 'index.html'), PAGE_HTML);
+  assert.equal(applyPageContentToHtml(PAGE_HTML, null, 'index.html'), PAGE_HTML);
+});
+
+test('mã trang đọc từ thẻ body, thiếu thì suy từ tên file', () => {
+  assert.equal(pageCodeFromHtml('<body data-page="pricing">', 'bat-ky.html'), 'pricing');
+  assert.equal(pageCodeFromHtml('<body>', 'index.html'), 'home');
+  assert.equal(pageCodeFromHtml('<body>', 'contact.html'), 'contact');
+  assert.equal(pageCodeFromHtml('<body>', 'preview.html'), null);
+});
+
+test('nội dung trang là nguồn thứ tư, lỗi riêng nó không chặn ba nguồn kia', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-page-'));
+  const quiet = { warn() {} };
+  try {
+    fs.writeFileSync(path.join(dir, 'index.html'), PAGE_HTML);
+    const result = await prerenderDirectory(dir, {
+      sourceDir: dir,
+      loadSettings: async () => ({ hotline: '0912345678' }),
+      loadCategories: async () => [],
+      loadNavigation: async () => [],
+      loadPageContent: async () => {
+        throw new Error('CMS 500');
+      },
+      log: quiet,
+    });
+    assert.equal(result.pageContent, false);
+    assert.match(fs.readFileSync(path.join(dir, 'index.html'), 'utf8'), /Cũ<\/title>/);
+
+    await prerenderDirectory(dir, {
+      sourceDir: dir,
+      loadSettings: async () => ({ hotline: '0912345678' }),
+      loadCategories: async () => [],
+      loadNavigation: async () => [],
+      loadPageContent: async () => PAGE_CONTENT,
+      log: quiet,
+    });
+    assert.match(fs.readFileSync(path.join(dir, 'index.html'), 'utf8'), /Tiêu đề Google<\/title>/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
