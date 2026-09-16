@@ -18,6 +18,7 @@ function harness({ exists = () => true } = {}) {
   const runner = createPrerenderRunner({
     script: '/var/www/web-ha-can/scripts/prerender-site-settings.js',
     htmlDir: '/var/www/dhakimloaimau.vn',
+    sourceDir: '/var/www/web-ha-can',
     delayMs: 1000,
     exists,
     log: () => {},
@@ -55,6 +56,7 @@ test('lưu cài đặt thì chạy prerender vào đúng thư mục website', ()
   assert.deepEqual(h.calls[0].args, [
     '/var/www/web-ha-can/scripts/prerender-site-settings.js',
     '/var/www/dhakimloaimau.vn',
+    '/var/www/web-ha-can',
   ]);
 });
 

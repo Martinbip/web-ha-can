@@ -614,3 +614,60 @@ test('chữ toàn khoảng trắng hoặc URL kiểu //... bị lọc khỏi li�
   assert.equal(renderFooterLinks(items), '');
   assert.equal(window.renderFooterLinks(items), '');
 });
+
+test('prerender đọc bản mẫu ở nguồn rồi ghi sang đích', async () => {
+  const src = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-src-'));
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-dest-'));
+  const template = '<html><body><span class="site-hotline">086.725.9078</span></body></html>';
+  const quiet = { warn() {} };
+  const noCms = async () => {
+    throw new Error('không dùng');
+  };
+  try {
+    fs.writeFileSync(path.join(src, 'index.html'), template);
+    fs.writeFileSync(path.join(dest, 'index.html'), template);
+    fs.writeFileSync(path.join(dest, 'sitemap.xml'), '<urlset/>');
+
+    await prerenderDirectory(dest, {
+      sourceDir: src,
+      loadSettings: async () => ({ hotline: '0912345678' }),
+      loadCategories: noCms,
+      loadNavigation: noCms,
+      log: quiet,
+    });
+    assert.match(fs.readFileSync(path.join(dest, 'index.html'), 'utf8'), /0912345678/);
+    assert.equal(fs.readFileSync(path.join(src, 'index.html'), 'utf8'), template, 'bản mẫu ở nguồn không bị sửa');
+    assert.equal(fs.readFileSync(path.join(dest, 'sitemap.xml'), 'utf8'), '<urlset/>', 'file không phải .html không bị đụng');
+
+    // Ô bị xoá trắng trong admin: đích phải quay về chữ mặc định của bản mẫu.
+    await prerenderDirectory(dest, {
+      sourceDir: src,
+      loadSettings: async () => ({ hotline: '' }),
+      loadCategories: noCms,
+      loadNavigation: noCms,
+      log: quiet,
+    });
+    assert.equal(fs.readFileSync(path.join(dest, 'index.html'), 'utf8'), template, 'bỏ trống thì về lại bản mẫu');
+  } finally {
+    fs.rmSync(src, { recursive: true, force: true });
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('thiếu thư mục nguồn thì báo lỗi rõ, không ghi gì', async () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-dest-'));
+  try {
+    await assert.rejects(
+      prerenderDirectory(dest, {
+        sourceDir: path.join(dest, 'khong-co-that'),
+        loadSettings: async () => ({ hotline: '0912345678' }),
+        loadCategories: async () => [],
+        loadNavigation: async () => [],
+        log: { warn() {} },
+      }),
+      /không tìm thấy|khong-co-that/i,
+    );
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});

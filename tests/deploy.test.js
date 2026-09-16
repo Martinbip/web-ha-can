@@ -36,3 +36,11 @@ test('lượt 2 đợi Strapi trả lời (health check) trước khi đọc', (
   assert.match(between, /sleep 2/);
   assert.match(source, /Strapi chưa trả lời sau 60 giây/);
 });
+
+test('cả hai lượt prerender đều ghi từ bản mẫu trong repo sang thư mục phục vụ', () => {
+  const calls = source.match(/node \/var\/www\/web-ha-can\/scripts\/prerender-site-settings\.js[^\n]*/g) || [];
+  assert.equal(calls.length, 2, 'đúng hai lượt prerender');
+  for (const call of calls) {
+    assert.match(call, /\/var\/www\/dhakimloaimau\.vn \/var\/www\/web-ha-can/, 'truyền đích rồi nguồn');
+  }
+});

@@ -458,12 +458,18 @@ const SOURCE_LABELS = ['cài đặt website', 'danh mục', 'menu'];
 async function prerenderDirectory(
   target,
   {
+    sourceDir = target,
     loadSettings = fetchSettings,
     loadCategories = fetchCategories,
     loadNavigation = fetchNavigation,
     log = console,
   } = {},
 ) {
+  // Luôn dựng từ bản mẫu trong repo rồi ghi sang thư mục phục vụ: ô nào quản trị
+  // xoá trắng sẽ quay về chữ mặc định ngay lần lưu kế tiếp, thay vì giữ nội dung
+  // của lần ghi trước tới tận lần deploy sau.
+  if (!fs.existsSync(sourceDir)) throw new Error(`không tìm thấy thư mục nguồn ${sourceDir}`);
+
   const results = await Promise.allSettled([loadSettings(), loadCategories(), loadNavigation()]);
   const [settings, categories, navigation] = results.map((result) => (result.status === 'fulfilled' ? result.value : null));
   const failures = results.map((result, index) =>
@@ -473,17 +479,19 @@ async function prerenderDirectory(
   if (failures.every(Boolean)) throw new Error(`Không đọc được gì từ CMS — ${failures.join('; ')}`);
   failures.filter(Boolean).forEach((failure) => log.warn(`⚠️  Bỏ qua ${failure}`));
 
-  const files = fs.readdirSync(target).filter((file) => file.endsWith('.html'));
+  const files = fs.readdirSync(sourceDir).filter((file) => file.endsWith('.html'));
   let changed = 0;
   for (const file of files) {
-    const full = path.join(target, file);
-    const html = fs.readFileSync(full, 'utf8');
+    const html = fs.readFileSync(path.join(sourceDir, file), 'utf8');
     let out = html;
     if (settings) out = applySettingsToHtml(out, settings);
     if (categories) out = applyCategoriesToHtml(out, categories);
     if (navigation) out = applyNavigationToHtml(out, navigation, pagePathForFile(file));
-    if (out !== html) {
-      fs.writeFileSync(full, out, 'utf8');
+
+    const destFile = path.join(target, file);
+    const current = fs.existsSync(destFile) ? fs.readFileSync(destFile, 'utf8') : null;
+    if (out !== current) {
+      fs.writeFileSync(destFile, out, 'utf8');
       changed += 1;
     }
   }
@@ -498,11 +506,13 @@ async function prerenderDirectory(
 
 async function main() {
   const target = path.resolve(process.argv[2] || path.join(__dirname, '..'));
-  const result = await prerenderDirectory(target);
+  const sourceDir = path.resolve(process.argv[3] || target);
+  const result = await prerenderDirectory(target, { sourceDir });
   const parts = [result.settings && 'cài đặt website', result.categories && 'danh mục', result.navigation && 'menu']
     .filter(Boolean)
     .join(' + ');
-  console.log(`✓ ${parts} đã ghi vào ${result.changed}/${result.total} trang trong ${target}`);
+  const from = sourceDir !== target ? ` từ ${sourceDir}` : '';
+  console.log(`✓ ${parts} đã ghi${from} vào ${result.changed}/${result.total} trang trong ${target}`);
 }
 
 module.exports = {
