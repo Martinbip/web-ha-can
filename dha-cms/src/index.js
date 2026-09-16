@@ -228,6 +228,7 @@ module.exports = {
           'api::pricing-survey.pricing-survey.findOne',
           'api::site-setting.site-setting.find',
           'api::navigation.navigation.find',
+          'api::page-content.page-content.find',
           'api::product.product.find',
           'api::product.product.findOne',
           'api::product-category.product-category.find',

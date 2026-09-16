@@ -340,6 +340,20 @@ const RESOURCE_CONFIG = {
       admin_labels: { label: 'Nhãn form quản trị', type: 'json' },
     },
   },
+  'page-content': {
+    uid: 'api::page-content.page-content',
+    label: 'Nội dung trang',
+    pluralLabel: 'Nội dung trang',
+    singleType: true,
+    draftAndPublish: false,
+    titleField: 'texts',
+    editableFields: ['texts', 'seo'],
+    listFields: [],
+    fields: {
+      texts: { label: 'Chữ trong các trang', type: 'json' },
+      seo: { label: 'SEO các trang', type: 'json' },
+    },
+  },
   'contact-inquiries': {
     uid: 'api::contact-inquiry.contact-inquiry',
     label: 'Yêu cầu liên hệ',
