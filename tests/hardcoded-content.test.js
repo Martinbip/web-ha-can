@@ -368,3 +368,53 @@ test('gợi ý các trường đầu/chân trang trong admin nói đúng việc 
     assert.doesNotMatch(declaration, /vẫn dẫn tới \/contact/, `${name}: hint không được hứa "vẫn dẫn tới /contact"`);
   }
 });
+
+// Đợt 3: đánh dấu nội dung từng trang và thẻ SEO để prerender/app.js thay chữ.
+const { PAGE_FIELDS, SEO_FIELDS } = require('../dha-cms/src/api/page-content/fields');
+
+const PAGE_FILES = {
+  'index.html': 'home',
+  'products.html': 'products',
+  'projects.html': 'projects',
+  'news.html': 'news',
+  'pricing.html': 'pricing',
+  'estimator.html': 'estimator',
+  'contact.html': 'contact',
+};
+
+test('mỗi trang khai báo mã trang trên thẻ body', () => {
+  for (const [file, code] of Object.entries(PAGE_FILES)) {
+    assert.equal(load(file).body.dataset.page, code, `${file} thiếu hoặc sai data-page`);
+  }
+  for (const file of ['product-detail.html', 'news-detail.html']) {
+    assert.ok(load(file).body.dataset.page, `${file} thiếu data-page`);
+  }
+});
+
+test('mọi ô khai báo trong CMS đều có chỗ tương ứng trong HTML', () => {
+  for (const [file, code] of Object.entries(PAGE_FILES)) {
+    const doc = load(file);
+    const marked = new Set(
+      [...doc.querySelectorAll('[data-page-text], [data-page-href], [data-page-list]')].map(
+        (el) => el.dataset.pageText || el.dataset.pageHref || el.dataset.pageList,
+      ),
+    );
+    for (const key of Object.keys(PAGE_FIELDS[code])) {
+      assert.ok(marked.has(key), `${file} thiếu dấu cho ô "${key}"`);
+    }
+  }
+});
+
+test('7 trang tĩnh có đủ dấu SEO cho cả thẻ Google, Facebook và Twitter', () => {
+  for (const file of Object.keys(PAGE_FILES)) {
+    const doc = load(file);
+    for (const key of Object.keys(SEO_FIELDS)) {
+      const marked = [...doc.querySelectorAll(`[data-page-seo="${key}"]`)];
+      assert.ok(marked.length >= 1, `${file} thiếu dấu SEO "${key}"`);
+    }
+    assert.equal(doc.querySelector('title').dataset.pageSeo, 'title', `${file}: thẻ title chưa đánh dấu`);
+    assert.equal(doc.querySelectorAll('[data-page-seo="title"]').length, 3, `${file}: title phải điền cho 3 thẻ`);
+    assert.equal(doc.querySelectorAll('[data-page-seo="description"]').length, 3, `${file}: description phải điền cho 3 thẻ`);
+    assert.equal(doc.querySelectorAll('[data-page-seo="image"]').length, 2, `${file}: ảnh phải điền cho 2 thẻ`);
+  }
+});
