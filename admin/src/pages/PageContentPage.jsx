@@ -76,12 +76,14 @@ export default function PageContentPage() {
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
 
-          <div className="page-tabs" data-tour="page-content-tabs">
+          <div className="page-tabs" data-tour="page-content-tabs" role="tablist">
             {PAGE_TABS.map((tab) => (
               <button
                 key={tab.code}
                 type="button"
                 className={`page-tab${activeTab === tab.code ? ' is-active' : ''}`}
+                role="tab"
+                aria-selected={tab.code === activeTab ? 'true' : 'false'}
                 onClick={() => setActiveTab(tab.code)}
               >
                 {tab.label}

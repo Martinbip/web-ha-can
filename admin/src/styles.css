@@ -477,14 +477,14 @@ button:hover {
 
 .page-tab {
   padding: 6px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 6px;
   background: transparent;
   cursor: pointer;
 }
 
 .page-tab.is-active {
-  border-color: var(--accent, #C5A059);
+  border-color: var(--brand);
   font-weight: 600;
 }
 

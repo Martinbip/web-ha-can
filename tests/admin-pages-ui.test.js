@@ -376,3 +376,15 @@ test('nội dung trang: không tải được thì báo lỗi chứ không để
   assert.match(view.text(), /Máy chủ đang bận|không tải được/i);
   view.unmount();
 });
+
+test('nội dung trang: thanh tab báo đúng tab đang chọn cho trình đọc màn hình', options, async () => {
+  const { view } = await renderPageContent({
+    'GET /resources/page-content': () => ({ body: { data: pageContentRecord() } }),
+  });
+  const tabs = view.all('.page-tab');
+  assert.equal(view.one('.page-tabs').getAttribute('role'), 'tablist');
+  assert.equal(tabs[0].getAttribute('role'), 'tab');
+  assert.equal(tabs[0].getAttribute('aria-selected'), 'true', 'tab đầu đang mở');
+  assert.equal(tabs[1].getAttribute('aria-selected'), 'false');
+  view.unmount();
+});

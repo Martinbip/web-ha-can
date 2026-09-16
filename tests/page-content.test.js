@@ -101,3 +101,11 @@ test('danh sách ô của admin khớp khai báo phía CMS', () => {
     assert.match(source, new RegExp(`key: '${key}'`), `admin thiếu ô SEO ${key}`);
   }
 });
+
+test('kiểu thanh tab dùng biến màu có thật trong admin', () => {
+  const css = read('admin/src/styles.css');
+  assert.doesNotMatch(css, /var\(--border\)/, 'admin không khai báo biến --border');
+  const block = css.match(/\.page-tab \{[^}]*\}/);
+  assert.ok(block, 'không tìm thấy khối .page-tab');
+  assert.match(block[0], /var\(--line\)/, 'viền tab phải dùng var(--line) như các khung khác');
+});
