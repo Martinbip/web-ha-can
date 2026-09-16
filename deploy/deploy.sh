@@ -58,7 +58,7 @@ node /var/www/web-ha-can/scripts/generate-sitemap.js /var/www/dhakimloaimau.vn/s
 # Strapi đang chạy, để website không nằm ở nội dung mẫu trong lúc build (hay mãi
 # nếu build lỗi và set -e dừng script).
 echo "▸ Ghi cài đặt website, danh mục và menu từ CMS vào HTML tĩnh (lượt 1)..."
-node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn \
+node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn /var/www/web-ha-can \
     || echo "⚠️  Không ghi được cài đặt vào HTML — trang vẫn tự áp bằng JS như trước."
 
 # Chỉ build & sync admin khi thư mục admin/ thật sự có thay đổi
@@ -114,7 +114,7 @@ for _ in $(seq 1 30); do
 done
 if [ "$STRAPI_READY" = 1 ]; then
     echo "▸ Ghi cài đặt website, danh mục và menu từ CMS vào HTML tĩnh (lượt 2)..."
-    node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn \
+    node /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn /var/www/web-ha-can \
         || echo "⚠️  Không ghi được cài đặt vào HTML — trang vẫn tự áp bằng JS như trước."
 else
     echo "⚠️  Strapi chưa trả lời sau 60 giây — bỏ qua prerender lượt 2, HTML giữ dữ liệu từ lượt 1."

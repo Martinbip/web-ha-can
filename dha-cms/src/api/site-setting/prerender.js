@@ -15,6 +15,7 @@ const nodeChildProcess = require('node:child_process');
 const DEFAULT_SCRIPT = process.env.PRERENDER_SCRIPT
   || '/var/www/web-ha-can/scripts/prerender-site-settings.js';
 const DEFAULT_HTML_DIR = process.env.SITE_HTML_DIR || '/var/www/dhakimloaimau.vn';
+const DEFAULT_SOURCE_DIR = process.env.PRERENDER_SOURCE_DIR || '/var/www/web-ha-can';
 
 // Hoãn một nhịp rồi mới chạy: vừa để dữ liệu kịp ghi hẳn xuống CSDL (script đọc
 // lại qua HTTP nên phải thấy bản mới), vừa gộp mấy lần bấm Lưu liên tiếp.
@@ -23,6 +24,7 @@ const DEFAULT_DELAY_MS = 1500;
 function createPrerenderRunner({
   script = DEFAULT_SCRIPT,
   htmlDir = DEFAULT_HTML_DIR,
+  sourceDir = DEFAULT_SOURCE_DIR,
   delayMs = DEFAULT_DELAY_MS,
   exists = (target) => nodeFs.existsSync(target),
   spawn = nodeChildProcess.spawn,
@@ -34,7 +36,7 @@ function createPrerenderRunner({
   let pending = false;
 
   function start() {
-    const child = spawn('node', [script, htmlDir], { stdio: 'ignore' });
+    const child = spawn('node', [script, htmlDir, sourceDir], { stdio: 'ignore' });
     running = true;
 
     child.on('error', (err) => {
@@ -56,7 +58,7 @@ function createPrerenderRunner({
   }
 
   function run() {
-    if (!exists(script) || !exists(htmlDir)) return false;
+    if (!exists(script) || !exists(htmlDir) || !exists(sourceDir)) return false;
     if (running) {
       pending = true;
       return false;

@@ -10,6 +10,7 @@ import ResourceEditPage from './pages/ResourceEditPage.jsx';
 import MediaLibraryPage from './pages/MediaLibraryPage.jsx';
 import HomePageEditor from './pages/HomePageEditor.jsx';
 import PricingPage from './pages/PricingPage.jsx';
+import PageContentPage from './pages/PageContentPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import MenuPage from './pages/MenuPage.jsx';
 import FormLabelsPage from './pages/FormLabelsPage.jsx';
@@ -33,6 +34,7 @@ export default function App() {
             <Route index element={<DashboardPage />} />
             <Route path="/media" element={<MediaLibraryPage />} />
             <Route path="/home" element={<HomePageEditor />} />
+            <Route path="/page-content" element={<PageContentPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/settings" element={<SettingsPage />} />

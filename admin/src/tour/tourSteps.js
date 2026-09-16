@@ -169,6 +169,25 @@ export const TOURS = {
     ],
   },
 
+  'page-content': {
+    label: 'Nội dung trang',
+    description: 'Chữ và SEO của từng trang website.',
+    steps: [
+      {
+        target: '[data-tour="savebar"]',
+        title: 'Bỏ trống thì dùng chữ mặc định',
+        body: 'Ô nào không sửa thì website tự dùng lại đúng chữ đang có sẵn trong trang, không hiện trống.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="page-content-tabs"]',
+        title: 'Mỗi tab một trang',
+        body: 'Chọn tab để sửa chữ và SEO của đúng trang đó. Đổi tab không mất chữ đã sửa ở các tab khác — bấm Lưu là ghi lại tất cả cùng lúc.',
+        placement: 'bottom',
+      },
+    ],
+  },
+
   pricing: {
     label: 'Bảng giá',
     description: 'Ba bảng giá con nằm ở đâu.',
@@ -295,6 +314,7 @@ const ROUTE_TOURS = [
   [/^\/resources\/[^/]+\/.+$/, 'resource-edit'],
   [/^\/resources\/[^/]+$/, 'resource-list'],
   [/^\/home$/, 'home'],
+  [/^\/page-content$/, 'page-content'],
   [/^\/pricing$/, 'pricing'],
   [/^\/menu$/, 'menu'],
   [/^\/media$/, 'media'],

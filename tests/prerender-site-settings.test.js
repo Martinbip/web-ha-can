@@ -15,11 +15,16 @@ const {
   applySettingsToHtml,
   applyCategoriesToHtml,
   applyNavigationToHtml,
+  applyPageContentToHtml,
+  pageCodeFromHtml,
+  renderPageList,
   renderCategoryLinks,
   renderFooterLinks,
   pickVisibleCategories,
   pagePathForFile,
   prerenderDirectory,
+  fetchPageContent,
+  transformHtml,
   safeUrl,
   DEFAULT_CATEGORIES,
 } = require('../scripts/prerender-site-settings.js');
@@ -109,6 +114,10 @@ const DYNAMIC_SELECTORS = [
   '[data-footer-links]',
   '[data-copyright]',
   '.btn-contact',
+  '[data-page-text]',
+  '[data-page-list]',
+  '[data-page-seo]',
+  '[data-page-href]',
 ];
 
 function snapshot(window) {
@@ -117,7 +126,7 @@ function snapshot(window) {
   );
 }
 
-function runAppJs(html, settings, categories = null, { url = 'https://dhakimloaimau.vn/', navigation = null } = {}) {
+function runAppJs(html, settings, categories = null, { url = 'https://dhakimloaimau.vn/', navigation = null, pageContent = null } = {}) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
     url,
@@ -134,6 +143,9 @@ function runAppJs(html, settings, categories = null, { url = 'https://dhakimloai
     }
     if (navigation && target.includes('/api/navigation')) {
       return Promise.resolve({ ok: true, json: async () => ({ data: { items: navigation } }) });
+    }
+    if (pageContent && target.includes('/api/page-content')) {
+      return Promise.resolve({ ok: true, json: async () => ({ data: pageContent }) });
     }
     return Promise.reject(new Error('network disabled in tests'));
   };
@@ -156,20 +168,26 @@ const PAGES = fs
 for (const file of PAGES) {
   test(`${file}: prerender xong thì app.js không phải sửa gì nữa`, async () => {
     const pagePath = pagePathForFile(file);
-    const html = applyNavigationToHtml(
-      applyCategoriesToHtml(applySettingsToHtml(readPage(file), SETTINGS), CATEGORIES),
-      NAV_ITEMS,
-      pagePath,
+    const html = applyPageContentToHtml(
+      applyNavigationToHtml(
+        applyCategoriesToHtml(applySettingsToHtml(readPage(file), SETTINGS), CATEGORIES),
+        NAV_ITEMS,
+        pagePath,
+      ),
+      PAGE_CONTENT,
+      file,
     );
     const window = runAppJs(html, SETTINGS, CATEGORIES, {
       url: `https://dhakimloaimau.vn${pagePath}`,
       navigation: NAV_ITEMS,
+      pageContent: PAGE_CONTENT,
     });
 
     const before = snapshot(window);
     await window.initSiteSettings();
     await window.initCategoryLinks();
     await window.initNavigationMenu();
+    await window.initPageContent();
     const after = snapshot(window);
 
     for (const [index, selector] of DYNAMIC_SELECTORS.entries()) {
@@ -502,7 +520,7 @@ test('ghi menu theo từng trang trong thư mục', async () => {
   }
 });
 
-test('cả ba nguồn cùng lỗi thì báo đủ ba lý do', async () => {
+test('cả bốn nguồn cùng lỗi thì báo đủ bốn lý do', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-fail-'));
   const reason = (label) => async () => {
     throw new Error(`hỏng ${label}`);
@@ -513,9 +531,14 @@ test('cả ba nguồn cùng lỗi thì báo đủ ba lý do', async () => {
         loadSettings: reason('A'),
         loadCategories: reason('B'),
         loadNavigation: reason('C'),
+        loadPageContent: reason('D'),
         log: { warn() {} },
       }),
-      (err) => /cài đặt website: hỏng A/.test(err.message) && /danh mục: hỏng B/.test(err.message) && /menu: hỏng C/.test(err.message),
+      (err) =>
+        /cài đặt website: hỏng A/.test(err.message)
+        && /danh mục: hỏng B/.test(err.message)
+        && /menu: hỏng C/.test(err.message)
+        && /nội dung trang: hỏng D/.test(err.message),
     );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -613,4 +636,276 @@ test('chữ toàn khoảng trắng hoặc URL kiểu //... bị lọc khỏi li�
   ];
   assert.equal(renderFooterLinks(items), '');
   assert.equal(window.renderFooterLinks(items), '');
+});
+
+test('prerender đọc bản mẫu ở nguồn rồi ghi sang đích', async () => {
+  const src = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-src-'));
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-dest-'));
+  const template = '<html><body><span class="site-hotline">086.725.9078</span></body></html>';
+  const quiet = { warn() {} };
+  const noCms = async () => {
+    throw new Error('không dùng');
+  };
+  try {
+    fs.writeFileSync(path.join(src, 'index.html'), template);
+    fs.writeFileSync(path.join(dest, 'index.html'), template);
+    fs.writeFileSync(path.join(dest, 'sitemap.xml'), '<urlset/>');
+
+    await prerenderDirectory(dest, {
+      sourceDir: src,
+      loadSettings: async () => ({ hotline: '0912345678' }),
+      loadCategories: noCms,
+      loadNavigation: noCms,
+      log: quiet,
+    });
+    assert.match(fs.readFileSync(path.join(dest, 'index.html'), 'utf8'), /0912345678/);
+    assert.equal(fs.readFileSync(path.join(src, 'index.html'), 'utf8'), template, 'bản mẫu ở nguồn không bị sửa');
+    assert.equal(fs.readFileSync(path.join(dest, 'sitemap.xml'), 'utf8'), '<urlset/>', 'file không phải .html không bị đụng');
+
+    // Ô bị xoá trắng trong admin: đích phải quay về chữ mặc định của bản mẫu.
+    await prerenderDirectory(dest, {
+      sourceDir: src,
+      loadSettings: async () => ({ hotline: '' }),
+      loadCategories: noCms,
+      loadNavigation: noCms,
+      log: quiet,
+    });
+    assert.equal(fs.readFileSync(path.join(dest, 'index.html'), 'utf8'), template, 'bỏ trống thì về lại bản mẫu');
+  } finally {
+    fs.rmSync(src, { recursive: true, force: true });
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+test('thiếu thư mục nguồn thì báo lỗi rõ, không ghi gì', async () => {
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-dest-'));
+  try {
+    await assert.rejects(
+      prerenderDirectory(dest, {
+        sourceDir: path.join(dest, 'khong-co-that'),
+        loadSettings: async () => ({ hotline: '0912345678' }),
+        loadCategories: async () => [],
+        loadNavigation: async () => [],
+        log: { warn() {} },
+      }),
+      /không tìm thấy|khong-co-that/i,
+    );
+  } finally {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+});
+
+const PAGE_CONTENT = {
+  texts: {
+    home: {
+      services_title: 'Dịch vụ <mới>',
+      products_title: 'QUẶNG\nCHUẨN',
+      hero_primary_label: 'Xem ngay',
+      hero_primary_url: '/products?filter=color-metal',
+    },
+    contact: { commitments: ['Nhanh & gọn', '  ', 'Đúng hẹn'] },
+  },
+  seo: {
+    home: { title: 'Tiêu đề Google', description: 'Mô tả Google', image: 'https://dha.vn/a.png', image_alt: 'Ảnh mẫu' },
+    contact: { image: 'javascript:alert(1)' },
+  },
+};
+
+const PAGE_HTML = '<html><head><title data-page-seo="title">Cũ</title>'
+  + '<meta name="description" data-page-seo="description" content="Cũ">'
+  + '<meta property="og:title" data-page-seo="title" content="Cũ">'
+  + '<meta property="og:image" data-page-seo="image" content="/cu.png">'
+  + '<meta property="og:image:alt" data-page-seo="image_alt" content="Cũ"></head>'
+  + '<body data-page="home"><a href="/cu" data-page-text="hero_primary_label" data-page-href="hero_primary_url">Cũ</a>'
+  + '<h2 data-page-text="products_title">CŨ</h2><p data-page-text="services_title">Cũ</p>'
+  + '<p data-page-text="khong_co">Giữ nguyên</p></body></html>';
+
+test('nội dung trang và SEO được ghi theo đúng mã trang', () => {
+  const doc = new JSDOM(applyPageContentToHtml(PAGE_HTML, PAGE_CONTENT, 'index.html')).window.document;
+
+  assert.equal(doc.querySelector('[data-page-text="services_title"]').textContent, 'Dịch vụ <mới>');
+  assert.equal(doc.querySelector('[data-page-text="products_title"]').innerHTML, 'QUẶNG<br>CHUẨN');
+  const link = doc.querySelector('[data-page-href="hero_primary_url"]');
+  assert.equal(link.textContent, 'Xem ngay');
+  assert.equal(link.getAttribute('href'), '/products?filter=color-metal');
+  assert.equal(doc.querySelector('[data-page-text="khong_co"]').textContent, 'Giữ nguyên', 'khoá không có dữ liệu thì giữ HTML');
+
+  assert.equal(doc.querySelector('title').textContent, 'Tiêu đề Google');
+  assert.equal(doc.querySelector('meta[name="description"]').getAttribute('content'), 'Mô tả Google');
+  assert.equal(doc.querySelector('meta[property="og:title"]').getAttribute('content'), 'Tiêu đề Google');
+  assert.equal(doc.querySelector('meta[property="og:image"]').getAttribute('content'), 'https://dha.vn/a.png');
+  assert.equal(doc.querySelector('meta[property="og:image:alt"]').getAttribute('content'), 'Ảnh mẫu');
+});
+
+test('danh sách trong trang: bỏ dòng trống, escape, hết dòng thì giữ HTML', () => {
+  const html = '<body data-page="contact"><ul data-page-list="commitments"><li>Cũ</li></ul></body>';
+  const doc = new JSDOM(applyPageContentToHtml(html, PAGE_CONTENT, 'contact.html')).window.document;
+  assert.deepEqual([...doc.querySelectorAll('[data-page-list] li')].map((li) => li.textContent), ['Nhanh & gọn', 'Đúng hẹn']);
+
+  const empty = applyPageContentToHtml(html, { texts: { contact: { commitments: ['  ', 42] } } }, 'contact.html');
+  assert.equal(empty, html, 'không còn dòng dùng được thì giữ nguyên');
+});
+
+test('ảnh SEO sai quy tắc URL bị bỏ, trang không có dữ liệu thì giữ HTML', () => {
+  const html = '<head><meta property="og:image" data-page-seo="image" content="/cu.png"></head><body data-page="contact"></body>';
+  assert.equal(applyPageContentToHtml(html, PAGE_CONTENT, 'contact.html'), html);
+  assert.equal(applyPageContentToHtml(PAGE_HTML, {}, 'index.html'), PAGE_HTML);
+  assert.equal(applyPageContentToHtml(PAGE_HTML, null, 'index.html'), PAGE_HTML);
+});
+
+test('mã trang đọc từ thẻ body, thiếu thì suy từ tên file', () => {
+  assert.equal(pageCodeFromHtml('<body data-page="pricing">', 'bat-ky.html'), 'pricing');
+  assert.equal(pageCodeFromHtml('<body>', 'index.html'), 'home');
+  assert.equal(pageCodeFromHtml('<body>', 'contact.html'), 'contact');
+  assert.equal(pageCodeFromHtml('<body>', 'preview.html'), null);
+});
+
+test('nội dung trang là nguồn thứ tư, lỗi riêng nó không chặn ba nguồn kia', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-page-'));
+  const quiet = { warn() {} };
+  try {
+    fs.writeFileSync(path.join(dir, 'index.html'), PAGE_HTML);
+    const result = await prerenderDirectory(dir, {
+      sourceDir: dir,
+      loadSettings: async () => ({ hotline: '0912345678' }),
+      loadCategories: async () => [],
+      loadNavigation: async () => [],
+      loadPageContent: async () => {
+        throw new Error('CMS 500');
+      },
+      log: quiet,
+    });
+    assert.equal(result.pageContent, false);
+    assert.match(fs.readFileSync(path.join(dir, 'index.html'), 'utf8'), /Cũ<\/title>/);
+
+    await prerenderDirectory(dir, {
+      sourceDir: dir,
+      loadSettings: async () => ({ hotline: '0912345678' }),
+      loadCategories: async () => [],
+      loadNavigation: async () => [],
+      loadPageContent: async () => PAGE_CONTENT,
+      log: quiet,
+    });
+    assert.match(fs.readFileSync(path.join(dir, 'index.html'), 'utf8'), /Tiêu đề Google<\/title>/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('app.js áp nội dung trang và SEO từ CMS', async () => {
+  const window = runAppJs(readPage('index.html'), SETTINGS, null, {
+    url: 'https://dhakimloaimau.vn/',
+    pageContent: PAGE_CONTENT,
+  });
+  await window.initPageContent();
+  const doc = window.document;
+
+  assert.equal(doc.querySelector('[data-page-text="services_title"]').textContent, 'Dịch vụ <mới>');
+  assert.equal(doc.querySelector('[data-page-text="products_title"]').innerHTML, 'QUẶNG<br>CHUẨN');
+  assert.equal(doc.querySelector('[data-page-href="hero_primary_url"]').getAttribute('href'), '/products?filter=color-metal');
+  assert.equal(doc.querySelector('title').textContent, 'Tiêu đề Google');
+  assert.equal(doc.querySelector('meta[property="og:title"]').getAttribute('content'), 'Tiêu đề Google');
+});
+
+test('CMS lỗi hoặc ô trống thì app.js giữ nguyên nội dung trang đã có', async () => {
+  const window = runAppJs(readPage('contact.html'), SETTINGS, null, { url: 'https://dhakimloaimau.vn/contact' });
+  const pick = () => [...window.document.querySelectorAll('[data-page-text], [data-page-list], title')].map((el) => el.outerHTML);
+
+  const before = pick();
+  await window.initPageContent();
+  assert.deepEqual(pick(), before);
+});
+
+test('app.js và prerender dựng danh sách trong trang ra cùng một DOM', () => {
+  const window = runAppJs(readPage('contact.html'), SETTINGS);
+  const items = ['A & "B"', '   ', '<script>'];
+  const fromJs = window.document.createElement('ul');
+  fromJs.innerHTML = window.renderPageList(items);
+  const fromPrerender = window.document.createElement('ul');
+  fromPrerender.innerHTML = renderPageList(items);
+
+  assert.equal(fromJs.innerHTML, fromPrerender.innerHTML);
+  assert.equal(fromJs.children.length, 2);
+});
+
+// initPageContent() gọi fetchSingleFromCMS('page-content') không kèm fallbackFile.
+// Khi CMS lỗi, hàm không được rơi xuống nhánh dự phòng rồi gọi fetch(undefined).
+test('CMS lỗi thì initPageContent không gọi fetch tới địa chỉ undefined', async () => {
+  const window = runAppJs(readPage('index.html'), SETTINGS, null, { url: 'https://dhakimloaimau.vn/' });
+  const calledUrls = [];
+  const originalFetch = window.fetch;
+  window.fetch = (input, ...rest) => {
+    calledUrls.push(String(input));
+    return originalFetch(input, ...rest);
+  };
+
+  await window.initPageContent();
+
+  assert.ok(
+    !calledUrls.some((url) => url.includes('undefined')),
+    `không được gọi fetch tới địa chỉ chứa "undefined", đã gọi: ${JSON.stringify(calledUrls)}`,
+  );
+});
+
+// product-detail.html và news-detail.html mang data-page (tiêu đề, mô tả do JS
+// đặt theo từng sản phẩm/bài viết) nhưng không có dấu [data-page-*] nào — gọi
+// CMS nội dung trang cho hai trang này là vô ích.
+test('product-detail.html không có dấu data-page-* thì initPageContent không gọi CMS', async () => {
+  const window = runAppJs(readPage('product-detail.html'), SETTINGS, null, { url: 'https://dhakimloaimau.vn/product-detail' });
+  const calledUrls = [];
+  const originalFetch = window.fetch;
+  window.fetch = (input, ...rest) => {
+    calledUrls.push(String(input));
+    return originalFetch(input, ...rest);
+  };
+
+  await window.initPageContent();
+
+  assert.ok(
+    !calledUrls.some((url) => url.includes('/api/page-content')),
+    `không được gọi CMS nội dung trang, đã gọi: ${JSON.stringify(calledUrls)}`,
+  );
+});
+
+// Single type "nội dung trang" chưa có bản ghi thì Strapi trả 404 — đó là
+// trạng thái "chưa có dữ liệu", không phải lỗi cần cảnh báo mỗi lượt prerender.
+test('fetchPageContent: 404 coi là chưa có dữ liệu, các lỗi khác vẫn ném ra', async () => {
+  const originalFetch = global.fetch;
+  try {
+    global.fetch = async () => ({ ok: false, status: 404 });
+    assert.deepEqual(await fetchPageContent(), {});
+
+    global.fetch = async () => ({ ok: false, status: 500 });
+    await assert.rejects(fetchPageContent(), /CMS trả về 500/);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+// Lưới an toàn cho bản vá thẻ tự đóng: handler.apply() cũng được gọi cho thẻ
+// void (vd <meta>). Một handler chỉ trả { inner } (không có ý nghĩa với thẻ
+// không có phần nội dung) không được làm đổi HTML; trả { rawAttrs } thì đổi
+// đúng thuộc tính.
+test('transformHtml với thẻ tự đóng: handler trả inner không đổi gì, trả rawAttrs thì đổi thuộc tính', () => {
+  const voidHtml = '<meta name="description" content="Cũ">';
+
+  const innerOnlyHandler = [
+    {
+      match: (tagName) => tagName === 'meta',
+      apply: () => ({ inner: 'không nên xuất hiện' }),
+    },
+  ];
+  assert.equal(transformHtml(voidHtml, innerOnlyHandler), voidHtml, 'handler chỉ trả inner không được đổi thẻ void');
+
+  const rawAttrsHandler = [
+    {
+      match: (tagName) => tagName === 'meta',
+      apply: ({ rawAttrs }) => ({ rawAttrs: rawAttrs.replace('content="Cũ"', 'content="Mới"') }),
+    },
+  ];
+  assert.equal(
+    transformHtml(voidHtml, rawAttrsHandler),
+    '<meta name="description" content="Mới">',
+    'handler trả rawAttrs phải đổi đúng thuộc tính',
+  );
 });

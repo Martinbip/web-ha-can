@@ -1,0 +1,22 @@
+{
+  "kind": "singleType",
+  "collectionName": "page_contents",
+  "info": {
+    "singularName": "page-content",
+    "pluralName": "page-contents",
+    "displayName": "Nội Dung Trang",
+    "description": "Chữ và SEO của từng trang trên website"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "texts": {
+      "type": "json"
+    },
+    "seo": {
+      "type": "json"
+    }
+  }
+}

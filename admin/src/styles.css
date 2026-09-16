@@ -468,6 +468,26 @@ button:hover {
   flex-wrap: wrap;
 }
 
+.page-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.page-tab {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.page-tab.is-active {
+  border-color: var(--brand);
+  font-weight: 600;
+}
+
 .search-form {
   display: flex;
   gap: 8px;
