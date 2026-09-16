@@ -81,6 +81,25 @@ test('lưu nội dung trang thì ghi lại HTML tĩnh ngay', () => {
   }
 });
 
+test('lượt ghi chỉ gửi một trường thì không tự sinh trường còn lại, tránh xoá trắng', () => {
+  const lifecycles = require('../dha-cms/src/api/page-content/content-types/page-content/lifecycles');
+
+  const onlyTexts = { params: { data: { texts: { home: { services_title: 'A' } } } } };
+  lifecycles.beforeUpdate(onlyTexts);
+  assert.deepEqual(onlyTexts.params.data.texts, { home: { services_title: 'A' } });
+  assert.equal('seo' in onlyTexts.params.data, false, 'không tự sinh khoá seo khi lượt ghi không gửi nó');
+
+  const onlySeo = { params: { data: { seo: { home: { title: 'Tiêu đề' } } } } };
+  lifecycles.beforeUpdate(onlySeo);
+  assert.deepEqual(onlySeo.params.data.seo, { home: { title: 'Tiêu đề' } });
+  assert.equal('texts' in onlySeo.params.data, false, 'không tự sinh khoá texts khi lượt ghi không gửi nó');
+
+  const both = { params: { data: { texts: { home: { services_title: 'A' } }, seo: { home: { title: 'Tiêu đề' } } } } };
+  lifecycles.beforeUpdate(both);
+  assert.deepEqual(both.params.data.texts, { home: { services_title: 'A' } });
+  assert.deepEqual(both.params.data.seo, { home: { title: 'Tiêu đề' } });
+});
+
 test('website đọc được nội dung trang mà không cần đăng nhập, admin sửa được', () => {
   assert.match(read('dha-cms/src/index.js'), /api::page-content\.page-content\.find'/);
   const config = getResourceConfig('page-content');

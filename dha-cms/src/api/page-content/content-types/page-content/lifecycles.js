@@ -10,8 +10,11 @@ function sanitizeEvent(event) {
   const data = event.params?.data;
   if (!data) return;
   const clean = sanitizePageContent(data);
-  data.texts = clean.texts;
-  data.seo = clean.seo;
+  // Lượt ghi có thể chỉ gửi một trong hai trường (gọi REST trực tiếp hoặc sửa
+  // trong trang quản trị gốc của Strapi) — chỉ lọc trường có mặt, tránh tự
+  // sinh trường còn lại thành {} và xoá trắng nó.
+  if ('texts' in data) data.texts = clean.texts;
+  if ('seo' in data) data.seo = clean.seo;
 }
 
 module.exports = {
