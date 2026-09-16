@@ -311,3 +311,68 @@ test('ô chọn ảnh: bỏ ảnh trả trường về rỗng và báo cho trư�
   assert.equal(state.cleared, 1);
   view.unmount();
 });
+
+// --- Nội dung trang ----------------------------------------------------------
+
+function pageContentRecord() {
+  return {
+    documentId: 'pc-1',
+    texts: { home: { services_title: 'Dịch vụ cũ' } },
+    seo: { home: { title: 'Tiêu đề cũ' } },
+  };
+}
+
+async function renderPageContent(routes) {
+  const calls = mockFetch(routes);
+  const PageContentPage = component('admin/src/pages/PageContentPage.jsx');
+  const view = await render(react().createElement(PageContentPage));
+  await view.act(async () => {});
+  return { view, calls };
+}
+
+test('nội dung trang: hiện đủ 7 tab và nạp sẵn chữ đang có', options, async () => {
+  const { view } = await renderPageContent({
+    'GET /resources/page-content': () => ({ body: { data: pageContentRecord() } }),
+  });
+  assert.equal(view.all('.page-tab').length, 7, 'đủ 7 tab');
+  const input = view.one('[data-field="services_title"] input, [data-field="services_title"] textarea');
+  assert.equal(input.value, 'Dịch vụ cũ');
+  view.unmount();
+});
+
+test('nội dung trang: sửa rồi lưu gửi lên đúng chỗ trong texts và seo', options, async () => {
+  let sent = null;
+  const { view } = await renderPageContent({
+    'GET /resources/page-content': () => ({ body: { data: pageContentRecord() } }),
+    'PUT /resources/page-content/pc-1': ({ body }) => {
+      sent = body;
+      return { body: { data: pageContentRecord() } };
+    },
+  });
+
+  const input = view.one('[data-field="services_title"] input, [data-field="services_title"] textarea');
+  await view.type(input, 'Dịch vụ mới');
+  await view.click(view.byText('button', 'Lưu'));
+
+  assert.equal(sent.data.texts.home.services_title, 'Dịch vụ mới');
+  assert.equal(sent.data.seo.home.title, 'Tiêu đề cũ', 'không làm mất dữ liệu của phần khác');
+  view.unmount();
+});
+
+test('nội dung trang: đổi tab thì hiện ô của trang đó', options, async () => {
+  const { view } = await renderPageContent({
+    'GET /resources/page-content': () => ({ body: { data: pageContentRecord() } }),
+  });
+  await view.click(view.byText('.page-tab', 'Liên hệ'));
+  assert.ok(view.one('[data-field="commitments"]'), 'tab Liên hệ có ô danh sách cam kết');
+  assert.equal(view.one('[data-field="services_title"]'), null, 'ô của trang chủ không còn hiện');
+  view.unmount();
+});
+
+test('nội dung trang: không tải được thì báo lỗi chứ không để màn hình trắng', options, async () => {
+  const { view } = await renderPageContent({
+    'GET /resources/page-content': () => ({ status: 500, body: { error: { message: 'Máy chủ đang bận.' } } }),
+  });
+  assert.match(view.text(), /Máy chủ đang bận|không tải được/i);
+  view.unmount();
+});

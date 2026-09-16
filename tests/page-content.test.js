@@ -88,3 +88,16 @@ test('website đọc được nội dung trang mà không cần đăng nhập, a
   assert.equal(config.singleType, true);
   assert.deepEqual(config.editableFields, ['texts', 'seo']);
 });
+
+test('danh sách ô của admin khớp khai báo phía CMS', () => {
+  const source = read('admin/src/config/page-content-fields.js');
+  for (const page of PAGE_CODES) {
+    const block = source.match(new RegExp(`code: '${page}'[\\s\\S]*?\\n  \\},`));
+    assert.ok(block, `admin thiếu tab ${page}`);
+    const keys = [...block[0].matchAll(/key: '([a-z_]+)'/g)].map((m) => m[1]).sort();
+    assert.deepEqual(keys, Object.keys(PAGE_FIELDS[page]).sort(), `tab ${page} lệch khoá so với CMS`);
+  }
+  for (const key of Object.keys(SEO_FIELDS)) {
+    assert.match(source, new RegExp(`key: '${key}'`), `admin thiếu ô SEO ${key}`);
+  }
+});

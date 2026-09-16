@@ -29,6 +29,7 @@ const NAV_GROUPS = [
     title: 'Trang trên website',
     items: [
       ['/home', 'Trang chủ', 'home'],
+      ['/page-content', 'Nội dung trang', 'news'],
       ['/pricing', 'Bảng giá', 'price'],
       ['/menu', 'Thanh menu', 'menu'],
     ],
