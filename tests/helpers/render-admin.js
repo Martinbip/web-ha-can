@@ -131,7 +131,11 @@ async function render(element) {
       });
     },
     async type(input, value) {
-      const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set;
+      // React theo dõi value qua setter của đúng loại thẻ: ô nhiều dòng là textarea.
+      const proto = input instanceof dom.window.HTMLTextAreaElement
+        ? dom.window.HTMLTextAreaElement.prototype
+        : dom.window.HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
       await act(async () => {
         setter.call(input, value);
         input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));

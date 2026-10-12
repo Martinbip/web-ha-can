@@ -191,3 +191,28 @@ test('tổng quan: hiện các thẻ số liệu, lỗi thì để trống chứ
   assert.equal(failed.all('.metric-card').length, 0);
   failed.unmount();
 });
+
+test('cài đặt: sửa được khung hotline, nút đầu trang và chân trang', options, async () => {
+  let sent = null;
+  const { view } = await renderSettings({
+    'GET /resources/site-setting': () => ({ body: { data: SETTINGS } }),
+    'PUT /resources/site-setting/st-1': ({ body }) => {
+      sent = body.data;
+      return { body: { data: { ...SETTINGS, ...body.data } } };
+    },
+  });
+
+  for (const name of ['hotline_box_title', 'hotline_box_note', 'header_cta_label', 'header_cta_url',
+    'footer_categories_title', 'footer_links_title', 'copyright_text']) {
+    assert.ok(view.one(`#field-${name}`), `trang Cài đặt phải có ô ${name}`);
+  }
+  assert.ok(view.one('#field-footer_links.link-list'), 'trang Cài đặt phải có ô liên kết chân trang');
+
+  await view.type(view.one('#field-hotline_box_title'), 'GỌI KỸ SƯ');
+  await view.type(view.one('#field-hotline_box_note'), 'Phản hồi trong 15 phút\nHỗ trợ cả Chủ nhật');
+  await submitForm(view);
+
+  assert.equal(sent.hotline_box_title, 'GỌI KỸ SƯ');
+  assert.equal(sent.hotline_box_note, 'Phản hồi trong 15 phút\nHỗ trợ cả Chủ nhật');
+  view.unmount();
+});
