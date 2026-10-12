@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Ghi cài đặt website, danh mục sản phẩm và menu của CMS thẳng vào các file HTML tĩnh.
+// Ghi cài đặt website, danh mục sản phẩm, menu, nội dung trang và option của hai
+// form (Dự toán, Liên hệ) từ CMS thẳng vào các file HTML tĩnh.
 //
 //   node scripts/prerender-site-settings.js [thư/mục/html]
 //
@@ -505,6 +506,203 @@ function applyPageContentToHtml(html, content, file) {
   ]);
 }
 
+// ── Form Dự toán và ô Nhu cầu của form Liên hệ ──
+// Mọi hàm render dưới đây phải cho ra cùng một DOM với bản cùng tên trong
+// app.js. Con số dùng để tính tiền nằm trong data-price / data-bulk-* — app.js
+// tính chỉ từ DOM, nên ghi đúng ở đây là khách thấy đúng giá ngay lần đầu.
+
+function firstFilledText(...values) {
+  for (const value of values) {
+    const raw = String(value ?? '').trim();
+    if (raw) return raw;
+  }
+  return '';
+}
+
+// "đ/kg", "VNĐ / KG"... đều tính theo kg; "đ/tấn" thì không nhân với số kg được.
+function isPerKgUnit(unit) {
+  return /\/kg$/i.test(String(unit ?? '').replace(/\s+/g, ''));
+}
+
+// Quặng của Dự toán = sản phẩm có giá theo kg, nhóm theo danh mục đang hiện
+// (categories đã qua pickVisibleCategories). Nhóm không có quặng nào bị bỏ để
+// khách không chọn phải một nhóm trống.
+function pickEstimatorOres(products, categories, settings = {}) {
+  const priced = (Array.isArray(products) ? products : [])
+    .map((product, index) => ({ product, index }))
+    .filter(({ product }) => {
+      if (!product || product.price_on_request) return false;
+      if (!(Number(product.price) > 0) || !product.uid || !String(product.name ?? '').trim()) return false;
+      return isPerKgUnit(firstFilledText(product.price_unit, settings?.price_unit_default, 'đ/kg'));
+    })
+    .sort((a, b) => (Number(a.product.sort_order) || 0) - (Number(b.product.sort_order) || 0) || a.index - b.index)
+    .map(({ product }) => product);
+
+  return (categories || [])
+    .map((category) => ({
+      slug: category.slug,
+      name: category.name,
+      ores: priced
+        .filter((product) => Array.isArray(product.categories) && product.categories.includes(category.slug))
+        .map((product) => ({ uid: product.uid, name: product.name, price: Math.round(Number(product.price)) })),
+    }))
+    .filter((group) => group.ores.length);
+}
+
+function renderEstimatorGroups(groups) {
+  return groups.map((group) => `<option value="${escapeAttr(group.slug)}">${escapeText(group.name)}</option>`).join('');
+}
+
+// Ô quặng chứa quặng của mọi nhóm; quặng ngoài nhóm đang chọn (nhóm đầu) mang
+// hidden. Đổi nhóm chỉ bật/tắt hidden nên Dự toán chạy được cả khi CMS lỗi.
+function renderEstimatorOres(groups) {
+  const first = groups[0]?.slug;
+  return groups
+    .flatMap((group) =>
+      group.ores.map(
+        (ore) =>
+          `<option value="${escapeAttr(ore.uid)}" data-group="${escapeAttr(group.slug)}" data-price="${ore.price}"`
+          + `${group.slug === first ? '' : ' hidden'}>${escapeText(ore.name)}</option>`,
+      ),
+    )
+    .join('');
+}
+
+// Các mục phân tích có giá; option "raw" (không phân tích) đứng đầu do nơi gọi ghép.
+function renderAnalysisOptions(analyses) {
+  return (Array.isArray(analyses) ? analyses : [])
+    .filter((item) => item && Number(item.price) > 0)
+    .map((item) => {
+      const price = Math.round(Number(item.price));
+      return `<option value="${escapeAttr(item.id ?? item.name)}" data-price="${price}">`
+        + `${escapeText(item.name)} — ${price.toLocaleString('vi-VN')}đ</option>`;
+    })
+    .join('');
+}
+
+function renderPackagingOptions(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item) => `<option value="${escapeAttr(item.code)}" data-price="${Math.round(Number(item.price))}">${escapeText(item.name)}</option>`)
+    .join('');
+}
+
+function renderContactServices(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item) => `<option value="${escapeAttr(item.code)}">${escapeText(item.label)}</option>`)
+    .join('');
+}
+
+const RAW_ANALYSIS_OPTION = /<option value="raw"[^>]*>[\s\S]*?<\/option>/;
+
+// Cùng quy tắc với numberAttr() trong app.js: số hợp lệ mới ghi, không thì giữ
+// giá trị mặc định đang nằm trong HTML.
+function numberAttr(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? String(number) : null;
+}
+
+function configText(config, key) {
+  const value = config && typeof config[key] === 'string' ? config[key].trim() : '';
+  return value || null;
+}
+
+function validRows(items) {
+  return Array.isArray(items) ? items.filter((item) => item && item.code) : [];
+}
+
+// Mỗi vùng chỉ đổi khi nguồn của nó có dữ liệu. Nhóm và quặng cần cả danh mục
+// lẫn sản phẩm: trộn danh mục mặc định với sản phẩm thật là ra nhóm sai.
+function applyFormsToHtml(html, { categories = null, products = null, analyses = null, formConfig = null, settings = null } = {}) {
+  const config = formConfig || {};
+  const groups = categories && products ? pickEstimatorOres(products, categories, settings || {}) : [];
+  const analysisRows = renderAnalysisOptions(analyses);
+  const noAnalysisLabel = configText(config, 'no_analysis_label');
+  const packaging = validRows(config.packaging);
+  const services = validRows(config.contact_services);
+  const coLabel = configText(config, 'co_label');
+  const coPrice = numberAttr(config.co_price);
+  const threshold = numberAttr(config.bulk_threshold_kg);
+  const percent = numberAttr(config.bulk_discount_percent);
+
+  const byId = (id) => (tagName, attrs) => attrs.id === id;
+
+  return transformHtml(html, [
+    {
+      match: byId('est-group'),
+      apply: () => (groups.length ? { inner: renderEstimatorGroups(groups) } : null),
+    },
+    {
+      match: byId('est-ore'),
+      apply: () => (groups.length ? { inner: renderEstimatorOres(groups) } : null),
+    },
+    {
+      match: byId('est-method'),
+      apply: ({ inner }) => {
+        if (analysisRows) {
+          const current = inner.match(RAW_ANALYSIS_OPTION)?.[0] || '<option value="raw"></option>';
+          const raw = noAnalysisLabel ? `<option value="raw">${escapeText(noAnalysisLabel)}</option>` : current;
+          return { inner: raw + analysisRows };
+        }
+        if (noAnalysisLabel) {
+          return { inner: inner.replace(RAW_ANALYSIS_OPTION, `<option value="raw">${escapeText(noAnalysisLabel)}</option>`) };
+        }
+        return null;
+      },
+    },
+    {
+      match: byId('est-pack'),
+      apply: () => (packaging.length ? { inner: renderPackagingOptions(packaging) } : null),
+    },
+    {
+      match: byId('contact-service'),
+      apply: () => (services.length ? { inner: renderContactServices(services) } : null),
+    },
+    {
+      match: byId('est-permit'),
+      apply: ({ rawAttrs }) => (coPrice ? { rawAttrs: setAttr(rawAttrs, 'data-price', coPrice) } : null),
+    },
+    {
+      match: byId('calculator-form'),
+      apply: ({ rawAttrs }) => {
+        let next = rawAttrs;
+        if (threshold) next = setAttr(next, 'data-bulk-threshold', threshold);
+        if (percent) next = setAttr(next, 'data-bulk-percent', percent);
+        return next !== rawAttrs ? { rawAttrs: next } : null;
+      },
+    },
+    {
+      match: (tagName, attrs) => attrs['data-form-text'] === 'co_label',
+      apply: () => (coLabel ? { inner: escapeText(coLabel) } : null),
+    },
+  ]);
+}
+
+async function fetchList(endpoint, label) {
+  const res = await fetch(`${CMS}/api/${endpoint}`, { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw new Error(`CMS trả về ${res.status} khi đọc ${label}`);
+  const json = await res.json();
+  return (json.data || []).map((item) => item.attributes || item);
+}
+
+function fetchProducts() {
+  return fetchList('products?sort=sort_order:asc&pagination[limit]=500', 'sản phẩm');
+}
+
+function fetchAnalyses() {
+  return fetchList('pricing-analyses?pagination[limit]=100', 'biểu phí phân tích');
+}
+
+async function fetchFormConfig() {
+  const res = await fetch(`${CMS}/api/form-config`, { signal: AbortSignal.timeout(10000) });
+  // Như nội dung trang: chưa lưu lần nào thì Strapi trả 404 — HTML giữ mặc định.
+  if (res.status === 404) return {};
+  if (!res.ok) throw new Error(`CMS trả về ${res.status} khi đọc cấu hình Dự toán & Liên hệ`);
+  const json = await res.json();
+  const data = json.data;
+  return data?.attributes || data || {};
+}
+
 async function fetchPageContent() {
   const res = await fetch(`${CMS}/api/page-content`, { signal: AbortSignal.timeout(10000) });
   // Single type chưa có bản ghi thì Strapi trả 404 — đó là "chưa có dữ liệu",
@@ -544,11 +742,14 @@ async function fetchSettings() {
   return settings;
 }
 
-const SOURCE_LABELS = ['cài đặt website', 'danh mục', 'menu', 'nội dung trang'];
+const SOURCE_LABELS = [
+  'cài đặt website', 'danh mục', 'menu', 'nội dung trang',
+  'sản phẩm', 'biểu phí phân tích', 'cấu hình Dự toán & Liên hệ',
+];
 
-// Bốn nguồn đọc độc lập: nguồn nào lỗi thì bỏ qua riêng phần đó, vì HTML ghi
-// được phần nào đỡ chớp phần đó. Chỉ bỏ cuộc khi cả bốn cùng lỗi — và khi đó báo
-// đủ bốn lý do, không nuốt mất lý do nào.
+// Các nguồn đọc độc lập: nguồn nào lỗi thì bỏ qua riêng phần đó, vì HTML ghi
+// được phần nào đỡ chớp phần đó. Chỉ bỏ cuộc khi tất cả cùng lỗi — và khi đó báo
+// đủ mọi lý do, không nuốt mất lý do nào.
 async function prerenderDirectory(
   target,
   {
@@ -557,6 +758,9 @@ async function prerenderDirectory(
     loadCategories = fetchCategories,
     loadNavigation = fetchNavigation,
     loadPageContent = fetchPageContent,
+    loadProducts = fetchProducts,
+    loadAnalyses = fetchAnalyses,
+    loadFormConfig = fetchFormConfig,
     log = console,
   } = {},
 ) {
@@ -565,8 +769,11 @@ async function prerenderDirectory(
   // của lần ghi trước tới tận lần deploy sau.
   if (!fs.existsSync(sourceDir)) throw new Error(`không tìm thấy thư mục nguồn ${sourceDir}`);
 
-  const results = await Promise.allSettled([loadSettings(), loadCategories(), loadNavigation(), loadPageContent()]);
-  const [settings, categories, navigation, pageContent] = results.map((result) => (result.status === 'fulfilled' ? result.value : null));
+  const results = await Promise.allSettled([
+    loadSettings(), loadCategories(), loadNavigation(), loadPageContent(),
+    loadProducts(), loadAnalyses(), loadFormConfig(),
+  ]);
+  const [settings, categories, navigation, pageContent, products, analyses, formConfig] = results.map((result) => (result.status === 'fulfilled' ? result.value : null));
   const failures = results.map((result, index) =>
     result.status === 'rejected' ? `${SOURCE_LABELS[index]}: ${result.reason?.message || result.reason}` : null,
   );
@@ -583,6 +790,13 @@ async function prerenderDirectory(
     if (categories) out = applyCategoriesToHtml(out, categories);
     if (navigation) out = applyNavigationToHtml(out, navigation, pagePathForFile(file));
     if (pageContent) out = applyPageContentToHtml(out, pageContent, file);
+    out = applyFormsToHtml(out, {
+      categories: categories ? pickVisibleCategories(categories) : null,
+      products,
+      analyses,
+      formConfig,
+      settings,
+    });
 
     const destFile = path.join(target, file);
     const current = fs.existsSync(destFile) ? fs.readFileSync(destFile, 'utf8') : null;
@@ -598,6 +812,7 @@ async function prerenderDirectory(
     categories: Boolean(categories),
     navigation: Boolean(navigation),
     pageContent: Boolean(pageContent),
+    forms: Boolean(products || analyses || formConfig),
   };
 }
 
@@ -610,6 +825,7 @@ async function main() {
     result.categories && 'danh mục',
     result.navigation && 'menu',
     result.pageContent && 'nội dung trang',
+    result.forms && 'form Dự toán & Liên hệ',
   ]
     .filter(Boolean)
     .join(' + ');
@@ -631,6 +847,15 @@ module.exports = {
   pagePathForFile,
   prerenderDirectory,
   fetchPageContent,
+  fetchFormConfig,
+  isPerKgUnit,
+  pickEstimatorOres,
+  renderEstimatorGroups,
+  renderEstimatorOres,
+  renderAnalysisOptions,
+  renderPackagingOptions,
+  renderContactServices,
+  applyFormsToHtml,
   transformHtml,
   safeUrl,
   DEFAULT_CATEGORIES,

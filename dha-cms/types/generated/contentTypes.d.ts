@@ -488,12 +488,77 @@ export interface ApiContactInquiryContactInquiry
         maxLength: 20;
       }>;
     publishedAt: Schema.Attribute.DateTime;
-    service: Schema.Attribute.Enumeration<
-      ['cung-cap-mau', 'phan-tich-lab', 'khao-sat-mo', 'tuyen-khoang']
-    > &
+    service: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }> &
       Schema.Attribute.DefaultTo<'cung-cap-mau'>;
+    service_label: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 150;
+      }>;
     status: Schema.Attribute.Enumeration<['new', 'contacted', 'completed']> &
       Schema.Attribute.DefaultTo<'new'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiFormConfigFormConfig extends Struct.SingleTypeSchema {
+  collectionName: 'form_configs';
+  info: {
+    description: 'Option v\u00E0 con s\u1ED1 c\u1EE7a form D\u1EF1 to\u00E1n, danh s\u00E1ch Nhu c\u1EA7u c\u1EE7a form Li\u00EAn h\u1EC7';
+    displayName: 'D\u1EF1 To\u00E1n & Li\u00EAn H\u1EC7';
+    pluralName: 'form-configs';
+    singularName: 'form-config';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    bulk_discount_percent: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 100;
+          min: 0;
+        },
+        number
+      >;
+    bulk_threshold_kg: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 1;
+        },
+        number
+      >;
+    co_label: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 150;
+      }>;
+    co_price: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      >;
+    contact_services: Schema.Attribute.JSON;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::form-config.form-config'
+    > &
+      Schema.Attribute.Private;
+    no_analysis_label: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    packaging: Schema.Attribute.JSON;
+    publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -741,6 +806,36 @@ export interface ApiOreOre extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiPageContentPageContent extends Struct.SingleTypeSchema {
+  collectionName: 'page_contents';
+  info: {
+    description: 'Ch\u1EEF v\u00E0 SEO c\u1EE7a t\u1EEBng trang tr\u00EAn website';
+    displayName: 'N\u1ED9i Dung Trang';
+    pluralName: 'page-contents';
+    singularName: 'page-content';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::page-content.page-content'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    seo: Schema.Attribute.JSON;
+    texts: Schema.Attribute.JSON;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiPricingAnalysisPricingAnalysis
   extends Struct.CollectionTypeSchema {
   collectionName: 'pricing_analyses';
@@ -894,6 +989,48 @@ export interface ApiPricingSurveyPricingSurvey
   };
 }
 
+export interface ApiProductCategoryProductCategory
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'product_categories';
+  info: {
+    description: 'C\u00E1c nh\u00F3m l\u1ECDc s\u1EA3n ph\u1EA9m hi\u1EC7n tr\u00EAn trang ch\u1EE7 v\u00E0 trang S\u1EA3n ph\u1EA9m';
+    displayName: 'Danh M\u1EE5c S\u1EA3n Ph\u1EA9m';
+    pluralName: 'product-categories';
+    singularName: 'product-category';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::product-category.product-category'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    slug: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    sort_order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    visible: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+  };
+}
+
 export interface ApiProductProduct extends Struct.CollectionTypeSchema {
   collectionName: 'products';
   info: {
@@ -906,6 +1043,7 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    categories: Schema.Attribute.JSON;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -949,6 +1087,17 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
         },
         number
       >;
+    price_label: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    price_on_request: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
+    price_unit: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }> &
+      Schema.Attribute.DefaultTo<'\u0111/kg'>;
     publishedAt: Schema.Attribute.DateTime;
     sort_order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     specs: Schema.Attribute.JSON;
@@ -1087,10 +1236,16 @@ export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
       }>;
+    admin_labels: Schema.Attribute.JSON & Schema.Attribute.Private;
     brand_bio: Schema.Attribute.Text &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 1000;
       }>;
+    copyright_text: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }> &
+      Schema.Attribute.DefaultTo<'Kim Lo\u1EA1i M\u00E0u DHA. B\u1EA3n quy\u1EC1n \u0111\u01B0\u1EE3c b\u1EA3o l\u01B0u.'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1103,6 +1258,35 @@ export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
       }>;
+    favicon_public_id: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
+      }>;
+    favicon_url: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    footer_categories_title: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }> &
+      Schema.Attribute.DefaultTo<'DANH M\u1EE4C S\u1EA2N PH\u1EA8M'>;
+    footer_links: Schema.Attribute.JSON;
+    footer_links_title: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }> &
+      Schema.Attribute.DefaultTo<'H\u1ED6 TR\u1EE2 KH\u00C1CH H\u00C0NG'>;
+    header_cta_label: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 40;
+      }> &
+      Schema.Attribute.DefaultTo<'Y\u00EAu C\u1EA7u M\u1EABu'>;
+    header_cta_url: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 300;
+      }> &
+      Schema.Attribute.DefaultTo<'/contact'>;
     hero_cert_label: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 50;
@@ -1130,6 +1314,16 @@ export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 20;
       }>;
+    hotline_box_note: Schema.Attribute.Text &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 300;
+      }> &
+      Schema.Attribute.DefaultTo<'K\u1EF9 s\u01B0 ph\u1EA3n h\u1ED3i trong 30 ph\u00FAt\nH\u1ED7 tr\u1EE3 7:30 \u2013 17:30 c\u00E1c ng\u00E0y trong tu\u1EA7n'>;
+    hotline_box_title: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }> &
+      Schema.Attribute.DefaultTo<'HOTLINE T\u01AF V\u1EA4N'>;
     hotline2: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 20;
@@ -1140,11 +1334,67 @@ export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
       'api::site-setting.site-setting'
     > &
       Schema.Attribute.Private;
+    logo_alt: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 150;
+      }>;
+    logo_image_dark_public_id: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
+      }>;
+    logo_image_dark_url: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    logo_image_public_id: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
+      }>;
+    logo_image_url: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    logo_text_accent: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }> &
+      Schema.Attribute.DefaultTo<'DHA'>;
+    logo_text_main: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 40;
+      }> &
+      Schema.Attribute.DefaultTo<'MINERALS'>;
     office_name: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 200;
       }> &
       Schema.Attribute.DefaultTo<'V\u0103n Ph\u00F2ng H\u00E0 N\u1ED9i'>;
+    price_contact_text: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }> &
+      Schema.Attribute.DefaultTo<'Li\u00EAn h\u1EC7'>;
+    price_intro_home: Schema.Attribute.Text &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    price_note_home: Schema.Attribute.Text &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    price_note_pricing: Schema.Attribute.Text &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    price_note_products: Schema.Attribute.Text &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    price_unit_default: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }> &
+      Schema.Attribute.DefaultTo<'\u0111/kg'>;
     publishedAt: Schema.Attribute.DateTime;
     stat1_label: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
@@ -1745,14 +1995,17 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::contact-inquiry.contact-inquiry': ApiContactInquiryContactInquiry;
+      'api::form-config.form-config': ApiFormConfigFormConfig;
       'api::hero-slide.hero-slide': ApiHeroSlideHeroSlide;
       'api::navigation.navigation': ApiNavigationNavigation;
       'api::news.news': ApiNewsNews;
       'api::order-request.order-request': ApiOrderRequestOrderRequest;
       'api::ore.ore': ApiOreOre;
+      'api::page-content.page-content': ApiPageContentPageContent;
       'api::pricing-analysis.pricing-analysis': ApiPricingAnalysisPricingAnalysis;
       'api::pricing-package.pricing-package': ApiPricingPackagePricingPackage;
       'api::pricing-survey.pricing-survey': ApiPricingSurveyPricingSurvey;
+      'api::product-category.product-category': ApiProductCategoryProductCategory;
       'api::product.product': ApiProductProduct;
       'api::project.project': ApiProjectProject;
       'api::service.service': ApiServiceService;

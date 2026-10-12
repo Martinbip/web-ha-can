@@ -520,7 +520,7 @@ test('ghi menu theo từng trang trong thư mục', async () => {
   }
 });
 
-test('cả bốn nguồn cùng lỗi thì báo đủ bốn lý do', async () => {
+test('mọi nguồn cùng lỗi thì báo đủ mọi lý do', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prerender-fail-'));
   const reason = (label) => async () => {
     throw new Error(`hỏng ${label}`);
@@ -532,13 +532,19 @@ test('cả bốn nguồn cùng lỗi thì báo đủ bốn lý do', async () => 
         loadCategories: reason('B'),
         loadNavigation: reason('C'),
         loadPageContent: reason('D'),
+        loadProducts: reason('E'),
+        loadAnalyses: reason('F'),
+        loadFormConfig: reason('G'),
         log: { warn() {} },
       }),
       (err) =>
         /cài đặt website: hỏng A/.test(err.message)
         && /danh mục: hỏng B/.test(err.message)
         && /menu: hỏng C/.test(err.message)
-        && /nội dung trang: hỏng D/.test(err.message),
+        && /nội dung trang: hỏng D/.test(err.message)
+        && /sản phẩm: hỏng E/.test(err.message)
+        && /biểu phí phân tích: hỏng F/.test(err.message)
+        && /cấu hình Dự toán & Liên hệ: hỏng G/.test(err.message),
     );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

@@ -66,10 +66,6 @@ function safeInternalUrl(value, fallback = '#') {
     return fallback;
 }
 
-function getOrePrice(ore) {
-    return Number(ore?.price ?? ore?.base_price ?? 0) || 0;
-}
-
 // Công tắc "Giá liên hệ" trong CMS là ý định rõ ràng của quản trị viên; sản phẩm
 // chưa kịp điền giá cũng rơi về cùng cách hiển thị đó. Chữ thay thế và đơn vị lấy
 // theo thứ tự: khai báo riêng của sản phẩm → mặc định trong Cài đặt website →
@@ -1811,6 +1807,7 @@ function initProductOrderForm(product) {
 function initContactForm() {
     const form = document.getElementById('contact-form');
     if (!form) return;
+    initContactServices();
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1819,7 +1816,8 @@ function initContactForm() {
         const phone   = document.getElementById('contact-phone')?.value?.trim();
         const email   = document.getElementById('contact-email')?.value?.trim();
         const address = document.getElementById('contact-address')?.value?.trim();
-        const service = document.getElementById('contact-service')?.value || 'cung-cap-mau';
+        // Mã lạ hoặc rỗng thì CMS tự chốt về mục đầu danh sách Nhu cầu.
+        const service = document.getElementById('contact-service')?.value || '';
         const message = document.getElementById('contact-message')?.value?.trim();
 
         if (!name || !phone || !address) {
@@ -1875,134 +1873,256 @@ function initContactForm() {
 }
 
 // ======================================================
-// ESTIMATOR (Cost Calculator) — Dynamic from CMS
+// ESTIMATOR (Cost Calculator) — option và con số từ CMS
 // ======================================================
+// Mọi con số dùng để tính nằm trong DOM: data-price của từng option và của ô
+// CO, data-bulk-* của form. Prerender đã ghi sẵn bản mới nhất; khi CMS trả lời,
+// các hàm dưới đây dựng lại ra đúng cùng một DOM (xem applyFormsToHtml trong
+// scripts/prerender-site-settings.js). CMS lỗi thì giữ nguyên HTML.
+
+// "đ/kg", "VNĐ / KG"... đều tính theo kg; "đ/tấn" thì không nhân với số kg được.
+function isPerKgUnit(unit) {
+    return /\/kg$/i.test(String(unit ?? '').replace(/\s+/g, ''));
+}
+
+// Cùng quy tắc với pickEstimatorOres() của prerender: sản phẩm có giá theo kg,
+// nhóm theo danh mục đang hiện, bỏ nhóm không có quặng nào.
+function pickEstimatorOres(products, categories, settings = {}) {
+    const priced = (Array.isArray(products) ? products : [])
+        .map((product, index) => ({ product, index }))
+        .filter(({ product }) => {
+            if (!product || product.price_on_request) return false;
+            if (!(Number(product.price) > 0) || !product.uid || !String(product.name ?? '').trim()) return false;
+            return isPerKgUnit(firstFilled(product.price_unit, settings?.price_unit_default, 'đ/kg'));
+        })
+        .sort((a, b) => (Number(a.product.sort_order) || 0) - (Number(b.product.sort_order) || 0) || a.index - b.index)
+        .map(({ product }) => product);
+
+    return (categories || [])
+        .map(category => ({
+            slug: category.slug,
+            name: category.name,
+            ores: priced
+                .filter(product => Array.isArray(product.categories) && product.categories.includes(category.slug))
+                .map(product => ({ uid: product.uid, name: product.name, price: Math.round(Number(product.price)) })),
+        }))
+        .filter(group => group.ores.length);
+}
+
+function renderEstimatorGroups(groups) {
+    return groups.map(group => `<option value="${escapeHtml(group.slug)}">${escapeHtml(group.name)}</option>`).join('');
+}
+
+// Quặng của mọi nhóm nằm chung một ô; quặng ngoài nhóm đầu mang hidden.
+function renderEstimatorOres(groups) {
+    const first = groups[0]?.slug;
+    return groups
+        .flatMap(group => group.ores.map(ore =>
+            `<option value="${escapeHtml(ore.uid)}" data-group="${escapeHtml(group.slug)}" data-price="${ore.price}"`
+            + `${group.slug === first ? '' : ' hidden'}>${escapeHtml(ore.name)}</option>`
+        ))
+        .join('');
+}
+
+function renderAnalysisOptions(analyses) {
+    return (Array.isArray(analyses) ? analyses : [])
+        .filter(item => item && Number(item.price) > 0)
+        .map(item => {
+            const price = Math.round(Number(item.price));
+            return `<option value="${escapeHtml(item.id ?? item.name)}" data-price="${price}">`
+                + `${escapeHtml(item.name)} — ${price.toLocaleString('vi-VN')}đ</option>`;
+        })
+        .join('');
+}
+
+function renderPackagingOptions(items) {
+    return (Array.isArray(items) ? items : [])
+        .map(item => `<option value="${escapeHtml(item.code)}" data-price="${Math.round(Number(item.price))}">${escapeHtml(item.name)}</option>`)
+        .join('');
+}
+
+function renderContactServices(items) {
+    return (Array.isArray(items) ? items : [])
+        .map(item => `<option value="${escapeHtml(item.code)}">${escapeHtml(item.label)}</option>`)
+        .join('');
+}
+
+// Số hợp lệ mới ghi; không thì giữ giá trị mặc định đang nằm trong HTML.
+function numberAttr(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? String(number) : null;
+}
+
+function configText(config, key) {
+    const value = config && typeof config[key] === 'string' ? config[key].trim() : '';
+    return value || null;
+}
+
+function validFormRows(items) {
+    return Array.isArray(items) ? items.filter(item => item && item.code) : [];
+}
+
+// Cấu hình "Dự toán & Liên hệ" dùng chung cho hai form — gọi CMS một lần.
+let formConfigPromise = null;
+
+function loadFormConfig() {
+    if (!formConfigPromise) formConfigPromise = fetchSingleFromCMS('form-config');
+    return formConfigPromise;
+}
+
+// Nhóm và quặng chỉ dựng lại khi cả danh mục lẫn sản phẩm đến từ CMS thật:
+// trộn danh mục dự phòng với sản phẩm thật là ra nhóm sai.
+function applyEstimatorData({ categories = null, products = null, analyses = null, formConfig = null, settings = null }) {
+    const config = formConfig || {};
+    const doc = document;
+
+    const groups = categories && products ? pickEstimatorOres(products, categories, settings || {}) : [];
+    const groupSelect = doc.getElementById('est-group');
+    const oreSelect = doc.getElementById('est-ore');
+    if (groups.length && groupSelect && oreSelect) {
+        groupSelect.innerHTML = renderEstimatorGroups(groups);
+        oreSelect.innerHTML = renderEstimatorOres(groups);
+    }
+
+    const methodSelect = doc.getElementById('est-method');
+    const analysisRows = renderAnalysisOptions(analyses);
+    const noAnalysisLabel = configText(config, 'no_analysis_label');
+    const rawOption = methodSelect?.querySelector('option[value="raw"]');
+    if (methodSelect && analysisRows) {
+        const label = noAnalysisLabel ?? rawOption?.textContent ?? '';
+        methodSelect.innerHTML = `<option value="raw">${escapeHtml(label)}</option>${analysisRows}`;
+    } else if (rawOption && noAnalysisLabel) {
+        rawOption.textContent = noAnalysisLabel;
+    }
+
+    const packaging = validFormRows(config.packaging);
+    const packSelect = doc.getElementById('est-pack');
+    if (packSelect && packaging.length) packSelect.innerHTML = renderPackagingOptions(packaging);
+
+    const coPrice = numberAttr(config.co_price);
+    const permit = doc.getElementById('est-permit');
+    if (permit && coPrice) permit.setAttribute('data-price', coPrice);
+
+    const coLabel = configText(config, 'co_label');
+    if (coLabel) doc.querySelectorAll('[data-form-text="co_label"]').forEach(el => { el.textContent = coLabel; });
+
+    const form = doc.getElementById('calculator-form');
+    const threshold = numberAttr(config.bulk_threshold_kg);
+    const percent = numberAttr(config.bulk_discount_percent);
+    if (form && threshold) form.setAttribute('data-bulk-threshold', threshold);
+    if (form && percent) form.setAttribute('data-bulk-percent', percent);
+}
+
+// Đổi nhóm: chỉ hiện quặng của nhóm đó, chọn quặng đầu tiên nếu quặng đang
+// chọn bị ẩn. Chọn bằng option.selected vì một sản phẩm thuộc hai danh mục có
+// hai option trùng value.
+function filterEstimatorOres() {
+    const group = document.getElementById('est-group')?.value;
+    const oreSelect = document.getElementById('est-ore');
+    if (!oreSelect) return;
+    let firstVisible = null;
+    [...oreSelect.options].forEach(option => {
+        const visible = option.dataset.group === group;
+        option.hidden = !visible;
+        if (visible && !firstVisible) firstVisible = option;
+    });
+    const selected = oreSelect.options[oreSelect.selectedIndex];
+    if (firstVisible && (!selected || selected.hidden)) firstVisible.selected = true;
+}
+
+function selectedOptionOf(id) {
+    const select = document.getElementById(id);
+    return select ? select.options[select.selectedIndex] : null;
+}
+
+function readPrice(el) {
+    const price = Number(el?.dataset?.price);
+    return Number.isFinite(price) && price > 0 ? price : 0;
+}
+
+function computeEstimate(form) {
+    const weight = Math.max(1, parseInt(document.getElementById('est-weight')?.value) || 10);
+    const orePrice = readPrice(selectedOptionOf('est-ore'));
+    const method = selectedOptionOf('est-method');
+    const analysisCost = method?.value === 'raw' ? 0 : readPrice(method);
+    const permit = document.getElementById('est-permit');
+    const packCost = readPrice(selectedOptionOf('est-pack')) + (permit?.checked ? readPrice(permit) : 0);
+
+    const oreCost = orePrice * weight;
+    const threshold = Number(form.dataset.bulkThreshold);
+    const percent = Number(form.dataset.bulkPercent);
+    const discount = threshold > 0 && percent > 0 && weight >= threshold
+        ? Math.round(oreCost * percent / 100)
+        : 0;
+
+    return { weight, orePrice, oreCost, analysisCost, packCost, discount, total: oreCost + analysisCost + packCost - discount };
+}
+
+function showEstimate(result) {
+    const fmt = (n) => n.toLocaleString('vi-VN') + 'đ';
+
+    document.getElementById('result-total').textContent = fmt(result.total);
+    document.getElementById('result-total-weight').textContent = result.weight + ' kg';
+    document.getElementById('result-avg-price').textContent = fmt(result.orePrice) + '/kg';
+    document.getElementById('result-ore-cost').textContent = fmt(result.oreCost);
+    document.getElementById('result-analysis-cost').textContent = fmt(result.analysisCost);
+    document.getElementById('result-pack-cost').textContent = fmt(result.packCost);
+
+    const discountRow = document.getElementById('result-discount')?.closest('.detail-item');
+    if (discountRow) {
+        if (result.discount > 0) {
+            discountRow.classList.remove('hidden');
+            document.getElementById('result-discount').textContent = '-' + fmt(result.discount);
+        } else {
+            discountRow.classList.add('hidden');
+        }
+    }
+
+    document.getElementById('result-placeholder')?.classList.add('hidden');
+    document.getElementById('result-content')?.classList.remove('hidden');
+}
+
+// Gắn sự kiện một lần dù initEstimator được gọi lại.
+const boundEstimatorForms = new WeakSet();
+
 async function initEstimator() {
     const form = document.getElementById('calculator-form');
     if (!form) return;
 
-    const groupSelect = document.getElementById('est-group');
-    const oreSelect = document.getElementById('est-ore');
+    if (!boundEstimatorForms.has(form)) {
+        boundEstimatorForms.add(form);
+        document.getElementById('est-group')?.addEventListener('change', filterEstimatorOres);
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            showEstimate(computeEstimate(form));
+        });
+    }
 
-    const [ores, analyses] = await Promise.all([
-        fetchFromCMS('ores?sort=name:asc&pagination[limit]=100', '/data/products.json'),
-        fetchFromCMS('pricing-analyses?pagination[limit]=100', '/data/pricing_analysis.json'),
+    // Sản phẩm và biểu phí không có file dự phòng: lỗi thì trả [] và HTML giữ nguyên.
+    const [categoryResult, products, analyses, formConfig, settings] = await Promise.all([
+        loadProductCategories(),
+        fetchFromCMS('products?sort=sort_order:asc&pagination[limit]=500'),
+        fetchFromCMS('pricing-analyses?pagination[limit]=100'),
+        loadFormConfig(),
+        loadSiteSettings(),
     ]);
 
-    const oreByGroup = {};
-    (ores || []).forEach(ore => {
-        const g = ore.group || 'other';
-        if (!oreByGroup[g]) oreByGroup[g] = [];
-        oreByGroup[g].push(ore);
+    applyEstimatorData({
+        categories: categoryResult.fromCMS ? categoryResult.categories : null,
+        products,
+        analyses,
+        formConfig,
+        settings,
     });
+}
 
-    const analysisMethods = (analyses || []).filter(a => a.price > 0);
-
-    const methodSelect = document.getElementById('est-method');
-    if (methodSelect && analysisMethods.length > 0) {
-        const rawOption = '<option value="raw">Không phân tích</option>';
-        const dynamicOptions = analysisMethods.map(a =>
-            `<option value="${escapeHtml(a.id || a.name)}" data-price="${a.price}">${escapeHtml(a.name)} — ${(a.price || 0).toLocaleString('vi-VN')}đ</option>`
-        ).join('');
-        methodSelect.innerHTML = rawOption + dynamicOptions;
-    }
-
-    if (groupSelect && oreSelect) {
-        const updateOreOptions = () => {
-            const group = groupSelect.value;
-            const groupOres = oreByGroup[group] || [];
-
-            if (groupOres.length > 0) {
-                oreSelect.innerHTML = groupOres.map(o =>
-                    `<option value="${escapeHtml(o.uid || o.name)}" data-price="${getOrePrice(o)}">${escapeHtml(o.name)}</option>`
-                ).join('');
-            } else {
-                const fallbackOptions = {
-                    'color-metal': [
-                        { value: 'copper-ore', label: 'Quặng Đồng Chalcopyrite', price: 85000 },
-                        { value: 'bauxite-ore', label: 'Quặng Bauxit Nhôm', price: 35000 },
-                        { value: 'lead-zinc-ore', label: 'Quặng Chì - Kẽm Galena', price: 65000 },
-                    ],
-                    'black-metal': [
-                        { value: 'iron-ore', label: 'Quặng Sắt Magnetite', price: 25000 },
-                        { value: 'manganese-ore', label: 'Quặng Mangan', price: 45000 },
-                    ],
-                    'rare-earth': [
-                        { value: 'rare-earth-ore', label: 'Quặng Đất Hiếm', price: 320000 },
-                    ],
-                };
-                const options = fallbackOptions[group] || [];
-                oreSelect.innerHTML = options.map(o =>
-                    `<option value="${o.value}" data-price="${o.price}">${o.label}</option>`
-                ).join('');
-            }
-        };
-
-        groupSelect.addEventListener('change', updateOreOptions);
-        updateOreOptions();
-    }
-
-    const FALLBACK_PRICES = {
-        packaging: {
-            'box': { name: 'Hộp nhựa kín khí', price: 150000 },
-            'bag': { name: 'Bao chống ẩm', price: 250000 },
-            'barrel': { name: 'Thùng phuy bảo quản', price: 800000 },
-        },
-        permit: 500000,
-        bulkDiscountThreshold: 500,
-        bulkDiscountRate: 0.05,
-    };
-
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        const selectedOre = oreSelect?.options[oreSelect.selectedIndex];
-        const orePrice = parseInt(selectedOre?.dataset?.price) || 85000;
-
-        const weight = Math.max(1, parseInt(document.getElementById('est-weight')?.value) || 10);
-
-        const selectedMethod = methodSelect?.options[methodSelect.selectedIndex];
-        const analysisPrice = selectedMethod?.value === 'raw' ? 0 : (parseInt(selectedMethod?.dataset?.price) || 0);
-
-        const pack = document.getElementById('est-pack')?.value || 'box';
-        const needPermit = document.getElementById('est-permit')?.checked ?? false;
-
-        const packInfo = FALLBACK_PRICES.packaging[pack] || FALLBACK_PRICES.packaging['box'];
-
-        const oreCost = orePrice * weight;
-        const analysisCost = analysisPrice;
-        const packCost = packInfo.price + (needPermit ? FALLBACK_PRICES.permit : 0);
-
-        let subtotal = oreCost + analysisCost + packCost;
-        let discount = 0;
-
-        if (weight >= FALLBACK_PRICES.bulkDiscountThreshold) {
-            discount = Math.round(oreCost * FALLBACK_PRICES.bulkDiscountRate);
-            subtotal -= discount;
-        }
-
-        const fmt = (n) => n.toLocaleString('vi-VN') + 'đ';
-
-        document.getElementById('result-total').textContent = fmt(subtotal);
-        document.getElementById('result-total-weight').textContent = weight + ' kg';
-        document.getElementById('result-avg-price').textContent = fmt(orePrice) + '/kg';
-        document.getElementById('result-ore-cost').textContent = fmt(oreCost);
-        document.getElementById('result-analysis-cost').textContent = fmt(analysisCost);
-        document.getElementById('result-pack-cost').textContent = fmt(packCost);
-
-        const discountRow = document.getElementById('result-discount')?.closest('.detail-item');
-        if (discountRow) {
-            if (discount > 0) {
-                discountRow.classList.remove('hidden');
-                document.getElementById('result-discount').textContent = '-' + fmt(discount);
-            } else {
-                discountRow.classList.add('hidden');
-            }
-        }
-
-        document.getElementById('result-placeholder')?.classList.add('hidden');
-        document.getElementById('result-content')?.classList.remove('hidden');
-    });
+// Ô Nhu cầu của form Liên hệ.
+async function initContactServices() {
+    const select = document.getElementById('contact-service');
+    if (!select) return;
+    const services = validFormRows((await loadFormConfig())?.contact_services);
+    if (services.length) select.innerHTML = renderContactServices(services);
 }
 
 // ======================================================

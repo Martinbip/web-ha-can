@@ -419,9 +419,9 @@ test('7 trang tĩnh có đủ dấu SEO cho cả thẻ Google, Facebook và Twit
   }
 });
 
-// Sau đợt 3, chữ khách nhìn thấy chỉ còn được nằm trong code nếu là nhãn giao
-// diện / thông báo hệ thống (nhóm 6 của lộ trình) hoặc thuộc đợt 4 (form Dự
-// toán, form Liên hệ). Mọi chữ nội dung khác phải nối CMS.
+// Sau đợt 4, chữ khách nhìn thấy chỉ còn được nằm trong code nếu là nhãn giao
+// diện / thông báo hệ thống (nhóm 6 của lộ trình). Mọi chữ nội dung khác, kể cả
+// option của form Dự toán và form Liên hệ, phải nối CMS.
 const PAGE_CMS = [
   '[data-page-text]', '[data-page-list]', '[data-page-href]', '[data-site-text]',
   '[data-category-list]', '[data-footer-links]', '[data-copyright]',
@@ -433,6 +433,7 @@ const PAGE_CMS = [
   '#home-products-grid', '#home-news-grid', '#news-full-grid', '#projects-container',
   '.services-grid', '.workflow-timeline', '#market-price-body', '#pricing-table-body',
   '#survey-pricing-table-body', '#hero-carousel', 'script', 'style', 'noscript', 'svg', 'title',
+  '#est-group', '#est-ore', '#est-method', '#est-pack', '#contact-service', '[data-form-text]',
 ].join(', ');
 
 const ALLOWED_UI_TEXT = new Set([
@@ -464,21 +465,9 @@ const ALLOWED_UI_TEXT = new Set([
   'Văn phòng:', 'Email:', 'Họ và Tên', 'Số Điện Thoại', 'Email', 'Địa Chỉ', 'Nhu Cầu',
   'Nội Dung Yêu Cầu', '*',
   'Gửi Yêu Cầu Báo Giá', 'Đóng',
-
-  // Đợt 4 — các option của form Dự toán (#est-group, #est-ore, #est-method, #est-pack), chưa nối CMS.
-  'Kim Loại Màu (Đồng, Nhôm...)', 'Kim Loại Đen (Sắt, Mangan...)', 'Đất Hiếm & Khoáng Sản Quý',
-  'Quặng Đồng Chalcopyrite', 'Quặng Bauxit Nhôm', 'Quặng Chì - Kẽm Galena',
-  'Chỉ Cung Cấp Mẫu Thô (Không phân tích)', 'Phân Tích Thành Phần XRF Nhanh',
-  'Phân Tích Quang Phổ ICP-MS Cực Nhạy', 'Thử Nghiệm Tuyển Khoáng Mẫu Thử',
-  'Hộp Nhựa Kín Khí Tiêu Chuẩn', 'Bao Chống Ẩm Chuyên Dụng', 'Thùng Phuy Bảo Quản Đặc Biệt',
-  // Đợt 4 — nhãn checkbox #est-permit của form Dự toán, chưa nối CMS.
-  'Yêu cầu giấy chứng nhận nguồn gốc (CO)',
-
-  // Đợt 4 — các option của form Liên hệ (#contact-service), chưa nối CMS.
-  'Cung cấp mẫu kim loại/quặng', 'Phân tích & kiểm định', 'Khảo sát mỏ', 'Tuyển khoáng',
 ]);
 
-test('trong thân trang chỉ còn nhãn giao diện và phần để dành đợt 4 là viết cứng', () => {
+test('trong thân trang chỉ còn nhãn giao diện là viết cứng', () => {
   const leftovers = new Map();
   for (const file of Object.keys(PAGE_FILES)) {
     const doc = load(file);

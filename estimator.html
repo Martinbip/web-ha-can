@@ -108,22 +108,25 @@
                 <div class="estimator-grid">
                     <!-- Calculator Inputs -->
                     <div class="estimator-form-card">
-                        <form id="calculator-form" class="estimator-form">
+                        <form id="calculator-form" class="estimator-form" data-bulk-threshold="500" data-bulk-percent="5">
                             <div class="form-group-row">
                                 <div class="form-group">
                                     <label for="est-group" class="form-label">Nhóm Khoáng Sản</label>
                                     <select id="est-group" class="input form-select cursor-pointer">
-                                        <option value="color-metal" selected>Kim Loại Màu (Đồng, Nhôm...)</option>
-                                        <option value="black-metal">Kim Loại Đen (Sắt, Mangan...)</option>
-                                        <option value="rare-earth">Đất Hiếm & Khoáng Sản Quý</option>
+                                        <option value="color-metal">Kim Loại Màu</option>
+                                        <option value="black-metal">Kim Loại Đen</option>
+                                        <option value="rare-earth">Đất Hiếm</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="est-ore" class="form-label">Loại Quặng Cụ Thể</label>
                                     <select id="est-ore" class="input form-select cursor-pointer">
-                                        <option value="copper-ore" selected>Quặng Đồng Chalcopyrite</option>
-                                        <option value="bauxite-ore">Quặng Bauxit Nhôm</option>
-                                        <option value="lead-zinc-ore">Quặng Chì - Kẽm Galena</option>
+                                        <option value="copper-ore" data-group="color-metal" data-price="85000">Quặng Đồng Chalcopyrite</option>
+                                        <option value="bauxite-ore" data-group="color-metal" data-price="35000">Quặng Bauxit Nhôm</option>
+                                        <option value="lead-zinc-ore" data-group="color-metal" data-price="65000">Quặng Chì - Kẽm Galena</option>
+                                        <option value="iron-ore" data-group="black-metal" data-price="25000" hidden>Quặng Sắt Magnetite</option>
+                                        <option value="manganese-ore" data-group="black-metal" data-price="45000" hidden>Quặng Mangan</option>
+                                        <option value="rare-earth-ore" data-group="rare-earth" data-price="320000" hidden>Quặng Đất Hiếm</option>
                                     </select>
                                 </div>
                             </div>
@@ -136,10 +139,12 @@
                                 <div class="form-group">
                                     <label for="est-method" class="form-label">Yêu Cầu Kiểm Định</label>
                                     <select id="est-method" class="input form-select cursor-pointer">
-                                        <option value="raw" selected>Chỉ Cung Cấp Mẫu Thô (Không phân tích)</option>
-                                        <option value="xrf">Phân Tích Thành Phần XRF Nhanh</option>
-                                        <option value="icp">Phân Tích Quang Phổ ICP-MS Cực Nhạy</option>
-                                        <option value="flotation">Thử Nghiệm Tuyển Khoáng Mẫu Thử</option>
+                                        <option value="raw">Không phân tích</option>
+                                        <option value="1" data-price="1500000">Phân tích huỳnh quang tia X (XRF) — 1.500.000đ</option>
+                                        <option value="2" data-price="3500000">Phân tích quang phổ ICP-MS — 3.500.000đ</option>
+                                        <option value="3" data-price="300000">Phân tích độ ẩm &amp; độ mất khi nung (LOI) — 300.000đ</option>
+                                        <option value="4" data-price="400000">Đo độ cứng khoáng vật (Mohs Scale) — 400.000đ</option>
+                                        <option value="5" data-price="5000000">Thử nghiệm tuyển nổi / tuyển từ quy mô phòng thí nghiệm — 5.000.000đ</option>
                                     </select>
                                 </div>
                             </div>
@@ -148,16 +153,16 @@
                                 <div class="form-group">
                                     <label for="est-pack" class="form-label">Quy Cách Đóng Gói</label>
                                     <select id="est-pack" class="input form-select cursor-pointer">
-                                        <option value="box" selected>Hộp Nhựa Kín Khí Tiêu Chuẩn</option>
-                                        <option value="bag">Bao Chống Ẩm Chuyên Dụng</option>
-                                        <option value="barrel">Thùng Phuy Bảo Quản Đặc Biệt</option>
+                                        <option value="box" data-price="150000">Hộp Nhựa Kín Khí Tiêu Chuẩn</option>
+                                        <option value="bag" data-price="250000">Bao Chống Ẩm Chuyên Dụng</option>
+                                        <option value="barrel" data-price="800000">Thùng Phuy Bảo Quản Đặc Biệt</option>
                                     </select>
                                 </div>
                                 <div class="form-group check-group">
                                     <label class="checkbox-container cursor-pointer" style="margin-top: 25px;">
-                                        <input type="checkbox" id="est-permit" checked>
+                                        <input type="checkbox" id="est-permit" checked data-price="500000">
                                         <span class="checkmark"></span>
-                                        Yêu cầu giấy chứng nhận nguồn gốc (CO)
+                                        <span data-form-text="co_label">Yêu cầu giấy chứng nhận nguồn gốc (CO)</span>
                                     </label>
                                 </div>
                             </div>
@@ -298,6 +303,6 @@
     </button>
 
     <script>window.__STRAPI_URL=location.origin;</script>
-    <script src="app.js?v=3.7"></script>
+    <script src="app.js?v=3.8"></script>
 </body>
 </html>

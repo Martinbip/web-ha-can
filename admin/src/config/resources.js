@@ -39,7 +39,7 @@ export const RESOURCE_CONFIG = {
       price_on_request: { label: 'Giá liên hệ (không hiện số)', type: 'boolean', hint: 'Bật khi sản phẩm báo giá theo từng đơn. Website sẽ hiện chữ bên dưới thay cho con số.', clearFields: ['price', 'price_unit'] },
       price_label: { label: 'Chữ hiển thị khi giá liên hệ', type: 'text', placeholder: 'Liên hệ', hint: 'Ví dụ: Liên hệ, Báo giá theo lô. Bỏ trống sẽ dùng chữ mặc định khai báo trong Cài đặt website.' },
       price: { label: 'Giá', type: 'number', placeholder: 'Ví dụ 285000', hideWhen: 'price_on_request', emptyText: 'Liên hệ' },
-      price_unit: { label: 'Đơn vị giá', type: 'text', placeholder: 'đ/kg', hideWhen: 'price_on_request', hint: 'Ghi liền ngay sau con số, ví dụ đ/kg, đ/tấn. Bỏ trống sẽ dùng đơn vị mặc định trong Cài đặt website.' },
+      price_unit: { label: 'Đơn vị giá', type: 'text', placeholder: 'đ/kg', hideWhen: 'price_on_request', hint: 'Ghi liền ngay sau con số, ví dụ đ/kg, đ/tấn. Bỏ trống sẽ dùng đơn vị mặc định trong Cài đặt website. Chỉ sản phẩm tính theo kg (đ/kg) mới hiện trong ô chọn quặng của trang Dự toán.' },
       description: { label: 'Mô tả', type: 'textarea' },
       specs: { label: 'Thông số', type: 'key-value-table' },
       image: { label: 'Ảnh sản phẩm', type: 'cloudinary-image', folder: 'dha/products' },
@@ -152,7 +152,39 @@ export const RESOURCE_CONFIG = {
       admin_labels: { label: 'Nhãn form quản trị', type: 'hidden' },
     },
   },
-  'contact-inquiries': { label: 'Yêu cầu liên hệ', titleField: 'name', readOnlyCreate: true, listFields: ['name', 'phone', 'service', 'status', 'createdAt'], fields: { email: { label: 'Email', type: 'email', readOnly: true }, address: { label: 'Địa chỉ', type: 'textarea', readOnly: true }, message: { label: 'Lời nhắn', type: 'textarea', readOnly: true }, status: { label: 'Trạng thái', type: 'select', options: ['new', 'contacted', 'completed'] } } },
+  'form-config': {
+    label: 'Dự toán & Liên hệ',
+    titleField: 'co_label',
+    fields: {
+      packaging: {
+        label: 'Quy cách đóng gói',
+        type: 'option-list',
+        addLabel: 'Thêm quy cách',
+        columns: [
+          { key: 'code', label: 'Mã', placeholder: 'Mã, ví dụ hop-nhua' },
+          { key: 'name', label: 'Tên hiển thị', placeholder: 'Ví dụ: Hộp nhựa kín khí' },
+          { key: 'price', label: 'Giá (đ)', type: 'number', placeholder: 'Giá, ví dụ 150000' },
+        ],
+        hint: 'Các lựa chọn của ô "Quy cách đóng gói" trong Dự toán, tính một lần cho mỗi đơn. Xoá hết thì website giữ 3 quy cách mặc định: Hộp nhựa 150.000đ, Bao chống ẩm 250.000đ, Thùng phuy 800.000đ.',
+      },
+      co_label: { label: 'Chữ ô chứng nhận nguồn gốc (CO)', type: 'text', placeholder: 'Yêu cầu giấy chứng nhận nguồn gốc (CO)', hint: 'Chữ cạnh ô tick CO. Bỏ trống thì giữ chữ mặc định.' },
+      co_price: { label: 'Phí chứng nhận CO (đ)', type: 'number', placeholder: '500000', hint: 'Cộng vào chi phí đóng gói khi khách tick ô CO. Bỏ trống thì dùng 500.000đ.' },
+      bulk_threshold_kg: { label: 'Chiết khấu từ (kg)', type: 'number', placeholder: '500', hint: 'Khối lượng từ mức này trở lên thì được chiết khấu. Bỏ trống thì dùng 500 kg.' },
+      bulk_discount_percent: { label: 'Tỉ lệ chiết khấu (%)', type: 'number', placeholder: '5', hint: 'Tính trên tiền quặng, không tính trên phí phân tích và đóng gói. Bỏ trống thì dùng 5%.' },
+      no_analysis_label: { label: 'Chữ lựa chọn không phân tích', type: 'text', placeholder: 'Không phân tích', hint: 'Lựa chọn đầu tiên của ô "Yêu cầu kiểm định". Các phương pháp phân tích và giá lấy từ Bảng giá → Biểu phí phân tích.' },
+      contact_services: {
+        label: 'Danh sách Nhu cầu',
+        type: 'option-list',
+        addLabel: 'Thêm nhu cầu',
+        columns: [
+          { key: 'code', label: 'Mã', placeholder: 'Mã, ví dụ khao-sat-mo' },
+          { key: 'label', label: 'Tên hiển thị', placeholder: 'Ví dụ: Khảo sát mỏ' },
+        ],
+        hint: 'Các lựa chọn của ô "Nhu cầu" trong form Liên hệ; mục đầu tiên được chọn sẵn. Mỗi yêu cầu khách gửi giữ lại tên nhu cầu lúc gửi, nên sửa hay xoá mục ở đây không làm đổi yêu cầu cũ. Xoá hết thì website giữ 4 nhu cầu mặc định.',
+      },
+    },
+  },
+  'contact-inquiries': { label: 'Yêu cầu liên hệ', titleField: 'name', readOnlyCreate: true, listFields: ['name', 'phone', 'service_label', 'status', 'createdAt'], fields: { service_label: { label: 'Nhu cầu', type: 'text', readOnly: true }, email: { label: 'Email', type: 'email', readOnly: true }, address: { label: 'Địa chỉ', type: 'textarea', readOnly: true }, message: { label: 'Lời nhắn', type: 'textarea', readOnly: true }, status: { label: 'Trạng thái', type: 'select', options: ['new', 'contacted', 'completed'] } } },
   'order-requests': { label: 'Đơn đặt mẫu', titleField: 'customer_name', readOnlyCreate: true, listFields: ['product_name', 'customer_name', 'phone', 'quantity', 'status', 'createdAt'], fields: { product_uid: { label: 'Mã sản phẩm', type: 'text', readOnly: true }, email: { label: 'Email', type: 'email', readOnly: true }, unit: { label: 'Đơn vị', type: 'text', readOnly: true }, note: { label: 'Ghi chú', type: 'textarea', readOnly: true }, status: { label: 'Trạng thái', type: 'select', options: ['new', 'processing', 'done'] } } },
 };
 

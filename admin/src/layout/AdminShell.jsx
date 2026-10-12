@@ -30,6 +30,7 @@ const NAV_GROUPS = [
     items: [
       ['/home', 'Trang chủ', 'home'],
       ['/page-content', 'Nội dung trang', 'news'],
+      ['/form-config', 'Dự toán & Liên hệ', 'price'],
       ['/pricing', 'Bảng giá', 'price'],
       ['/menu', 'Thanh menu', 'menu'],
     ],

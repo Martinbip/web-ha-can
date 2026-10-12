@@ -48,6 +48,11 @@ Nhóm 1–5 làm theo 4 đợt, mỗi đợt một spec, một kế hoạch, m�
 | 3 | Nội dung từng trang + SEO, ghi sẵn vào HTML lúc deploy | 3, 4 |
 | 4 | Cấu hình Dự toán + danh sách nhu cầu form Liên hệ | 5 |
 
+**Trạng thái (12/10/2026):** đợt 1–3 đã deploy; đợt 4 xong trên nhánh
+`claude/tien-do-cong-viec-91d96a` (spec `2026-10-12-du-toan-lien-he-design.md`),
+chờ merge và deploy. Sau đợt 4, danh sách cho phép của test chống tái phát chỉ
+còn nhóm 6.
+
 Thứ tự này đi từ chỗ đang hỏng (link dẫn ra trang trống) tới chỗ chỉ bất tiện.
 Đợt 4 đứng cuối vì đụng tới số tiền báo cho khách và cần đối chiếu với bảng giá
 thật.

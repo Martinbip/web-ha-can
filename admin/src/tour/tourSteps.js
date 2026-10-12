@@ -188,6 +188,31 @@ export const TOURS = {
     ],
   },
 
+  'form-config': {
+    label: 'Dự toán & Liên hệ',
+    description: 'Lựa chọn và con số của hai form trên website.',
+    steps: [
+      {
+        target: '[data-tour="form-config-estimator"]',
+        title: 'Con số của Dự toán',
+        body: 'Quy cách đóng gói, phí CO và mức chiết khấu dùng để tính tiền cho khách. Giá quặng không nằm ở đây: sửa ở mục Sản phẩm (chỉ sản phẩm tính theo kg mới hiện trong Dự toán).',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="field-option-list"]',
+        title: 'Danh sách lựa chọn',
+        body: 'Mỗi dòng một lựa chọn: mã viết thường không dấu, tên hiển thị cho khách. Dùng nút mũi tên để đổi thứ tự; dòng đầu được chọn sẵn.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="form-config-contact"]',
+        title: 'Nhu cầu của form Liên hệ',
+        body: 'Khách chọn một nhu cầu khi gửi liên hệ. Tên nhu cầu được lưu kèm yêu cầu, nên sửa danh sách sau này không làm đổi các yêu cầu đã nhận.',
+        placement: 'top',
+      },
+    ],
+  },
+
   pricing: {
     label: 'Bảng giá',
     description: 'Ba bảng giá con nằm ở đâu.',
@@ -315,6 +340,7 @@ const ROUTE_TOURS = [
   [/^\/resources\/[^/]+$/, 'resource-list'],
   [/^\/home$/, 'home'],
   [/^\/page-content$/, 'page-content'],
+  [/^\/form-config$/, 'form-config'],
   [/^\/pricing$/, 'pricing'],
   [/^\/menu$/, 'menu'],
   [/^\/media$/, 'media'],
