@@ -347,27 +347,30 @@ test('nút mạng xã hội bị ẩn thì không hiện dù .social-link đặt
 // Prerender ghi tại chỗ vào HTML đang phục vụ, nên "bỏ trống" thực chất là
 // giữ nội dung của lần ghi trước (không phải quay lại giá trị mặc định cho
 // tới lần deploy sau) — gợi ý trong admin phải nói đúng điều đó.
-test('gợi ý các trường đầu/chân trang trong admin nói đúng việc bỏ trống giữ nội dung đang hiện', () => {
+// Từ đợt 3, prerender luôn dựng từ bản mẫu trong repo rồi ghi sang thư mục phục
+// vụ, nên ô bỏ trống quay về mặc định ngay lần lưu kế tiếp — gợi ý không được
+// nói "giữ nội dung đang hiện" như hồi prerender còn ghi tại chỗ.
+test('gợi ý các trường đầu/chân trang trong admin nói đúng việc bỏ trống là về mặc định', () => {
   const source = read('admin/src/config/resources.js');
-  const fields = [
-    'header_cta_label',
-    'header_cta_url',
-    'footer_categories_title',
-    'footer_links_title',
-    'footer_links',
-    'copyright_text',
-  ];
+  const fields = {
+    header_cta_label: 'Yêu Cầu Mẫu',
+    header_cta_url: '/contact',
+    footer_categories_title: 'DANH MỤC SẢN PHẨM',
+    footer_links_title: 'HỖ TRỢ KHÁCH HÀNG',
+    footer_links: 'Liên Hệ Báo Giá',
+    copyright_text: 'Kim Loại Màu DHA. Bản quyền được bảo lưu.',
+  };
 
-  for (const name of fields) {
+  for (const [name, defaultText] of Object.entries(fields)) {
     const match = source.match(new RegExp(`${name}: \\{[^}]*\\}`));
     assert.ok(match, `không tìm thấy khai báo trường ${name}`);
-    const declaration = match[0];
-    assert.match(declaration, /đang hiện|đang dùng/, `${name}: hint phải nói giữ nội dung đang hiện/đang dùng`);
-    assert.doesNotMatch(declaration, /5 link mặc định/, `${name}: hint không được hứa "5 link mặc định"`);
-    assert.doesNotMatch(declaration, /giữ dòng mặc định/, `${name}: hint không được hứa "giữ dòng mặc định"`);
-    assert.doesNotMatch(declaration, /vẫn dẫn tới \/contact/, `${name}: hint không được hứa "vẫn dẫn tới /contact"`);
+    const hint = match[0].match(/hint: '([^']*)'/)?.[1] || '';
+    assert.match(hint, /mặc định/, `${name}: gợi ý phải nói bỏ trống thì về mặc định`);
+    assert.ok(hint.includes(defaultText), `${name}: gợi ý phải nêu giá trị mặc định "${defaultText}"`);
+    assert.doesNotMatch(hint, /đang hiện|đang dùng|giữ nguyên/, `${name}: gợi ý còn cách nói cũ "giữ nội dung đang hiện"`);
   }
 });
+
 
 // Đợt 3: đánh dấu nội dung từng trang và thẻ SEO để prerender/app.js thay chữ.
 const { PAGE_FIELDS, SEO_FIELDS } = require('../dha-cms/src/api/page-content/fields');
