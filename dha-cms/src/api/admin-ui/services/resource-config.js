@@ -391,7 +391,7 @@ const RESOURCE_CONFIG = {
     defaultSort: { createdAt: 'desc' },
     searchableFields: ['name', 'phone', 'email', 'address', 'message'],
     editableFields: ['status'],
-    readFields: ['email', 'address', 'message'],
+    readFields: ['service_label', 'email', 'address', 'message'],
     listFields: ['name', 'phone', 'service_label', 'status', 'createdAt'],
     fields: {
       status: {

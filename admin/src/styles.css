@@ -1006,6 +1006,30 @@ button:hover {
   }
 }
 
+/* Danh sách option của form website: số cột tuỳ khai báo nên dùng flex. */
+.option-list {
+  display: grid;
+  gap: 8px;
+}
+
+.option-list-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.option-list-row input {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.option-list-warning {
+  flex-basis: 100%;
+  margin: 0;
+  color: #b45309;
+}
+
 /* ── Trình sửa thanh menu ── */
 .menu-page {
   padding-bottom: 96px;

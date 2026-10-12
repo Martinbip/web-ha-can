@@ -155,3 +155,27 @@ test('danh sách Nhu cầu mặc định khớp contact.html', () => {
     .map((m) => ({ code: m[1], label: m[2].replace(/&amp;/g, '&') }));
   assert.deepEqual(options, DEFAULT_CONTACT_SERVICES);
 });
+
+test('admin có trang "Dự toán & Liên hệ" với đúng các ô của CMS', () => {
+  const source = read('admin/src/config/resources.js');
+  const start = source.indexOf("'form-config': {");
+  assert.ok(start > -1, 'admin thiếu cấu hình form-config');
+  const block = source.slice(start, source.indexOf("\n  },\n", start));
+  for (const key of FORM_CONFIG_FIELDS) {
+    assert.match(block, new RegExp(`\\n      ${key}: \\{`), `admin thiếu ô ${key}`);
+  }
+  assert.match(read('admin/src/App.jsx'), /path="\/form-config" element={<FormConfigPage \/>}/);
+  assert.match(read('admin/src/layout/AdminShell.jsx'), /\['\/form-config', 'Dự toán & Liên hệ'/);
+  assert.match(read('admin/src/tour/tourSteps.js'), /\[\/\^\\\/form-config\$\/, 'form-config'\]/);
+  const page = read('admin/src/pages/FormConfigPage.jsx');
+  for (const key of FORM_CONFIG_FIELDS) {
+    assert.match(page, new RegExp(`'${key}'`), `trang chưa dựng ô ${key}`);
+  }
+});
+
+test('admin hiện tên Nhu cầu đã chốt, và nhắc đơn vị kg ở ô giá sản phẩm', () => {
+  const source = read('admin/src/config/resources.js');
+  assert.match(source, /'contact-inquiries': \{[^\n]*listFields: \['name', 'phone', 'service_label'/);
+  assert.match(source, /service_label: \{ label: 'Nhu cầu', type: 'text', readOnly: true \}/);
+  assert.match(source, /price_unit: \{[^\n]*Dự toán/);
+});

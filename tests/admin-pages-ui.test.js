@@ -388,3 +388,78 @@ test('nội dung trang: thanh tab báo đúng tab đang chọn cho trình đọc
   assert.equal(tabs[1].getAttribute('aria-selected'), 'false');
   view.unmount();
 });
+
+// --- Dự toán & Liên hệ -------------------------------------------------------
+
+function formConfigRecord() {
+  return {
+    documentId: 'fc-1',
+    packaging: [{ code: 'box', name: 'Hộp', price: 150000 }],
+    co_price: 500000,
+    contact_services: [{ code: 'tu-van', label: 'Tư vấn' }],
+  };
+}
+
+async function renderFormConfig(routes) {
+  const calls = mockFetch(routes);
+  const FormConfigPage = component('admin/src/pages/FormConfigPage.jsx');
+  const view = await render(react().createElement(FormConfigPage));
+  await view.act(async () => {});
+  return { view, calls };
+}
+
+test('dự toán & liên hệ: nạp sẵn hai danh sách và các con số đang có', options, async () => {
+  const { view } = await renderFormConfig({
+    'GET /resources/form-config': () => ({ body: { data: formConfigRecord() } }),
+  });
+  assert.equal(view.all('.option-list').length, 2, 'đóng gói và Nhu cầu');
+  const [code, name, price] = view.all('.option-list')[0].querySelectorAll('.option-list-row input');
+  assert.deepEqual([code.value, name.value, price.value], ['box', 'Hộp', '150000']);
+  assert.equal(view.one('#field-co_price').value, '500000');
+  view.unmount();
+});
+
+test('dự toán & liên hệ: lưu chỉ gửi các ô của trang, giữ nguyên danh sách không sửa', options, async () => {
+  let sent = null;
+  const { view } = await renderFormConfig({
+    'GET /resources/form-config': () => ({ body: { data: formConfigRecord() } }),
+    'PUT /resources/form-config/fc-1': ({ body }) => {
+      sent = body;
+      return { body: { data: { ...formConfigRecord(), ...body.data } } };
+    },
+  });
+  await view.click(view.byText('button', 'Thêm nhu cầu'));
+  const row = view.all('.option-list')[1].querySelectorAll('.option-list-row')[1];
+  const [code, label] = row.querySelectorAll('input');
+  await view.type(code, 'mua-mau');
+  await view.type(label, 'Mua mẫu');
+  await view.click(view.byText('button', 'Lưu'));
+
+  assert.deepEqual(Object.keys(sent.data).sort(), [
+    'bulk_discount_percent', 'bulk_threshold_kg', 'co_label', 'co_price',
+    'contact_services', 'no_analysis_label', 'packaging',
+  ]);
+  assert.deepEqual(sent.data.contact_services, [{ code: 'tu-van', label: 'Tư vấn' }, { code: 'mua-mau', label: 'Mua mẫu' }]);
+  assert.deepEqual(sent.data.packaging, formConfigRecord().packaging);
+  assert.match(view.text(), /Đã lưu/);
+  view.unmount();
+});
+
+test('dự toán & liên hệ: chưa có bản ghi thì hiện form trống, lưu lần đầu là tạo mới', options, async () => {
+  let created = false;
+  const { view } = await renderFormConfig({
+    'GET /resources/form-config': () => ({ body: { data: null } }),
+    'POST /resources/form-config': () => {
+      created = true;
+      return { body: { data: { documentId: 'fc-1' } } };
+    },
+    'PUT /resources/form-config/null': () => {
+      created = true;
+      return { body: { data: { documentId: 'fc-1' } } };
+    },
+  });
+  assert.equal(view.all('.option-list-row').length, 0);
+  await view.click(view.byText('button', 'Lưu'));
+  assert.equal(created, true);
+  view.unmount();
+});

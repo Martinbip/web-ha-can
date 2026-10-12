@@ -189,6 +189,9 @@ function renderInput({ id, field, value, onChange, setField, values }) {
     case 'link-list':
       return <LinkListField id={id} value={value} onChange={onChange} />;
 
+    case 'option-list':
+      return <OptionListField id={id} value={value} onChange={onChange} field={field} />;
+
     case 'cloudinary-image':
       return (
         <ImagePicker
@@ -440,6 +443,84 @@ function LinkListField({ id, value, onChange }) {
       })}
       <button type="button" className="btn-secondary" onClick={addItem}>
         + Thêm liên kết
+      </button>
+    </div>
+  );
+}
+
+// Mã của option nằm trong HTML website và trong dữ liệu khách gửi; CMS bỏ dòng
+// có mã sai mẫu khi lưu, nên báo trước ngay tại ô cho quản trị sửa.
+const OPTION_CODE_PATTERN = /^[a-z0-9-]{1,60}$/;
+
+// Danh sách option của form website (quy cách đóng gói, Nhu cầu...): mỗi dòng
+// một object, cột khai báo trong field.columns. Cột số lưu thành số, bỏ trống
+// lưu null.
+function OptionListField({ id, value, onChange, field }) {
+  const items = Array.isArray(value) ? value.filter((item) => item && typeof item === 'object' && !Array.isArray(item)) : [];
+  const columns = field.columns || [];
+
+  function updateItem(index, key, raw, column) {
+    const next = column.type === 'number' ? (raw === '' ? null : Number(raw)) : raw;
+    onChange(items.map((item, i) => (i === index ? { ...item, [key]: next } : item)));
+  }
+
+  function moveItem(index, delta) {
+    const target = index + delta;
+    if (target < 0 || target >= items.length) return;
+    const next = items.slice();
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+  }
+
+  function removeItem(index) {
+    onChange(items.filter((_, i) => i !== index));
+  }
+
+  function addItem() {
+    onChange([...items, Object.fromEntries(columns.map((column) => [column.key, column.type === 'number' ? null : '']))]);
+  }
+
+  return (
+    <div className="option-list" id={id}>
+      {items.map((item, index) => {
+        const code = typeof item.code === 'string' ? item.code.trim() : '';
+        const warning = code && !OPTION_CODE_PATTERN.test(code)
+          ? 'Mã chỉ gồm chữ thường không dấu, số và gạch ngang (ví dụ: hop-nhua). Dòng có mã sai sẽ bị bỏ khi lưu.'
+          : '';
+        return (
+          <div className="option-list-row" key={index}>
+            {columns.map((column) => (
+              <input
+                key={column.key}
+                type={column.type === 'number' ? 'number' : 'text'}
+                min={column.type === 'number' ? 0 : undefined}
+                aria-label={column.label}
+                placeholder={column.placeholder || column.label}
+                value={item[column.key] ?? ''}
+                onChange={(event) => updateItem(index, column.key, event.target.value, column)}
+              />
+            ))}
+            <button type="button" className="btn-secondary" aria-label="Đưa lên" disabled={index === 0} onClick={() => moveItem(index, -1)}>
+              ↑
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              aria-label="Đưa xuống"
+              disabled={index === items.length - 1}
+              onClick={() => moveItem(index, 1)}
+            >
+              ↓
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => removeItem(index)}>
+              Xóa
+            </button>
+            {warning ? <p className="field-hint option-list-warning">{warning}</p> : null}
+          </div>
+        );
+      })}
+      <button type="button" className="btn-secondary" onClick={addItem}>
+        + {field.addLabel || 'Thêm dòng'}
       </button>
     </div>
   );

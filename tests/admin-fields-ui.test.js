@@ -203,3 +203,58 @@ test('liên kết chân trang: URL kiểu "//..." (protocol-relative) cũng bị
   assert.ok(view.one('.link-list-warning'), '"//evil.com" trông như đường dẫn nội bộ nhưng thực ra dẫn ra ngoài');
   view.unmount();
 });
+
+const PACKAGING_FIELD = {
+  label: 'Quy cách đóng gói',
+  type: 'option-list',
+  addLabel: 'Thêm quy cách',
+  columns: [
+    { key: 'code', label: 'Mã', placeholder: 'hop' },
+    { key: 'name', label: 'Tên hiển thị' },
+    { key: 'price', label: 'Giá (đ)', type: 'number' },
+  ],
+};
+
+test('danh sách option: thêm, gõ mã/tên/giá, đổi thứ tự và xoá được', options, async () => {
+  const { view, state } = await renderField({
+    name: 'packaging',
+    field: PACKAGING_FIELD,
+    value: [{ code: 'box', name: 'Hộp', price: 150000 }],
+  });
+
+  await view.click(view.byText('button', 'Thêm quy cách'));
+  assert.equal(view.all('.option-list-row').length, 2, 'thêm được dòng mới');
+  const [code, name, price] = view.all('.option-list-row')[1].querySelectorAll('input');
+  await view.type(code, 'bag');
+  await view.type(name, 'Bao');
+  await view.type(price, '250000');
+  assert.deepEqual(state.value, [
+    { code: 'box', name: 'Hộp', price: 150000 },
+    { code: 'bag', name: 'Bao', price: 250000 },
+  ], 'ô giá lưu thành số');
+
+  await view.type(view.all('.option-list-row')[1].querySelectorAll('input')[2], '');
+  assert.equal(state.value[1].price, null, 'xoá trắng ô giá thì lưu null');
+
+  await view.click(view.all('.option-list-row')[1].querySelector('button[aria-label="Đưa lên"]'));
+  assert.deepEqual(state.value.map((item) => item.code), ['bag', 'box']);
+
+  await view.click(view.byText('.option-list-row button', 'Xóa'));
+  assert.deepEqual(state.value.map((item) => item.code), ['box'], 'xoá đúng dòng đầu');
+  view.unmount();
+});
+
+test('danh sách option: dữ liệu hỏng không làm vỡ màn hình, mã sai mẫu được cảnh báo', options, async () => {
+  for (const value of [null, 'chuoi', 42, {}, ['chu']]) {
+    const { view } = await renderField({ name: 'packaging', field: PACKAGING_FIELD, value });
+    assert.ok(view.one('.option-list'), `value ${JSON.stringify(value)} vẫn dựng được danh sách`);
+    view.unmount();
+  }
+  const { view } = await renderField({
+    name: 'packaging',
+    field: PACKAGING_FIELD,
+    value: [{ code: 'Có Dấu', name: 'Hộp', price: 1 }],
+  });
+  assert.match(view.one('.option-list-warning').textContent, /chữ thường không dấu/);
+  view.unmount();
+});
