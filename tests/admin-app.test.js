@@ -211,3 +211,9 @@ test('mọi ô Cài đặt website cho quản trị sửa đều có trên một
   const missing = fields.filter((name) => !pages.includes(`'${name}'`));
   assert.deepEqual(missing, [], `các ô chưa có trên trang admin nào: ${missing.join(', ')}`);
 });
+
+test('link nút đầu trang dùng ô có cảnh báo đường dẫn sai quy tắc', () => {
+  const config = read('admin/src/config/resources.js');
+  assert.match(config, /header_cta_url: \{ label: '[^']*', type: 'site-link'/);
+  assert.match(config, /header_cta_url: \{[^\n]*invalidNote: '[^']*\/contact/);
+});

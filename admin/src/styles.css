@@ -994,6 +994,10 @@ button:hover {
   white-space: nowrap;
 }
 
+.site-link-warning {
+  color: #b45309;
+}
+
 .link-list-warning {
   grid-column: 1 / -1;
   margin: 0;

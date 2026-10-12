@@ -189,6 +189,9 @@ function renderInput({ id, field, value, onChange, setField, values }) {
     case 'link-list':
       return <LinkListField id={id} value={value} onChange={onChange} />;
 
+    case 'site-link':
+      return <SiteLinkField id={id} value={value} onChange={onChange} field={field} />;
+
     case 'option-list':
       return <OptionListField id={id} value={value} onChange={onChange} field={field} />;
 
@@ -353,20 +356,49 @@ function TextListField({ id, value, onChange }) {
   );
 }
 
-// Cùng quy tắc với menu (dha-cms/src/api/admin-ui/services/navigation.js) và
-// safeNavUrl() trên website: đường dẫn nội bộ, neo trong trang, hoặc http(s).
-// "//vi-du.vn" và "/\vi-du.vn" trông như đường dẫn trong website nhưng trình
-// duyệt hiểu là một tên miền khác nên cũng bị cảnh báo, không chỉ riêng "/".
+// Cùng quy tắc với menu (dha-cms/src/api/admin-ui/services/navigation.js),
+// safeNavUrl() trong app.js và safeUrl() trong scripts/prerender-site-settings.js:
+// đường dẫn nội bộ, neo trong trang, hoặc http(s). "//vi-du.vn" và "/\vi-du.vn"
+// trông như đường dẫn trong website nhưng trình duyệt hiểu là một tên miền khác
+// nên cũng bị cảnh báo, không chỉ riêng "/".
+function isSiteLink(url) {
+  if (/^\/[/\\]/.test(url)) return false;
+  return url.startsWith('/') || url.startsWith('#') || /^https?:\/\/\S+$/i.test(url);
+}
+
+const SITE_LINK_RULE = 'Đường dẫn phải bắt đầu bằng "/", "#" hoặc "http(s)://"';
+
 function linkUrlWarning(item) {
   const url = String(item.url || '').trim();
   if (!url) {
     return String(item.label || '').trim() ? 'Chưa có đường dẫn — liên kết này sẽ không hiện trên website.' : '';
   }
-  if (/^\/[/\\]/.test(url)) {
-    return 'Đường dẫn phải bắt đầu bằng "/", "#" hoặc "http(s)://" — liên kết này sẽ không hiện trên website.';
-  }
-  if (url.startsWith('/') || url.startsWith('#') || /^https?:\/\/\S+$/i.test(url)) return '';
-  return 'Đường dẫn phải bắt đầu bằng "/", "#" hoặc "http(s)://" — liên kết này sẽ không hiện trên website.';
+  return isSiteLink(url) ? '' : `${SITE_LINK_RULE} — liên kết này sẽ không hiện trên website.`;
+}
+
+// Một đường dẫn đơn lẻ (vd link nút đầu trang). Website bỏ qua đường dẫn sai quy
+// tắc, nên báo ngay tại ô — không thì quản trị bấm Lưu thấy "Đã lưu" mà website
+// không đổi. Vẫn cho lưu: bỏ trống hay sai thì website dùng mặc định.
+function SiteLinkField({ id, value, onChange, field }) {
+  const url = String(value ?? '').trim();
+  const warning = url && !isSiteLink(url)
+    ? `${SITE_LINK_RULE} — ${field.invalidNote || 'website sẽ bỏ qua đường dẫn này'}.`
+    : '';
+  return (
+    <>
+      <input
+        id={id}
+        type="text"
+        value={value ?? ''}
+        placeholder={field.placeholder}
+        readOnly={field.readOnly}
+        disabled={field.readOnly}
+        aria-invalid={warning ? 'true' : undefined}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      {warning ? <p className="field-hint site-link-warning" role="alert">{warning}</p> : null}
+    </>
+  );
 }
 
 // Danh sách liên kết { label, url, visible } — dùng cho cột liên kết ở chân trang.
