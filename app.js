@@ -323,10 +323,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // chỉ gọi CMS một lần và chia sẻ chung lời hứa — phần render nào cần thì chờ nó.
 let siteSettingsPromise = null;
 
-// HTML tĩnh hard-code sẵn hotline và các câu chữ mặc định, còn dữ liệu thật chỉ
-// về sau khi CMS trả lời. Nếu chỉ chờ CMS thì mỗi lần khách tải lại trang, nội
-// dung cũ nhấp nháy một nhịp rồi mới bị thay. Nên cất lại lần trả lời gần nhất
-// và áp ngay khi app.js chạy — lần tải sau khách thấy đúng nội dung từ đầu.
+// Chữ do quản trị đặt đã được prerender ghi sẵn vào HTML (xem
+// scripts/prerender-site-settings.js), nên không cần — và không được — áp chữ từ
+// bộ nhớ đệm: quản trị xoá trắng một ô thì CMS trả ô trống, nghĩa là "giữ chữ
+// đang có trên trang", mà chữ đó lại là bản cũ vừa áp từ bộ nhớ đệm — khách quay
+// lại thấy giá trị cũ thêm một lượt. Bộ nhớ đệm chỉ còn lo phần prerender không
+// ghi được: ảnh logo và favicon, để logo không chớp từ chữ sang ảnh.
 const SITE_SETTINGS_CACHE_KEY = 'dha:site-settings:v1';
 
 function readCachedSiteSettings() {
@@ -349,13 +351,17 @@ function writeCachedSiteSettings(settings) {
 }
 
 // Chạy đồng bộ ngay lúc app.js được nạp (thẻ script nằm cuối body nên DOM đã đủ),
-// trước cả DOMContentLoaded, để nội dung đúng có mặt ngay từ khung hình đầu tiên.
+// trước cả DOMContentLoaded, để ảnh logo có mặt ngay từ khung hình đầu tiên. Chỉ
+// truyền các ô ảnh: chữ logo bỏ trống thì applyLogo giữ nguyên chữ trong HTML.
 function applyCachedSiteSettings() {
     const cached = readCachedSiteSettings();
-    if (!cached || !Object.keys(cached).length) return;
-    // Các phần dựng bằng JS (thanh gọi nhanh trên mobile) cũng cần số đúng ngay.
-    window.__siteSettings = cached;
-    renderSiteSettings(cached);
+    if (!cached) return;
+    applyLogo({
+        logo_image_url: cached.logo_image_url,
+        logo_image_dark_url: cached.logo_image_dark_url,
+        logo_alt: cached.logo_alt,
+    });
+    applyFavicon({ favicon_url: cached.favicon_url });
 }
 
 function loadSiteSettings() {
@@ -792,12 +798,13 @@ function initHeroCarousel() {
 // ======================================================
 function injectSiteComponents() {
     if (window.innerWidth <= 768 && !document.querySelector('.mobile-cta-bar')) {
-        const settings = window.__siteSettings;
-        const hotline = settings?.hotline ? settings.hotline.replace(/[.\s\-()]/g, '') : '0981234567';
+        // Số gọi lấy từ link gọi điện prerender đã ghi sẵn trong HTML; khi CMS trả
+        // lời, renderSiteSettings đổi mọi link tel: (kể cả nút này) theo số mới.
+        const callHref = document.querySelector('a[href^="tel:"]')?.getAttribute('href') || '/contact';
         const bar = document.createElement('div');
         bar.className = 'mobile-cta-bar';
         bar.innerHTML = `
-            <a href="tel:${escapeHtml(hotline)}" class="mobile-cta-call">
+            <a href="${escapeHtml(callHref)}" class="mobile-cta-call">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                 Gọi Ngay
             </a>
@@ -1655,8 +1662,13 @@ async function initProductDetailPage() {
         const imgSrc = escapeHtml(product.image || '/assets/phong_thi_nghiem_dha.png');
         const inStock = product.in_stock !== false;
         const priceLabel = getProductPriceLabel(product);
+        // Số gọi: theo cài đặt CMS; CMS lỗi thì lấy link gọi điện prerender đã ghi
+        // sẵn trong HTML (đầu trang, chân trang) — không dùng số viết cứng nào.
         const settings = window.__siteSettings;
-        const hotline = settings?.hotline ? settings.hotline.replace(/[.\s\-()]/g, '') : '0981234567';
+        const hotline = String(settings?.hotline || '').replace(/[.\s\-()]/g, '');
+        const callHref = hotline
+            ? `tel:${hotline}`
+            : (document.querySelector('a[href^="tel:"]')?.getAttribute('href') || '/contact');
 
         let specsHtml = '';
         if (Array.isArray(product.specs)) {
@@ -1698,7 +1710,7 @@ async function initProductDetailPage() {
                     <ul class="detail-specs-list">${specsHtml}</ul>
                 </div>` : ''}
                     <div class="detail-cta-box">
-                        <a href="tel:${escapeHtml(hotline)}" class="btn-primary" style="flex:1;text-align:center;">
+                        <a href="${escapeHtml(callHref)}" class="btn-primary" style="flex:1;text-align:center;">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;margin-right:6px;" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                             Liên Hệ Nhận Báo Giá
                         </a>
