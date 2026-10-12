@@ -43,6 +43,19 @@ const PRICE_FIELDS = [
   'price_note_pricing',
 ];
 
+// Khung nền xanh "HOTLINE TƯ VẤN" bên hông trang chủ; số điện thoại lấy từ ô Hotline.
+const HOTLINE_BOX_FIELDS = ['hotline_box_title', 'hotline_box_note'];
+
+// Nút góc phải đầu trang và các cột chữ ở chân trang, dùng chung cho mọi trang.
+const CHROME_FIELDS = [
+  'header_cta_label',
+  'header_cta_url',
+  'footer_categories_title',
+  'footer_links_title',
+  'footer_links',
+  'copyright_text',
+];
+
 export default function SettingsPage() {
   const config = getResourceConfig(TYPE);
   const [recordId, setRecordId] = useState(null);
@@ -123,6 +136,38 @@ export default function SettingsPage() {
           </div>
           <div className="field-grid" data-tour="settings-contact">
             {GENERAL_FIELDS.map((name) => (
+              <FieldRenderer
+                key={name}
+                name={name}
+                field={config.fields[name]}
+                value={values[name]}
+                onChange={(value) => handleChange(name, value)}
+              />
+            ))}
+          </div>
+
+          <div className="page-heading">
+            <h2>Khung hotline</h2>
+            <p>Khung nền xanh bên hông trang chủ. Số điện thoại trong khung lấy từ ô Hotline ở trên.</p>
+          </div>
+          <div className="field-grid" data-tour="settings-hotline-box">
+            {HOTLINE_BOX_FIELDS.map((name) => (
+              <FieldRenderer
+                key={name}
+                name={name}
+                field={config.fields[name]}
+                value={values[name]}
+                onChange={(value) => handleChange(name, value)}
+              />
+            ))}
+          </div>
+
+          <div className="page-heading">
+            <h2>Đầu trang &amp; chân trang</h2>
+            <p>Nút nổi bật ở đầu trang và các cột ở chân trang, dùng chung cho mọi trang.</p>
+          </div>
+          <div className="field-grid" data-tour="settings-chrome">
+            {CHROME_FIELDS.map((name) => (
               <FieldRenderer
                 key={name}
                 name={name}

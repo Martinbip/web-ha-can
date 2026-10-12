@@ -195,3 +195,19 @@ test('trang cài đặt cho đổi logo, và ảnh đã chọn có thể gỡ ra
     'gỡ ảnh cũng xóa luôn public ID đi kèm',
   );
 });
+
+// Đợt 1 và 2 của lộ trình bỏ HTML viết cứng từng khai báo ô mới cho Cài đặt
+// website mà quên đặt lên trang nào — website đọc được, quản trị không sửa được.
+test('mọi ô Cài đặt website cho quản trị sửa đều có trên một trang admin', () => {
+  const config = read('admin/src/config/resources.js');
+  const start = config.indexOf("'site-setting': {");
+  const block = config.slice(start, config.indexOf('\n  },\n', start));
+  const fields = [...block.matchAll(/\n {6}(\w+): \{ label: '[^']*', type: '([a-z-]+)'/g)]
+    .filter(([, , type]) => type !== 'hidden')
+    .map(([, name]) => name);
+  assert.ok(fields.length > 30, `đọc được danh sách ô (${fields.length})`);
+
+  const pages = ['SettingsPage', 'HomePageEditor'].map((page) => read(`admin/src/pages/${page}.jsx`)).join('\n');
+  const missing = fields.filter((name) => !pages.includes(`'${name}'`));
+  assert.deepEqual(missing, [], `các ô chưa có trên trang admin nào: ${missing.join(', ')}`);
+});
