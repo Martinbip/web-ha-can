@@ -258,3 +258,38 @@ test('danh sách option: dữ liệu hỏng không làm vỡ màn hình, mã sai
   assert.match(view.one('.option-list-warning').textContent, /chữ thường không dấu/);
   view.unmount();
 });
+
+const HEADER_LINK_FIELD = {
+  label: 'Link nút đầu trang',
+  type: 'site-link',
+  invalidNote: 'nút sẽ dẫn tới link mặc định /contact',
+};
+
+test('ô đường dẫn trong website: sai quy tắc thì cảnh báo ngay dưới ô, đúng thì không', options, async () => {
+  for (const bad of ['javascript:void(0)', '//vi-du.vn', '/\\vi-du.vn', 'www.vi-du.vn', 'ftp://vi-du.vn']) {
+    const { view } = await renderField({ name: 'header_cta_url', field: HEADER_LINK_FIELD, value: bad });
+    const warning = view.one('.site-link-warning');
+    assert.ok(warning, `"${bad}" phải bị cảnh báo`);
+    assert.match(warning.textContent, /bắt đầu bằng "\/", "#" hoặc "http\(s\):\/\/"/);
+    assert.match(warning.textContent, /nút sẽ dẫn tới link mặc định \/contact/);
+    view.unmount();
+  }
+  for (const good of ['', '/pricing', '#workflow', 'https://zalo.me/0867259078', 'http://vi-du.vn']) {
+    const { view } = await renderField({ name: 'header_cta_url', field: HEADER_LINK_FIELD, value: good });
+    assert.equal(view.one('.site-link-warning'), null, `"${good}" không được cảnh báo`);
+    view.unmount();
+  }
+});
+
+test('ô đường dẫn trong website: gõ sửa thì cảnh báo hiện/tắt theo, và vẫn lưu được chữ đã gõ', options, async () => {
+  const { view, state } = await renderField({ name: 'header_cta_url', field: HEADER_LINK_FIELD, value: '' });
+  const input = view.one('#field-header_cta_url');
+  assert.equal(input.type, 'text', 'không dùng type="url" — trình duyệt sẽ chặn cả "/contact"');
+  await view.type(input, 'javascript:void(0)');
+  assert.ok(view.one('.site-link-warning'));
+  assert.equal(state.value, 'javascript:void(0)');
+  await view.type(input, '/pricing');
+  assert.equal(view.one('.site-link-warning'), null);
+  assert.equal(state.value, '/pricing');
+  view.unmount();
+});
