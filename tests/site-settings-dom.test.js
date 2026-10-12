@@ -271,15 +271,17 @@ test('chữ thay cho giá và đơn vị giá theo đúng thứ tự ưu tiên',
   assert.equal(window.getProductPriceLabel({}).text, 'Báo giá theo lô');
 });
 
-// ── Chớp nội dung cũ khi tải lại trang ──
-// HTML tĩnh hard-code sẵn hotline/câu chữ mặc định, còn dữ liệu thật chỉ về sau
-// khi CMS trả lời. Vì vậy mỗi lần refresh khách thấy nội dung cũ nhấp nháy rồi
-// mới bị thay. Bộ nhớ đệm của lần tải trước phải được áp ngay khi app.js chạy.
+// ── Bộ nhớ đệm cài đặt của lần tải trước ──
+// Chữ đã được prerender ghi sẵn vào HTML, nên bộ nhớ đệm chỉ còn lo phần
+// prerender không ghi được: ảnh logo và favicon (không có thì logo chớp từ chữ
+// sang ảnh). Áp cả chữ từ bộ nhớ đệm từng gây lỗi: quản trị xoá trắng một ô thì
+// khách quay lại vẫn thấy giá trị cũ thêm một lượt, vì CMS trả ô trống nghĩa là
+// "giữ chữ đang có" — mà chữ đang có lại là bản cũ trong bộ nhớ đệm.
 const SITE_SETTINGS_CACHE_KEY = 'dha:site-settings:v1';
 
-// Khác loadPage: gieo sẵn bộ nhớ đệm và để CMS treo mãi không trả lời, đúng
-// cảnh khoảnh khắc đầu tiên sau khi refresh.
-function loadPageWithCache(cached, file = 'index.html') {
+// Khác loadPage: gieo sẵn bộ nhớ đệm. CMS treo mãi không trả lời (khoảnh khắc đầu
+// tiên sau khi tải trang), hoặc trả về đúng bộ cài đặt truyền vào.
+function loadPageWithCache(cached, { file = 'index.html', cms = null } = {}) {
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', (err) => errors.push(err));
@@ -291,31 +293,80 @@ function loadPageWithCache(cached, file = 'index.html') {
   const { window } = dom;
   window.__scriptErrors = errors;
   window.localStorage.setItem(SITE_SETTINGS_CACHE_KEY, JSON.stringify(cached));
-  window.fetch = () => new Promise(() => {});
+  window.fetch = (url) => {
+    if (cms && String(url).includes('/api/site-setting')) {
+      return Promise.resolve({ ok: true, json: async () => ({ data: cms }) });
+    }
+    return cms ? Promise.reject(new Error('network disabled in tests')) : new Promise(() => {});
+  };
   const script = window.document.createElement('script');
   script.textContent = APP_JS;
   window.document.body.appendChild(script);
   return window;
 }
 
-test('tải lại trang thì hotline hiện ngay theo bộ nhớ đệm, không chớp số cũ', () => {
-  const window = loadPageWithCache({ hotline: '0912.345.678', email: 'moi@dha.vn' });
+test('bộ nhớ đệm không đè chữ đã prerender trong HTML', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const original = new JSDOM(html).window.document;
+  const window = loadPageWithCache({
+    hotline: '0999.999.999',
+    price_intro_home: 'Chữ cũ trong bộ nhớ đệm.',
+    copyright_text: 'Bản quyền cũ.',
+    logo_text_main: 'CU',
+  });
+  const doc = window.document;
 
-  const hotlines = [...window.document.querySelectorAll('.site-hotline')];
-  assert.ok(hotlines.length >= 2, 'trang chủ có hotline ở header và chân trang');
-  for (const el of hotlines) {
-    assert.equal(el.textContent, '0912.345.678');
-  }
-  assert.equal(window.document.querySelector('a.site-hotline').getAttribute('href'), 'tel:0912345678');
+  assert.equal(doc.querySelector('.site-hotline').textContent, original.querySelector('.site-hotline').textContent);
+  assert.equal(
+    doc.querySelector('[data-site-text="price_intro_home"]').textContent,
+    original.querySelector('[data-site-text="price_intro_home"]').textContent,
+  );
+  assert.equal(doc.querySelector('[data-copyright]').textContent, original.querySelector('[data-copyright]').textContent);
+  assert.equal(doc.querySelector('.logo-text').textContent, original.querySelector('.logo-text').textContent);
 });
 
-test('câu chữ do quản trị đặt cũng hiện ngay từ bộ nhớ đệm', () => {
-  const window = loadPageWithCache({ hotline: '0912345678', price_intro_home: 'Giá cập nhật mỗi sáng.' });
-
-  assert.equal(
-    window.document.querySelector('[data-site-text="price_intro_home"]').textContent,
-    'Giá cập nhật mỗi sáng.',
+test('quản trị xoá trắng một ô thì khách quay lại thấy ngay chữ mặc định, không thấy giá trị cũ', async () => {
+  const html = fs.readFileSync(path.join(root, 'news.html'), 'utf8');
+  const original = new JSDOM(html).window.document;
+  const window = loadPageWithCache(
+    { copyright_text: 'Kim Loại Màu DHA (Thử).', footer_links: [{ label: 'Bảng Giá (Thử)', url: '/pricing', visible: true }] },
+    { file: 'news.html', cms: { copyright_text: '', footer_links: [] } },
   );
+  await window.initSiteSettings();
+  const doc = window.document;
+
+  assert.equal(doc.querySelector('[data-copyright]').textContent, original.querySelector('[data-copyright]').textContent);
+  assert.deepEqual(
+    [...doc.querySelectorAll('[data-footer-links] a')].map((a) => a.textContent),
+    [...original.querySelectorAll('[data-footer-links] a')].map((a) => a.textContent),
+  );
+});
+
+test('ảnh logo và favicon vẫn hiện ngay từ bộ nhớ đệm, không chớp logo chữ', () => {
+  const window = loadPageWithCache({ logo_image_url: 'https://cdn.vi-du.vn/logo.png', favicon_url: '/assets/icon.png' });
+  const doc = window.document;
+
+  const img = doc.querySelector('header a.logo .logo-img');
+  assert.ok(img, 'logo đầu trang có ảnh ngay khi app.js chạy');
+  assert.equal(img.getAttribute('src'), 'https://cdn.vi-du.vn/logo.png');
+  assert.equal(doc.querySelector('link[data-site-favicon]')?.getAttribute('href'), '/assets/icon.png');
+});
+
+test('quản trị gỡ ảnh logo thì CMS trả lời xong là về logo chữ', async () => {
+  const window = loadPageWithCache({ logo_image_url: 'https://cdn.vi-du.vn/logo.png' }, { cms: { hotline: '0912345678' } });
+  await window.initSiteSettings();
+  assert.equal(window.document.querySelector('.logo-img'), null);
+});
+
+test('thanh gọi nhanh trên điện thoại lấy số từ HTML, không từ bộ nhớ đệm hay số viết cứng', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const expected = new JSDOM(html).window.document.querySelector('a.site-hotline').getAttribute('href');
+  const window = loadPageWithCache({ hotline: '0999.999.999' });
+  Object.defineProperty(window, 'innerWidth', { value: 375, configurable: true });
+  window.injectSiteComponents();
+
+  assert.equal(window.document.querySelector('.mobile-cta-call').getAttribute('href'), expected);
+  assert.doesNotMatch(APP_JS, /0981234567/, 'không còn số dự phòng viết cứng');
 });
 
 test('bộ nhớ đệm hỏng thì trang vẫn chạy bình thường', () => {
