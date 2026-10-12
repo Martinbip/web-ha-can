@@ -204,3 +204,25 @@ test('sản phẩm có nhưng danh mục lỗi thì giữ nguyên nhóm và qu�
   const doc = formDoc(applyFormsToHtml(html, { categories: null, products: PRODUCTS }));
   assert.equal(doc.getElementById('est-ore').innerHTML, formDoc(html).getElementById('est-ore').innerHTML);
 });
+
+test('HTML mặc định của Dự toán mang đủ giá, đúng mẫu thẻ của hàm render', () => {
+  const doc = formDoc(readPage('estimator.html'));
+  const priced = (selector) => [...doc.querySelectorAll(selector)].every((o) => Number(o.dataset.price) > 0);
+  assert.ok(priced('#est-ore option'), 'quặng mặc định phải có giá');
+  assert.ok(priced('#est-pack option'), 'đóng gói mặc định phải có giá');
+  assert.ok(priced('#est-method option:not([value="raw"])'), 'phân tích mặc định phải có giá');
+  assert.equal(doc.querySelector('#est-method option').value, 'raw', 'lựa chọn không phân tích đứng đầu');
+  assert.ok(Number(doc.getElementById('est-permit').dataset.price) > 0);
+  const form = doc.getElementById('calculator-form');
+  assert.equal(form.dataset.bulkThreshold, '500');
+  assert.equal(form.dataset.bulkPercent, '5');
+
+  const firstGroup = doc.querySelector('#est-group option').value;
+  for (const option of doc.querySelectorAll('#est-ore option')) {
+    assert.equal(option.hidden, option.dataset.group !== firstGroup, `${option.value}: chỉ quặng nhóm đầu được hiện`);
+  }
+  const groups = new Set([...doc.querySelectorAll('#est-group option')].map((o) => o.value));
+  for (const option of doc.querySelectorAll('#est-ore option')) {
+    assert.ok(groups.has(option.dataset.group), `${option.value} trỏ tới nhóm không có trong ô Nhóm`);
+  }
+});
