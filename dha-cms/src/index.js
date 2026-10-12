@@ -229,6 +229,7 @@ module.exports = {
           'api::site-setting.site-setting.find',
           'api::navigation.navigation.find',
           'api::page-content.page-content.find',
+          'api::form-config.form-config.find',
           'api::product.product.find',
           'api::product.product.findOne',
           'api::product-category.product-category.find',

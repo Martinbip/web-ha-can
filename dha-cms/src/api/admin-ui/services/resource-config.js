@@ -354,6 +354,33 @@ const RESOURCE_CONFIG = {
       seo: { label: 'SEO các trang', type: 'json' },
     },
   },
+  'form-config': {
+    uid: 'api::form-config.form-config',
+    label: 'Dự toán & Liên hệ',
+    pluralLabel: 'Dự toán & Liên hệ',
+    singleType: true,
+    draftAndPublish: false,
+    titleField: 'co_label',
+    editableFields: [
+      'packaging',
+      'co_label',
+      'co_price',
+      'bulk_threshold_kg',
+      'bulk_discount_percent',
+      'no_analysis_label',
+      'contact_services',
+    ],
+    listFields: [],
+    fields: {
+      packaging: { label: 'Quy cách đóng gói', type: 'json' },
+      co_label: { label: 'Nhãn chứng nhận nguồn gốc (CO)', type: 'text', maxLength: 150 },
+      co_price: { label: 'Phí CO', type: 'number', min: 0 },
+      bulk_threshold_kg: { label: 'Ngưỡng chiết khấu (kg)', type: 'number', min: 1 },
+      bulk_discount_percent: { label: 'Tỉ lệ chiết khấu (%)', type: 'number', min: 0, max: 100 },
+      no_analysis_label: { label: 'Chữ lựa chọn không phân tích', type: 'text', maxLength: 100 },
+      contact_services: { label: 'Danh sách Nhu cầu', type: 'json' },
+    },
+  },
   'contact-inquiries': {
     uid: 'api::contact-inquiry.contact-inquiry',
     label: 'Yêu cầu liên hệ',
@@ -365,7 +392,7 @@ const RESOURCE_CONFIG = {
     searchableFields: ['name', 'phone', 'email', 'address', 'message'],
     editableFields: ['status'],
     readFields: ['email', 'address', 'message'],
-    listFields: ['name', 'phone', 'service', 'status', 'createdAt'],
+    listFields: ['name', 'phone', 'service_label', 'status', 'createdAt'],
     fields: {
       status: {
         label: 'Trạng thái',

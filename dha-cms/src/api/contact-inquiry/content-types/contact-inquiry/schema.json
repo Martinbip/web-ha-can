@@ -35,14 +35,13 @@
       "maxLength": 500
     },
     "service": {
-      "type": "enumeration",
-      "enum": [
-        "cung-cap-mau",
-        "phan-tich-lab",
-        "khao-sat-mo",
-        "tuyen-khoang"
-      ],
+      "type": "string",
+      "maxLength": 60,
       "default": "cung-cap-mau"
+    },
+    "service_label": {
+      "type": "string",
+      "maxLength": 150
     },
     "message": {
       "type": "text",

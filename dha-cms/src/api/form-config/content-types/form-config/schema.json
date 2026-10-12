@@ -1,0 +1,43 @@
+{
+  "kind": "singleType",
+  "collectionName": "form_configs",
+  "info": {
+    "singularName": "form-config",
+    "pluralName": "form-configs",
+    "displayName": "Dự Toán & Liên Hệ",
+    "description": "Option và con số của form Dự toán, danh sách Nhu cầu của form Liên hệ"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "packaging": {
+      "type": "json"
+    },
+    "co_label": {
+      "type": "string",
+      "maxLength": 150
+    },
+    "co_price": {
+      "type": "integer",
+      "min": 0
+    },
+    "bulk_threshold_kg": {
+      "type": "integer",
+      "min": 1
+    },
+    "bulk_discount_percent": {
+      "type": "decimal",
+      "min": 0,
+      "max": 100
+    },
+    "no_analysis_label": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "contact_services": {
+      "type": "json"
+    }
+  }
+}
