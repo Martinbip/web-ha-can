@@ -67,7 +67,10 @@ test('homepage CMS-managed content is seeded and publicly readable', () => {
 test('estimator reads ore prices from the CMS price field', () => {
   const appJs = read('app.js');
 
-  assert.match(appJs, /getOrePrice/, 'estimator has an explicit ore price normalizer');
+  // Từ đợt 4, quặng của Dự toán là sản phẩm; giá đọc từ trường price của CMS
+  // (hành vi kiểm kỹ trong tests/estimator-form.test.js).
+  assert.match(appJs, /function pickEstimatorOres/, 'estimator builds ores from products');
+  assert.match(appJs, /Number\(product\.price\)/, 'estimator reads the CMS price field');
   assert.doesNotMatch(appJs, /o\.base_price\s*\|\|\s*0/, 'estimator must not ignore the CMS price field');
 });
 

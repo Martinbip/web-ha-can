@@ -226,3 +226,157 @@ test('HTML mặc định của Dự toán mang đủ giá, đúng mẫu thẻ c�
     assert.ok(groups.has(option.dataset.group), `${option.value} trỏ tới nhóm không có trong ô Nhóm`);
   }
 });
+
+// ── app.js trên DOM thật ──
+
+// Chặn mạng: nguồn nào truyền null thì coi như CMS lỗi.
+function runApp(html, { categories = null, products = null, analyses = null, formConfig = null, settings = null } = {}) {
+  const dom = new JSDOM(html, {
+    runScripts: 'dangerously',
+    url: 'https://dhakimloaimau.vn/estimator',
+    virtualConsole: new VirtualConsole(),
+  });
+  const { window } = dom;
+  const ok = (data) => Promise.resolve({ ok: true, status: 200, json: async () => ({ data }) });
+  window.fetch = (input) => {
+    const target = String(input);
+    if (settings && target.includes('/api/site-setting')) return ok(settings);
+    if (categories && target.includes('/api/product-categories')) return ok(categories);
+    if (products && target.includes('/api/products')) return ok(products);
+    if (analyses && target.includes('/api/pricing-analyses')) return ok(analyses);
+    if (formConfig && target.includes('/api/form-config')) return ok(formConfig);
+    return Promise.reject(new Error('network disabled in tests'));
+  };
+  const script = window.document.createElement('script');
+  script.textContent = APP_JS;
+  window.document.body.appendChild(script);
+  return window;
+}
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 30));
+
+async function estimate(window, { group, ore, weight, method, pack, permit } = {}) {
+  const doc = window.document;
+  if (group !== undefined) {
+    doc.getElementById('est-group').value = group;
+    doc.getElementById('est-group').dispatchEvent(new window.Event('change'));
+  }
+  if (ore !== undefined) doc.getElementById('est-ore').value = ore;
+  if (weight !== undefined) doc.getElementById('est-weight').value = String(weight);
+  if (method !== undefined) doc.getElementById('est-method').value = method;
+  if (pack !== undefined) doc.getElementById('est-pack').value = pack;
+  if (permit !== undefined) doc.getElementById('est-permit').checked = permit;
+  doc.getElementById('calculator-form').dispatchEvent(new window.Event('submit', { cancelable: true }));
+  const text = (id) => doc.getElementById(id).textContent;
+  return {
+    total: text('result-total'),
+    avg: text('result-avg-price'),
+    analysis: text('result-analysis-cost'),
+    pack: text('result-pack-cost'),
+    discount: doc.getElementById('result-discount').closest('.detail-item').classList.contains('hidden') ? null : text('result-discount'),
+  };
+}
+
+test('CMS lỗi: Dự toán tính bằng giá mặc định trong HTML, đúng như trước', async () => {
+  const window = runApp(readPage('estimator.html'));
+  await window.initEstimator();
+  // 10 kg Quặng Đồng 85.000đ + hộp 150.000đ + CO 500.000đ.
+  const result = await estimate(window, { weight: 10 });
+  assert.equal(result.total, '1.500.000đ');
+  assert.equal(result.avg, '85.000đ/kg');
+  assert.equal(result.pack, '650.000đ');
+  assert.equal(result.discount, null);
+});
+
+test('từ ngưỡng 500 kg thì chiết khấu 5% tiền quặng', async () => {
+  const window = runApp(readPage('estimator.html'));
+  await window.initEstimator();
+  const result = await estimate(window, { weight: 600, permit: false, method: '1' });
+  // 51.000.000 + 1.500.000 + 150.000 − 2.550.000
+  assert.equal(result.discount, '-2.550.000đ');
+  assert.equal(result.total, '50.100.000đ');
+});
+
+test('đổi nhóm thì chỉ hiện quặng của nhóm đó và tính theo quặng đầu của nhóm', async () => {
+  const window = runApp(readPage('estimator.html'));
+  await window.initEstimator();
+  const result = await estimate(window, { group: 'black-metal', weight: 1, permit: false });
+  const visible = [...window.document.querySelectorAll('#est-ore option')].filter((o) => !o.hidden).map((o) => o.value);
+  assert.deepEqual(visible, ['iron-ore', 'manganese-ore']);
+  assert.equal(result.avg, '25.000đ/kg');
+  assert.equal(result.total, '175.000đ');
+});
+
+test('cấu hình trong admin đổi cách tính: đóng gói, CO, chiết khấu', async () => {
+  const cms = cmsData();
+  const window = runApp(readPage('estimator.html'), cms);
+  await window.initEstimator();
+  await settle();
+  const result = await estimate(window, { weight: 100, pack: 'thung' });
+  // Nhôm 40.000đ × 100 = 4.000.000; thùng 900.000 + CO 700.000; giảm 10% tiền quặng.
+  assert.equal(result.avg, '40.000đ/kg');
+  assert.equal(result.pack, '1.600.000đ');
+  assert.equal(result.discount, '-400.000đ');
+  assert.equal(result.total, '5.200.000đ');
+
+  const second = await estimate(window, { group: 'quang-<&>', weight: 1, permit: false, method: '9' });
+  assert.equal(second.avg, '40.000đ/kg', 'quặng đầu của nhóm thứ hai là Nhôm');
+  assert.equal(second.analysis, '3.500.000đ');
+});
+
+const FORM_SELECTORS = ['#calculator-form', '#contact-service'];
+
+function formSnapshot(window) {
+  return FORM_SELECTORS.map((selector) => window.document.querySelector(selector)?.outerHTML ?? '');
+}
+
+for (const file of ['estimator.html', 'contact.html']) {
+  test(`${file}: prerender xong thì app.js không phải sửa gì ở hai form`, async () => {
+    const cms = cmsData();
+    const window = runApp(applyFormsToHtml(readPage(file), cms), cms);
+    const before = formSnapshot(window);
+    await window.initEstimator();
+    await window.initContactServices();
+    await settle();
+    assert.deepEqual(formSnapshot(window), before);
+  });
+
+  test(`${file}: CMS lỗi thì app.js giữ nguyên HTML của hai form`, async () => {
+    const window = runApp(readPage(file));
+    const before = formSnapshot(window);
+    await window.initEstimator();
+    await window.initContactServices();
+    await settle();
+    assert.deepEqual(formSnapshot(window), before);
+  });
+
+  test(`${file}: app.js dựng ra cùng DOM với prerender khi CMS trả lời`, async () => {
+    const cms = cmsData();
+    const window = runApp(readPage(file), cms);
+    await window.initEstimator();
+    await window.initContactServices();
+    await settle();
+    const expected = runApp(applyFormsToHtml(readPage(file), cms));
+    assert.deepEqual(formSnapshot(window), formSnapshot(expected));
+  });
+}
+
+test('sản phẩm có nhưng danh mục lỗi thì app.js giữ nhóm và quặng mặc định', async () => {
+  const window = runApp(readPage('estimator.html'), { products: PRODUCTS, settings: SETTINGS });
+  const before = window.document.getElementById('est-ore').outerHTML;
+  await window.initEstimator();
+  await settle();
+  assert.equal(window.document.getElementById('est-ore').outerHTML, before);
+});
+
+test('app.js và prerender dùng chung quy tắc lọc quặng', () => {
+  const window = runApp('<!doctype html><body></body>');
+  const categories = pickVisibleCategories(CATEGORIES);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(window.pickEstimatorOres(PRODUCTS, categories, SETTINGS))),
+    pickEstimatorOres(PRODUCTS, categories, SETTINGS),
+  );
+  for (const unit of ['đ/kg', ' VNĐ / KG ', 'đ/tấn', '', null]) {
+    assert.equal(window.isPerKgUnit(unit), isPerKgUnit(unit), `đơn vị ${unit}`);
+  }
+});
