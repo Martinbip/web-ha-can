@@ -179,3 +179,25 @@ test('admin hiện tên Nhu cầu đã chốt, và nhắc đơn vị kg ở ô g
   assert.match(source, /service_label: \{ label: 'Nhu cầu', type: 'text', readOnly: true \}/);
   assert.match(source, /price_unit: \{[^\n]*Dự toán/);
 });
+
+// Dự toán ghi sẵn giá sản phẩm và biểu phí phân tích vào HTML, nên sửa hai mục
+// này cũng phải ghi lại HTML ngay — không thì khách thấy giá cũ tới lần deploy sau.
+for (const api of ['product', 'pricing-analysis']) {
+  test(`lưu hoặc xoá ${api} thì ghi lại HTML tĩnh ngay`, () => {
+    const prerender = require('../dha-cms/src/api/site-setting/prerender');
+    const original = prerender.schedulePrerender;
+    let calls = 0;
+    prerender.schedulePrerender = () => {
+      calls += 1;
+    };
+    try {
+      const lifecycles = require(`../dha-cms/src/api/${api}/content-types/${api}/lifecycles`);
+      lifecycles.afterCreate();
+      lifecycles.afterUpdate();
+      lifecycles.afterDelete();
+      assert.equal(calls, 3);
+    } finally {
+      prerender.schedulePrerender = original;
+    }
+  });
+}
