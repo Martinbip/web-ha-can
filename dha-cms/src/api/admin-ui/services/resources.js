@@ -262,6 +262,12 @@ async function get(ctx) {
   if (!config) return;
   const data = await getService(config).findOne({ documentId: ctx.params.id, fields: getDocumentFields(config) });
   if (!data) return sendError(ctx, 404, 'NOT_FOUND', 'Không tìm thấy dữ liệu.');
+  // Bản nháp luôn có publishedAt = null; form cần biết bài có đang lên web không
+  // (vd báo trước rằng đổi đường dẫn sẽ tạo chuyển hướng từ link cũ).
+  if (config.draftAndPublish) {
+    const published = await getService(config).findOne({ documentId: ctx.params.id, status: 'published', fields: ['publishedAt'] });
+    data.publishedAt = published?.publishedAt ?? null;
+  }
   ctx.body = { data: normalizeEntry(data, config) };
 }
 
@@ -319,6 +325,28 @@ async function isSlugTaken(service, field, value, documentId) {
   return matches.some((entry) => entry.documentId !== documentId);
 }
 
+// Bài đã đăng mà đổi đường dẫn thì link cũ (đã chia sẻ, đã được Google lập chỉ
+// mục) phải còn dẫn được tới bài. Cất đường dẫn đang đăng vào danh sách cũ để
+// prerender ghi trang chuyển hướng; bài chưa đăng lần nào thì chẳng có link cũ
+// nào để giữ. Đổi ngược về một đường dẫn cũ thì gỡ nó khỏi danh sách.
+async function rememberOldSlugs(config, data, documentId) {
+  const listField = config.oldSlugsField;
+  if (!listField || !documentId || !config.draftAndPublish) return data;
+  const slugField = Object.keys(config.fields || {}).find((name) => config.fields[name].type === 'slug');
+  if (!slugField) return data;
+  const nextSlug = String(data[slugField] || '').trim();
+  if (!nextSlug) return data;
+
+  const published = await getService(config).findOne({ documentId, status: 'published', fields: [slugField, listField] });
+  if (!published) return data;
+
+  const previous = Array.isArray(published[listField]) ? published[listField].filter((item) => typeof item === 'string') : [];
+  const currentSlug = String(published[slugField] || '').trim();
+  const oldSlugs = unique([...previous, currentSlug]).filter((slug) => slug !== nextSlug);
+  if (oldSlugs.length === previous.length && oldSlugs.every((slug, index) => slug === previous[index])) return data;
+  return { ...data, [listField]: oldSlugs };
+}
+
 async function create(ctx) {
   const config = await loadConfig(ctx);
   if (!config) return;
@@ -353,9 +381,10 @@ async function update(ctx) {
     }
   } else {
     wasPublished = await isPublished(config, ctx.params.id);
+    const payload = await ensureUniqueSlugs(config, cleanData(config, ctx.request.body), ctx.params.id);
     data = await service.update({
       documentId: ctx.params.id,
-      data: await ensureUniqueSlugs(config, cleanData(config, ctx.request.body), ctx.params.id),
+      data: await rememberOldSlugs(config, payload, ctx.params.id),
     });
   }
 
@@ -404,4 +433,5 @@ module.exports = {
   getReadableFields,
   normalizeEntry,
   mergePublishedAt,
+  rememberOldSlugs,
 };

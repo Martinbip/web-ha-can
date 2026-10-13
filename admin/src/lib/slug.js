@@ -17,3 +17,16 @@ export function slugify(input) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 120);
 }
+
+// Bản dùng trong lúc gõ: giữ dấu gạch ngang ở cuối để gõ được "gia-dong-" rồi
+// gõ tiếp, thay vì gạch vừa gõ đã bị xoá. Rời ô thì chuẩn hoá hẳn bằng slugify.
+export function slugifyTyping(input) {
+  return String(input || '')
+    .normalize('NFD')
+    .replace(VIETNAMESE_MARKS, '')
+    .replace(/[đĐ]/g, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+/, '')
+    .slice(0, 120);
+}

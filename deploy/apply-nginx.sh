@@ -35,7 +35,7 @@ assert anchor in src, "Không tìm thấy mốc chèn trong file nginx"
 
 block = """    # ── Trang chi tiết tin tức: /tin-tuc/<duong-dan> ────
     location /tin-tuc/ {
-        try_files $uri /news-detail.html;
+        try_files $uri $uri/index.html /news-detail.html;
     }
 
     # Địa chỉ cũ /news-detail?slug=... chuyển vĩnh viễn sang dạng mới.
@@ -53,8 +53,18 @@ print("▸ Đã chèn route /tin-tuc/ và chuyển hướng từ địa chỉ c�
 PY
 fi
 
+# Bản cấu hình chèn từ trước chưa biết tới trang tĩnh của từng bài viết.
+if grep -q 'try_files $uri /news-detail.html;' "$CONF"; then
+    sed -i 's#try_files $uri /news-detail.html;#try_files $uri $uri/index.html /news-detail.html;#' "$CONF"
+    echo "▸ Đã cho /tin-tuc/ dùng trang tĩnh của từng bài viết"
+fi
+
 echo "▸ Kiểm tra cú pháp nginx..."
-nginx -t
+if ! nginx -t; then
+    cp "$BACKUP" "$CONF"
+    echo "❌ Cấu hình mới lỗi — đã trả lại bản backup, nginx không bị nạp lại."
+    exit 1
+fi
 
 echo "▸ Nạp lại nginx..."
 systemctl reload nginx

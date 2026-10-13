@@ -96,5 +96,12 @@ function readUiFields(source, type) {
   // Bắt cả cấu hình viết nhiều dòng lẫn viết gọn một dòng: tên trường là khóa
   // đứng ngay trước một object con.
   const block = source.slice(fieldsStart + 'fields: {'.length, end);
-  return [...block.matchAll(/(?:^|[{,])\s*(\w+):\s*\{/gm)].map((match) => match[1]);
+  // Ô chỉ để hiển thị (vd khối Kiểm tra SEO, type 'seo-check') không lưu gì nên
+  // không cần trường trong schema.
+  const virtualFields = new Set(
+    [...block.matchAll(/(\w+):\s*\{[^{}]*type:\s*'seo-check'/g)].map((match) => match[1]),
+  );
+  return [...block.matchAll(/(?:^|[{,])\s*(\w+):\s*\{/gm)]
+    .map((match) => match[1])
+    .filter((field) => !virtualFields.has(field));
 }

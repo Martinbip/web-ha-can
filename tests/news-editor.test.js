@@ -29,18 +29,23 @@ test('đường dẫn bài viết được sinh tự động từ tiêu đề', 
   }
 });
 
-test('form tin tức không có ô nhập đường dẫn — địa chỉ bài viết luôn bám theo tiêu đề', () => {
+test('đường dẫn bài viết tự bám tiêu đề nhưng sửa được, và không gõ ra được ký tự lạ', async () => {
   const config = read('admin/src/config/resources.js');
   const fieldRenderer = read('admin/src/components/FieldRenderer.jsx');
   const slugField = read('admin/src/components/SlugField.jsx');
   const editPage = read('admin/src/pages/ResourceEditPage.jsx');
+  const { slugifyTyping } = await import(`file://${path.join(root, 'admin/src/lib/slug.js')}`);
 
   assert.match(config, /slug:\s*{[^}]*type:\s*'slug'/s, 'slug dùng input chuyên biệt, không phải text thường');
   assert.match(config, /slug:\s*{[^}]*sourceField:\s*'title'/s, 'slug lấy nguồn từ tiêu đề');
+  assert.match(config, /slug:\s*{[^}]*editable:\s*true/s, 'tin tức cho sửa đường dẫn (link SEO)');
   assert.match(fieldRenderer, /case 'slug':/, 'FieldRenderer xử lý kiểu slug');
   assert.match(slugField, /slugify\(sourceValue\)/, 'slug được sinh từ tiêu đề');
-  assert.doesNotMatch(slugField, /<input/, 'không còn ô nhập để gõ sai vào');
-  assert.doesNotMatch(slugField, /<button/, 'không còn nút nào phải bấm');
+  assert.match(slugField, /Sửa đường dẫn/, 'ô nhập ẩn sau nút, mặc định không phải gõ gì');
+  assert.match(slugField, /slugifyTyping\(event\.target\.value\)/, 'mọi thứ gõ vào được chuẩn hoá ngay');
+  assert.match(slugField, /existing/, 'bài đã có thì thôi bám tiêu đề, sửa tiêu đề không làm chết link');
+  assert.equal(slugifyTyping('Giá Đồng hôm nay-'), 'gia-dong-hom-nay-', 'gõ dở gạch ngang cuối vẫn giữ để gõ tiếp');
+  assert.equal(slugifyTyping('https://dhakimloaimau.vn'), 'https-dhakimloaimau-vn', 'dán nguyên link cũng thành dạng hợp lệ');
   assert.match(editPage, /withGeneratedSlugs\(config, values\)/, 'slug rỗng được sinh lại trước khi lưu');
 });
 
@@ -101,7 +106,11 @@ test('địa chỉ bài viết dùng đường dẫn sạch và link cũ đượ
   const nginx = read('deploy/nginx.conf');
   const appJs = read('app.js');
 
-  assert.match(nginx, /location \/tin-tuc\/ \{\s*\n\s*try_files \$uri \/news-detail\.html;/, '/tin-tuc/ được phục vụ bởi trang chi tiết');
+  assert.match(
+    nginx,
+    /location \/tin-tuc\/ \{\s*\n\s*try_files \$uri \$uri\/index\.html \/news-detail\.html;/,
+    '/tin-tuc/ dùng trang tĩnh của từng bài, chưa có thì trang chi tiết chung',
+  );
   assert.match(nginx, /return 301 \/tin-tuc\/\$arg_slug;/, 'link cũ ?slug= chuyển vĩnh viễn sang địa chỉ mới');
   assert.match(appJs, /pathname\.match\(\/\^\\\/tin-tuc/, 'slug được đọc từ đường dẫn');
   assert.match(appJs, /URLSearchParams\(window\.location\.search\)\.get\('slug'\)/, 'vẫn đọc được link cũ dạng ?slug=');

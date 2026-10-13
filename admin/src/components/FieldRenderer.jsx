@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import RichTextField from './RichTextField.jsx';
 import SlugField from './SlugField.jsx';
 import ImagePicker from './ImagePicker.jsx';
+import SeoPanel, { CountedInput } from './SeoPanel.jsx';
 import { listResources } from '../api/resources.js';
 
 // Maps one field config entry (from RESOURCE_CONFIG) + its current value to the
@@ -27,7 +28,7 @@ export default function FieldRenderer({ name, field, value, onChange, setField, 
     );
   }
 
-  return (
+  const row = (
     <div className="field-row" key={name} data-tour={`field-${field.type}`}>
       {field.type !== 'hidden' ? (
         <label htmlFor={id}>
@@ -39,6 +40,15 @@ export default function FieldRenderer({ name, field, value, onChange, setField, 
       {renderInput({ id, field, value, onChange, setField, values })}
       {field.hint ? <p className="field-hint">{field.hint}</p> : null}
     </div>
+  );
+
+  // Tiêu đề nhóm đứng trước ô đầu tiên của nhóm (vd "SEO & chia sẻ").
+  if (!field.section) return row;
+  return (
+    <>
+      <h3 className="field-section">{field.section}</h3>
+      {row}
+    </>
   );
 }
 
@@ -144,6 +154,24 @@ function renderInput({ id, field, value, onChange, setField, values }) {
           sourceValue={values?.[field.sourceField] || ''}
           previewBase={field.previewBase}
           locked={Boolean(field.lockAfterCreate && values?.documentId)}
+          editable={Boolean(field.editable)}
+          existing={Boolean(values?.documentId)}
+          published={Boolean(values?.publishedAt)}
+        />
+      );
+
+    case 'seo-check':
+      return <SeoPanel id={id} values={values || {}} previewBase={field.previewBase} />;
+
+    case 'text-counter':
+      return (
+        <CountedInput
+          id={id}
+          value={value}
+          onChange={onChange}
+          multiline={Boolean(field.multiline)}
+          limit={field.limit}
+          placeholder={field.placeholderFrom ? field.placeholderFrom(values || {}) : field.placeholder}
         />
       );
 

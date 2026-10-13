@@ -7,10 +7,11 @@ export const RESOURCE_CONFIG = {
     fields: {
       title: { label: 'Tiêu đề', type: 'text', required: true },
       slug: {
-        label: 'Đường dẫn bài viết',
+        label: 'Đường dẫn bài viết (link SEO)',
         type: 'slug',
         sourceField: 'title',
         previewBase: 'https://dhakimloaimau.vn/tin-tuc/',
+        editable: true,
         required: true,
       },
       summary: { label: 'Tóm tắt', type: 'textarea', required: true },
@@ -18,6 +19,39 @@ export const RESOURCE_CONFIG = {
       category: { label: 'Danh mục', type: 'select', options: ['gia-ca', 'quoc-te', 'noi-dia', 'phan-tich', 'cong-nghe'] },
       date: { label: 'Ngày đăng', type: 'date', required: true },
       image: { label: 'Ảnh đại diện', type: 'cloudinary-image', folder: 'dha/news' },
+      focus_keyword: {
+        section: 'SEO & chia sẻ mạng xã hội',
+        label: 'Từ khoá chính',
+        type: 'text',
+        placeholder: 'Vd: giá đồng hôm nay',
+        hint: 'Cụm từ khách hay gõ trên Google mà bài này muốn lên top. Dùng để chấm điểm SEO bên dưới, không hiện trên website.',
+      },
+      seo_title: {
+        label: 'Tiêu đề SEO',
+        type: 'text-counter',
+        limit: 60,
+        placeholderFrom: (values) => (values.title ? `${values.title} - DHA Minerals` : 'Bỏ trống thì dùng tiêu đề bài + " - DHA Minerals"'),
+        hint: 'Dòng chữ xanh trên kết quả Google và tiêu đề khi chia sẻ Facebook/Zalo. Bỏ trống thì dùng tiêu đề bài.',
+      },
+      seo_description: {
+        label: 'Mô tả SEO',
+        type: 'text-counter',
+        multiline: true,
+        limit: 160,
+        placeholderFrom: (values) => values.summary || 'Bỏ trống thì dùng phần Tóm tắt.',
+        hint: 'Đoạn chữ dưới tiêu đề trên Google và khi chia sẻ. Bỏ trống thì dùng phần Tóm tắt.',
+      },
+      share_image: {
+        label: 'Ảnh khi chia sẻ Facebook/Zalo',
+        type: 'cloudinary-image',
+        folder: 'dha/news',
+        hint: 'Bỏ trống thì dùng Ảnh đại diện. Nên dùng ảnh ngang 1200×630.',
+      },
+      seo_check: {
+        label: 'Kiểm tra SEO',
+        type: 'seo-check',
+        previewBase: 'https://dhakimloaimau.vn/tin-tuc/',
+      },
     },
   },
   'products': {
