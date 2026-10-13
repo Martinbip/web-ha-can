@@ -484,8 +484,18 @@ test('cài đặt bỏ trống hoặc hỏng thì giữ nguyên chân trang và 
   const out = applySettingsToHtml(CHROME_HTML, {
     footer_links: [{ label: 'Ẩn', url: '/x', visible: false }],
     header_cta_url: 'javascript:alert(1)',
-  });
+  }, { year: 2026 });
   assert.equal(out, CHROME_HTML);
+});
+
+// Dòng bản quyền mặc định trong HTML viết sẵn năm. Ô bản quyền bỏ trống thì vẫn
+// phải đổi năm, không thì sang năm mới website hiện năm cũ.
+test('ô bản quyền bỏ trống thì vẫn đổi năm trong dòng mặc định, giữ nguyên phần chữ', () => {
+  const doc = new JSDOM(applySettingsToHtml(CHROME_HTML, { hotline: '0912345678' }, { year: 2031 })).window.document;
+  assert.equal(doc.querySelector('[data-copyright]').textContent, '© 2031 Cũ');
+
+  const noYear = '<p data-copyright>Bản quyền thuộc DHA</p>';
+  assert.equal(applySettingsToHtml(noYear, { hotline: '0912345678' }, { year: 2031 }), noYear, 'dòng không mở đầu bằng © năm thì để nguyên');
 });
 
 test('renderFooterLinks trả chuỗi rỗng khi dữ liệu không phải mảng', () => {
@@ -583,7 +593,10 @@ test('app.js áp liên kết chân trang, bản quyền và link nút đầu tra
 
 test('cài đặt bỏ trống thì app.js giữ nguyên chân trang và nút đầu trang', async () => {
   const partial = { hotline: '0912345678', header_cta_url: 'javascript:alert(1)', footer_links: [] };
-  const window = runAppJs(readPage('news.html'), partial, null, { url: 'https://dhakimloaimau.vn/news' });
+  // Năm trong dòng bản quyền luôn được đổi về năm hiện tại (test riêng bên dưới);
+  // ở đây đặt sẵn đúng năm để chỉ kiểm phần "giữ nguyên".
+  const html = readPage('news.html').replace(/&copy; \d{4}/, `&copy; ${new Date().getFullYear()}`);
+  const window = runAppJs(html, partial, null, { url: 'https://dhakimloaimau.vn/news' });
   const pick = () => ['[data-footer-links]', '[data-copyright]', '.btn-contact'].map((s) => window.document.querySelector(s).outerHTML);
 
   const before = pick();
@@ -914,4 +927,25 @@ test('transformHtml với thẻ tự đóng: handler trả inner không đổi g
     '<meta name="description" content="Mới">',
     'handler trả rawAttrs phải đổi đúng thuộc tính',
   );
+});
+
+test('ô bản quyền bỏ trống thì app.js đổi năm trong dòng mặc định về năm hiện tại', async () => {
+  const html = readPage('news.html').replace(/&copy; \d{4}/, '&copy; 1999');
+  const window = runAppJs(html, { hotline: '0912345678' }, null, { url: 'https://dhakimloaimau.vn/news' });
+  await window.initSiteSettings();
+  assert.equal(
+    window.document.querySelector('[data-copyright]').textContent,
+    `© ${new Date().getFullYear()} Kim Loại Màu DHA. Bản quyền được bảo lưu.`,
+  );
+});
+
+test('app.js và prerender đổi năm bản quyền ra cùng một DOM', async () => {
+  const year = new Date().getFullYear();
+  const old = readPage('news.html').replace(/&copy; \d{4}/, '&copy; 1999');
+  const settings = { hotline: '0912345678' };
+  const prerendered = applySettingsToHtml(old, settings, { year });
+  const window = runAppJs(prerendered, settings, null, { url: 'https://dhakimloaimau.vn/news' });
+  const before = window.document.querySelector('[data-copyright]').outerHTML;
+  await window.initSiteSettings();
+  assert.equal(window.document.querySelector('[data-copyright]').outerHTML, before, 'app.js không phải sửa gì → không chớp');
 });

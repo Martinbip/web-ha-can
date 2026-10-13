@@ -585,11 +585,16 @@ function applySiteChrome(settings) {
         document.querySelectorAll('[data-footer-links]').forEach(list => { list.innerHTML = footerLinks; });
     }
 
+    // Ô bỏ trống thì giữ chữ mặc định trong HTML nhưng vẫn đổi năm ở đầu dòng.
+    // Cùng quy tắc với prerender (scripts/prerender-site-settings.js).
     const copyright = String(settings.copyright_text ?? '').trim();
-    if (copyright) {
-        const line = `© ${new Date().getFullYear()} ${copyright}`;
-        document.querySelectorAll('[data-copyright]').forEach(el => { el.textContent = line; });
-    }
+    const year = new Date().getFullYear();
+    document.querySelectorAll('[data-copyright]').forEach(el => {
+        const line = copyright
+            ? `© ${year} ${copyright}`
+            : el.textContent.replace(/^(\s*©\s*)\d{4}/, `$1${year}`);
+        if (line !== el.textContent) el.textContent = line;
+    });
 
     const ctaUrl = safeNavUrl(settings.header_cta_url);
     if (ctaUrl) {
