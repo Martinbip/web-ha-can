@@ -19,6 +19,7 @@ const path = require('node:path');
 const { buildArticlePages, writeArticlePages } = require('./prerender-articles');
 const { buildSitemapXml } = require('./generate-sitemap');
 const { buildProductPages, writeProductPages } = require('./prerender-products');
+const { applyOrganizationToHtml } = require('./prerender-organization');
 
 const CMS = process.env.CMS_URL || 'http://127.0.0.1:1337';
 
@@ -804,6 +805,7 @@ async function prerenderDirectory(
     const html = fs.readFileSync(path.join(sourceDir, file), 'utf8');
     let out = html;
     if (settings) out = applySettingsToHtml(out, settings);
+    if (settings && file === 'index.html') out = applyOrganizationToHtml(out, settings);
     if (categories) out = applyCategoriesToHtml(out, categories);
     if (navigation) out = applyNavigationToHtml(out, navigation, pagePathForFile(file));
     if (pageContent) out = applyPageContentToHtml(out, pageContent, file);
