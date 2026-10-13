@@ -1314,16 +1314,35 @@ const ARTICLE_CATEGORY_LABELS = {
 // gắn vào trang bằng innerHTML, nên vẫn phải lọc trước khi hiển thị.
 const ARTICLE_ALLOWED_TAGS = new Set([
     'P', 'BR', 'HR', 'STRONG', 'B', 'EM', 'I', 'U', 'S', 'CODE', 'PRE',
-    'H2', 'H3', 'H4', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'A', 'IMG',
+    'H2', 'H3', 'H4', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'A', 'IMG', 'DIV',
     'FIGURE', 'FIGCAPTION', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD',
 ]);
 // Những thẻ này bị xoá cả phần bên trong: giữ lại chữ trong <script>/<style>
-// chỉ tạo ra một đống mã lộ thiên giữa bài viết.
-const ARTICLE_DROPPED_TAGS = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'NOSCRIPT']);
+// chỉ tạo ra một đống mã lộ thiên giữa bài viết. IFRAME xử lý riêng: chỉ video
+// YouTube được giữ.
+const ARTICLE_DROPPED_TAGS = new Set(['SCRIPT', 'STYLE', 'OBJECT', 'EMBED', 'NOSCRIPT']);
 const ARTICLE_ALLOWED_ATTRS = {
-    A: ['href', 'title'],
-    IMG: ['src', 'alt', 'title'],
+    A: ['href', 'title', 'rel', 'class'],
+    IMG: ['src', 'alt', 'title', 'class'],
+    DIV: ['class'],
+    TH: ['colspan', 'rowspan'],
+    TD: ['colspan', 'rowspan'],
+    P: ['style'],
+    H2: ['style'],
+    H3: ['style'],
+    H4: ['style'],
 };
+// Class mà trình soạn thảo gắn để chỉnh cỡ/căn ảnh, khung nổi bật, nút kêu gọi.
+// Ngoài danh sách này class bị bỏ — không để nội dung dán vào mượn class của
+// giao diện (vd "hidden", "btn-primary") làm vỡ trang.
+const ARTICLE_ALLOWED_CLASSES = {
+    A: ['article-btn'],
+    IMG: ['img-sm', 'img-md', 'img-full', 'align-left', 'align-center', 'align-right'],
+    DIV: ['article-callout'],
+};
+const ARTICLE_TEXT_ALIGN = /^\s*text-align:\s*(left|center|right|justify)\s*;?\s*$/i;
+const ARTICLE_YOUTUBE_EMBED = /^https:\/\/(www\.)?youtube(-nocookie)?\.com\/embed\/[\w-]{6,20}(\?[\w=&;.-]*)?$/;
+const ARTICLE_REL_KEEP = ['nofollow', 'sponsored', 'ugc'];
 
 function isSafeArticleUrl(value, { allowRelative = true } = {}) {
     const raw = String(value || '').trim();
@@ -1348,6 +1367,26 @@ function articleContentToHtml(content) {
         .join('');
 }
 
+// Link trỏ về chính website (đường dẫn tương đối hoặc cùng tên miền) là liên
+// kết nội bộ: mở cùng tab và không gắn nofollow, để Google lần theo được.
+function isInternalArticleLink(href) {
+    const raw = String(href || '').trim();
+    if (raw.startsWith('/') || raw.startsWith('#')) return true;
+    try {
+        const url = new URL(raw);
+        return /^https?:$/.test(url.protocol) && url.hostname.replace(/^www\./, '') === window.location.hostname.replace(/^www\./, '');
+    } catch (e) {
+        return false;
+    }
+}
+
+function keepAllowedClasses(el) {
+    const allowed = ARTICLE_ALLOWED_CLASSES[el.tagName] || [];
+    const kept = [...el.classList].filter(name => allowed.includes(name));
+    if (kept.length) el.setAttribute('class', kept.join(' '));
+    else el.removeAttribute('class');
+}
+
 function sanitizeArticleHtml(html) {
     const doc = new DOMParser().parseFromString(`<div id="root">${html || ''}</div>`, 'text/html');
     const root = doc.getElementById('root');
@@ -1355,6 +1394,25 @@ function sanitizeArticleHtml(html) {
     root.querySelectorAll('*').forEach(el => {
         if (ARTICLE_DROPPED_TAGS.has(el.tagName)) {
             el.remove();
+            return;
+        }
+
+        if (el.tagName === 'IFRAME') {
+            const src = String(el.getAttribute('src') || '').trim();
+            if (!ARTICLE_YOUTUBE_EMBED.test(src)) {
+                el.remove();
+                return;
+            }
+            const wrapper = doc.createElement('div');
+            wrapper.className = 'article-video';
+            const frame = doc.createElement('iframe');
+            frame.setAttribute('src', src);
+            frame.setAttribute('title', 'Video YouTube');
+            frame.setAttribute('loading', 'lazy');
+            frame.setAttribute('allow', 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+            frame.setAttribute('allowfullscreen', '');
+            wrapper.appendChild(frame);
+            el.replaceWith(wrapper);
             return;
         }
 
@@ -1371,13 +1429,32 @@ function sanitizeArticleHtml(html) {
                 el.removeAttribute(attr.name);
             }
         });
+        if (el.hasAttribute('class')) keepAllowedClasses(el);
+        if (el.hasAttribute('style') && !ARTICLE_TEXT_ALIGN.test(el.getAttribute('style'))) {
+            el.removeAttribute('style');
+        }
+
+        // DIV chỉ dùng cho khung nổi bật; div khác (thường do dán từ web khác)
+        // chỉ là lớp bọc — bỏ lớp, giữ nội dung.
+        if (el.tagName === 'DIV' && !el.classList.contains('article-callout')) {
+            el.replaceWith(...el.childNodes);
+            return;
+        }
 
         if (el.tagName === 'A') {
-            if (!isSafeArticleUrl(el.getAttribute('href'))) {
+            const href = el.getAttribute('href');
+            if (!isSafeArticleUrl(href)) {
                 el.removeAttribute('href');
-            } else {
+                el.removeAttribute('rel');
+            } else if (isInternalArticleLink(href)) {
+                el.removeAttribute('rel');
+            } else if (/^https?:/i.test(href)) {
+                const rel = String(el.getAttribute('rel') || '').toLowerCase().split(/\s+/)
+                    .filter(token => ARTICLE_REL_KEEP.includes(token));
                 el.setAttribute('target', '_blank');
-                el.setAttribute('rel', 'noopener nofollow');
+                el.setAttribute('rel', ['noopener', 'noreferrer', ...rel].join(' '));
+            } else {
+                el.removeAttribute('rel');
             }
         }
 
@@ -1388,6 +1465,23 @@ function sanitizeArticleHtml(html) {
             }
             el.setAttribute('loading', 'lazy');
             el.classList.add('article-image');
+
+            // Chú thích ảnh lưu ở title — hiện thành dòng chữ dưới ảnh. Cỡ và
+            // căn chuyển sang khung figure để chú thích đi theo ảnh.
+            const caption = String(el.getAttribute('title') || '').trim();
+            el.removeAttribute('title');
+            if (caption && el.parentElement?.tagName !== 'FIGURE') {
+                const figure = doc.createElement('figure');
+                const layout = [...el.classList].filter(name => name !== 'article-image');
+                figure.className = ['article-figure', ...layout].join(' ');
+                // Cỡ/căn chuyển hẳn lên khung — để lại trên ảnh thì ảnh bị thu
+                // nhỏ hai lần (70% của khung 70%).
+                el.className = 'article-image';
+                const figcaption = doc.createElement('figcaption');
+                figcaption.textContent = caption;
+                el.replaceWith(figure);
+                figure.append(el, figcaption);
+            }
         }
     });
 
@@ -1417,6 +1511,30 @@ function getArticleUrl(slug) {
     return `/tin-tuc/${encodeURIComponent(slug)}`;
 }
 
+// Phải khớp với articleMeta() trong scripts/prerender-articles.js: trang tĩnh
+// của bài và trang sau khi JS chạy phải nói cùng một tiêu đề, mô tả, ảnh.
+function articleMeta(article) {
+    const text = value => (typeof value === 'string' ? value.trim() : '');
+    // Không có ảnh đại diện thì lấy ảnh đầu tiên trong bài làm ảnh chia sẻ.
+    const firstImage = content => {
+        const match = String(content || '').match(/<img\b[^>]*\bsrc="(https?:\/\/[^"]+)"/i);
+        return match ? match[1].replace(/&amp;/g, '&') : '';
+    };
+    const absolute = value => {
+        const url = toSiteAssetUrl(text(value));
+        if (!url) return '';
+        if (/^https?:\/\//i.test(url)) return url;
+        if (url.startsWith('//')) return `https:${url}`;
+        return `${window.location.origin}${url}`;
+    };
+    return {
+        title: text(article.seo_title) || `${text(article.title)} - DHA Minerals`,
+        description: text(article.seo_description) || text(article.summary),
+        image: absolute(article.share_image) || absolute(article.image) || absolute(firstImage(article.content)),
+        url: `${window.location.origin}${getArticleUrl(article.slug)}`,
+    };
+}
+
 async function initNewsDetailPage() {
     const contentEl = document.getElementById('news-detail-content');
     if (!contentEl) return;
@@ -1430,25 +1548,34 @@ async function initNewsDetailPage() {
     }
 
     try {
-        const news = await fetchFromCMS('news-articles?pagination[limit]=200&sort=date:desc', '/data/news.json');
+        const news = await fetchFromCMS('news-articles?pagination[limit]=500&sort=date:desc', '/data/news.json');
         const article = (news || []).find(item => item.slug === slug);
 
         if (!article) {
+            // Đường dẫn cũ của một bài đã đổi đường dẫn: chuyển sang địa chỉ mới
+            // (trang tĩnh do prerender ghi cũng làm việc này; đây là lưới đỡ khi
+            // trang đó chưa kịp có).
+            const moved = (news || []).find(item => Array.isArray(item.old_slugs) && item.old_slugs.includes(slug));
+            if (moved?.slug) {
+                window.location.replace(getArticleUrl(moved.slug));
+                return;
+            }
             contentEl.innerHTML = notFound;
             return;
         }
 
-        document.title = `${article.title} - DHA Minerals`;
-        setMetaContent('page-desc', article.summary);
-        setMetaContent('og-title', article.title);
-        setMetaContent('og-desc', article.summary);
-        setMetaContent('og-image', article.image);
-        setMetaContent('og-url', `${window.location.origin}${getArticleUrl(article.slug)}`);
+        const meta = articleMeta(article);
+        document.title = meta.title;
+        setMetaContent('page-desc', meta.description);
+        setMetaContent('og-title', meta.title);
+        setMetaContent('og-desc', meta.description);
+        setMetaContent('og-image', meta.image);
+        setMetaContent('og-url', meta.url);
 
         // Hai địa chỉ cùng trỏ về một bài (dạng cũ và dạng mới), nên phải nói rõ
         // với công cụ tìm kiếm đâu là địa chỉ chính thức.
         const canonical = document.getElementById('canonical-url');
-        if (canonical) canonical.href = `${window.location.origin}${getArticleUrl(article.slug)}`;
+        if (canonical) canonical.href = meta.url;
 
         const breadcrumb = document.getElementById('detail-breadcrumb');
         if (breadcrumb) breadcrumb.textContent = article.title;

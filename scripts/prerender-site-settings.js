@@ -16,6 +16,7 @@
 // dù sao cũng phải tải về mới hiện được.
 const fs = require('node:fs');
 const path = require('node:path');
+const { buildArticlePages, writeArticlePages } = require('./prerender-articles');
 
 const CMS = process.env.CMS_URL || 'http://127.0.0.1:1337';
 
@@ -694,6 +695,12 @@ function fetchProducts() {
   return fetchList('products?sort=sort_order:asc&pagination[limit]=500', 'sản phẩm');
 }
 
+// Chỉ bài đã đăng (API công khai không trả bản nháp). 500 là trần an toàn —
+// vượt mức đó thì bài cũ nhất thiếu trang tĩnh và dùng lại news-detail.html.
+function fetchArticles() {
+  return fetchList('news-articles?sort=date:desc&pagination[limit]=500', 'tin tức');
+}
+
 function fetchAnalyses() {
   return fetchList('pricing-analyses?pagination[limit]=100', 'biểu phí phân tích');
 }
@@ -749,7 +756,7 @@ async function fetchSettings() {
 
 const SOURCE_LABELS = [
   'cài đặt website', 'danh mục', 'menu', 'nội dung trang',
-  'sản phẩm', 'biểu phí phân tích', 'cấu hình Dự toán & Liên hệ',
+  'sản phẩm', 'biểu phí phân tích', 'cấu hình Dự toán & Liên hệ', 'tin tức',
 ];
 
 // Các nguồn đọc độc lập: nguồn nào lỗi thì bỏ qua riêng phần đó, vì HTML ghi
@@ -766,6 +773,7 @@ async function prerenderDirectory(
     loadProducts = fetchProducts,
     loadAnalyses = fetchAnalyses,
     loadFormConfig = fetchFormConfig,
+    loadArticles = fetchArticles,
     log = console,
   } = {},
 ) {
@@ -776,9 +784,9 @@ async function prerenderDirectory(
 
   const results = await Promise.allSettled([
     loadSettings(), loadCategories(), loadNavigation(), loadPageContent(),
-    loadProducts(), loadAnalyses(), loadFormConfig(),
+    loadProducts(), loadAnalyses(), loadFormConfig(), loadArticles(),
   ]);
-  const [settings, categories, navigation, pageContent, products, analyses, formConfig] = results.map((result) => (result.status === 'fulfilled' ? result.value : null));
+  const [settings, categories, navigation, pageContent, products, analyses, formConfig, articles] = results.map((result) => (result.status === 'fulfilled' ? result.value : null));
   const failures = results.map((result, index) =>
     result.status === 'rejected' ? `${SOURCE_LABELS[index]}: ${result.reason?.message || result.reason}` : null,
   );
@@ -788,6 +796,7 @@ async function prerenderDirectory(
 
   const files = fs.readdirSync(sourceDir).filter((file) => file.endsWith('.html'));
   let changed = 0;
+  let articleTemplate = null;
   for (const file of files) {
     const html = fs.readFileSync(path.join(sourceDir, file), 'utf8');
     let out = html;
@@ -803,6 +812,8 @@ async function prerenderDirectory(
       settings,
     });
 
+    if (file === 'news-detail.html') articleTemplate = out;
+
     const destFile = path.join(target, file);
     const current = fs.existsSync(destFile) ? fs.readFileSync(destFile, 'utf8') : null;
     if (out !== current) {
@@ -810,9 +821,18 @@ async function prerenderDirectory(
       changed += 1;
     }
   }
+  // Đọc tin tức lỗi thì giữ nguyên thư mục tin-tuc/ của lượt trước: dọn theo một
+  // danh sách rỗng sẽ xoá sạch trang của mọi bài.
+  let articlePages = 0;
+  if (articles && articleTemplate) {
+    articlePages = writeArticlePages(target, buildArticlePages(articleTemplate, articles));
+  }
+
   return {
     changed,
     total: files.length,
+    articles: articles ? articles.length : null,
+    articlePages,
     settings: Boolean(settings),
     categories: Boolean(categories),
     navigation: Boolean(navigation),
@@ -831,6 +851,7 @@ async function main() {
     result.navigation && 'menu',
     result.pageContent && 'nội dung trang',
     result.forms && 'form Dự toán & Liên hệ',
+    result.articles != null && `${result.articles} bài tin tức (${result.articlePages} trang đổi)`,
   ]
     .filter(Boolean)
     .join(' + ');

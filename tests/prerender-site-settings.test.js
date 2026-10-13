@@ -8,6 +8,10 @@ const path = require('node:path');
 const test = require('node:test');
 const { JSDOM, VirtualConsole } = require('jsdom');
 
+// Nguồn nào test không giả lập thì prerender gọi CMS thật — trỏ sang một cổng
+// không có gì chạy, để kết quả không phụ thuộc máy đang chạy Strapi hay không.
+process.env.CMS_URL = 'http://127.0.0.1:9';
+
 const root = path.resolve(__dirname, '..');
 const APP_JS = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 const os = require('node:os');
@@ -545,6 +549,7 @@ test('mọi nguồn cùng lỗi thì báo đủ mọi lý do', async () => {
         loadProducts: reason('E'),
         loadAnalyses: reason('F'),
         loadFormConfig: reason('G'),
+        loadArticles: reason('H'),
         log: { warn() {} },
       }),
       (err) =>
@@ -554,7 +559,8 @@ test('mọi nguồn cùng lỗi thì báo đủ mọi lý do', async () => {
         && /nội dung trang: hỏng D/.test(err.message)
         && /sản phẩm: hỏng E/.test(err.message)
         && /biểu phí phân tích: hỏng F/.test(err.message)
-        && /cấu hình Dự toán & Liên hệ: hỏng G/.test(err.message),
+        && /cấu hình Dự toán & Liên hệ: hỏng G/.test(err.message)
+        && /tin tức: hỏng H/.test(err.message),
     );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

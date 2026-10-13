@@ -49,10 +49,11 @@ test('địa chỉ nguy hiểm bị từ chối thay vì gắn vào bài', async
 
 test('trình soạn thảo dùng chung bộ chuẩn hoá này và có cách gỡ liên kết', () => {
   const source = read('admin/src/components/RichTextField.jsx');
+  const panel = read('admin/src/components/richtext/LinkPanel.jsx');
 
-  assert.match(source, /normalizeLinkHref/, 'không tự chuẩn hoá địa chỉ một kiểu riêng');
+  assert.match(panel, /normalizeLinkHref/, 'không tự chuẩn hoá địa chỉ một kiểu riêng');
   assert.match(source, /unsetLink/, 'gỡ được liên kết đã gắn');
-  assert.match(source, /Gỡ liên kết/, 'có nút gỡ riêng, không bắt người dùng đoán là phải xoá trắng ô');
+  assert.match(panel, /Gỡ liên kết/, 'có nút gỡ riêng, không bắt người dùng đoán là phải xoá trắng ô');
 });
 
 test('bấm Liên kết khi chưa bôi đen chữ thì chèn luôn địa chỉ làm chữ hiển thị', () => {

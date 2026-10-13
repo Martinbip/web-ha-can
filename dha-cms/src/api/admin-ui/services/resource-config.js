@@ -9,7 +9,11 @@ const RESOURCE_CONFIG = {
     titleField: 'title',
     defaultSort: { date: 'desc' },
     searchableFields: ['title', 'summary', 'category'],
-    editableFields: ['title', 'slug', 'summary', 'content', 'category', 'date', 'image'],
+    editableFields: ['title', 'slug', 'summary', 'content', 'category', 'date', 'image', 'seo_title', 'seo_description', 'focus_keyword', 'share_image'],
+    // Đường dẫn cũ do server tự ghi khi bài đã đăng bị đổi đường dẫn (xem
+    // rememberOldSlugs) — admin chỉ đọc để báo cho biên tập viên biết.
+    readFields: ['old_slugs'],
+    oldSlugsField: 'old_slugs',
     listFields: ['title', 'category', 'date', 'publishedAt'],
     fields: {
       title: { label: 'Tiêu đề', type: 'text', required: true, maxLength: 300 },
@@ -30,6 +34,10 @@ const RESOURCE_CONFIG = {
       },
       date: { label: 'Ngày đăng', type: 'date', required: true },
       image: { label: 'Ảnh đại diện', type: 'cloudinary-image', folder: 'dha/news' },
+      seo_title: { label: 'Tiêu đề SEO', type: 'text', maxLength: 200 },
+      seo_description: { label: 'Mô tả SEO', type: 'textarea', maxLength: 500 },
+      focus_keyword: { label: 'Từ khoá chính', type: 'text', maxLength: 100 },
+      share_image: { label: 'Ảnh khi chia sẻ', type: 'cloudinary-image', folder: 'dha/news' },
     },
   },
   'products': {

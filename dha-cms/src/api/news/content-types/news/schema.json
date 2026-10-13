@@ -49,6 +49,25 @@
     "image": {
       "type": "string",
       "maxLength": 500
+    },
+    "seo_title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "seo_description": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "focus_keyword": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "share_image": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "old_slugs": {
+      "type": "json"
     }
   }
 }
