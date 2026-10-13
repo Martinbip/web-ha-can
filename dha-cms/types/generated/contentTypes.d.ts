@@ -758,54 +758,6 @@ export interface ApiOrderRequestOrderRequest
   };
 }
 
-export interface ApiOreOre extends Struct.CollectionTypeSchema {
-  collectionName: 'ores';
-  info: {
-    description: 'C\u00E1c lo\u1EA1i qu\u1EB7ng m\u1EABu v\u00E0 gi\u00E1 c\u01A1 s\u1EDF ph\u1EE5c v\u1EE5 Estimator v\u00E0 Pricing';
-    displayName: 'Qu\u1EB7ng M\u1EABu';
-    pluralName: 'ores';
-    singularName: 'ore';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    group: Schema.Attribute.Enumeration<
-      ['color-metal', 'black-metal', 'rare-earth']
-    > &
-      Schema.Attribute.Required;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<'oneToMany', 'api::ore.ore'> &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 200;
-      }>;
-    price: Schema.Attribute.Integer &
-      Schema.Attribute.Required &
-      Schema.Attribute.SetMinMax<
-        {
-          min: 0;
-        },
-        number
-      >;
-    publishedAt: Schema.Attribute.DateTime;
-    uid: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 100;
-      }>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
 export interface ApiPageContentPageContent extends Struct.SingleTypeSchema {
   collectionName: 'page_contents';
   info: {
@@ -2000,7 +1952,6 @@ declare module '@strapi/strapi' {
       'api::navigation.navigation': ApiNavigationNavigation;
       'api::news.news': ApiNewsNews;
       'api::order-request.order-request': ApiOrderRequestOrderRequest;
-      'api::ore.ore': ApiOreOre;
       'api::page-content.page-content': ApiPageContentPageContent;
       'api::pricing-analysis.pricing-analysis': ApiPricingAnalysisPricingAnalysis;
       'api::pricing-package.pricing-package': ApiPricingPackagePricingPackage;

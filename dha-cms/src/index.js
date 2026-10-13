@@ -13,21 +13,6 @@ function loadJsonFile(filename) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
-function getOreGroup(item) {
-  if (item.group === 'quang' && (item.uid || '').includes('sat')) return 'black-metal';
-  if (item.group === 'rare-earth' || (item.name || '').toLowerCase().includes('đất hiếm')) return 'rare-earth';
-  return 'color-metal';
-}
-
-function getOreSeedPrice(item) {
-  const uid = item.uid || '';
-  if (uid.includes('sat')) return 25000;
-  if (uid.includes('nhom') || uid.includes('bauxite')) return 35000;
-  if (uid.includes('chi')) return 65000;
-  if (uid.includes('thiec')) return 120000;
-  return 85000;
-}
-
 module.exports = {
   register() {},
 
@@ -152,13 +137,6 @@ module.exports = {
       sort_order: item.sort_order,
     }));
 
-    await seedCollection('api::ore.ore', 'products.json', (item) => ({
-      uid: item.uid,
-      name: item.name,
-      group: getOreGroup(item),
-      price: item.price || getOreSeedPrice(item),
-    }));
-
     // Danh mục sản phẩm và việc gán danh mục cho sản phẩm cũ đều đến từ code
     // (xem product-category/default-categories.js) vì thư mục data/ ở gốc repo
     // không được deploy sang máy chủ Strapi.
@@ -234,8 +212,6 @@ module.exports = {
           'api::product.product.findOne',
           'api::product-category.product-category.find',
           'api::product-category.product-category.findOne',
-          'api::ore.ore.find',
-          'api::ore.ore.findOne',
           'api::news.news.find',
           'api::news.news.findOne',
           'api::hero-slide.hero-slide.find',
