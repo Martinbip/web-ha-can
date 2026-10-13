@@ -2059,7 +2059,7 @@ button:hover {
 
 /* Dòng giải thích dưới tiêu đề màn danh sách: mục này ứng với khối nào trên website. */
 .page-hint {
-  margin: -8px 0 16px;
+  margin: 0 0 16px;
   color: var(--muted);
   font-size: 14px;
 }
