@@ -182,3 +182,22 @@ test('mốc cao gần hết màn hình vẫn giữ được bong bóng trong khu
   assert.ok(top >= EDGE - 1, 'không trồi lên trên mép');
   assert.ok(top + CARD_HEIGHT <= viewport.height - EDGE + 1, 'không rơi khỏi mép dưới');
 });
+
+test('màn Trang chủ dẫn tới đủ các khối, hướng dẫn nói rõ khối nào ở đâu', async () => {
+  const home = read('admin/src/pages/HomePageEditor.jsx');
+  for (const target of ['/resources/hero-slides', '/resources/services', '/resources/workflow-steps', '/page-content']) {
+    assert.ok(home.includes(`to="${target}"`), `có lối tới ${target}`);
+  }
+  const { TOURS } = await tourModule();
+  const homeSteps = TOURS.home.steps.map((step) => step.target);
+  for (const target of ['home-services', 'home-workflow', 'home-headings']) {
+    assert.ok(homeSteps.includes(`[data-tour="${target}"]`), `tour trang chủ có bước ${target}`);
+    assert.ok(home.includes(`data-tour="${target}"`), `màn Trang chủ có mốc ${target}`);
+  }
+  const editSteps = TOURS['resource-edit'].steps;
+  assert.ok(editSteps.some((step) => step.target === '[data-tour="field-seo-check"]'), 'tour soạn thảo giải thích khối SEO');
+  assert.doesNotMatch(JSON.stringify(editSteps), /link cũ khách đang giữ sẽ hỏng/, 'không còn hướng dẫn lỗi thời về đường dẫn');
+  const resources = read('admin/src/config/resources.js');
+  assert.match(resources, /'services': \{[\s\S]*?listHint:/, 'danh sách dịch vụ nói rõ ứng với khối nào');
+  assert.match(resources, /'workflow-steps': \{[\s\S]*?listHint:/, 'danh sách bước quy trình nói rõ ứng với khối nào');
+});

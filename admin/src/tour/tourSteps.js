@@ -132,13 +132,19 @@ export const TOURS = {
       {
         target: '[data-tour="field-slug"]',
         title: 'Đường dẫn bài viết',
-        body: 'Tự sinh ra từ tiêu đề, thường không cần sửa. Nếu bài đã đăng rồi thì đừng đổi: link cũ khách đang giữ sẽ hỏng.',
+        body: 'Tự sinh từ tiêu đề khi viết bài mới. Muốn đặt link ngắn có từ khoá thì bấm "Sửa đường dẫn" — chữ có dấu tự đổi đúng dạng. Bài đã đăng mà đổi đường dẫn thì link cũ tự chuyển sang link mới.',
         placement: 'top',
       },
       {
         target: '[data-tour="field-richtext"]',
         title: 'Trình soạn thảo',
-        body: 'Bôi đen chữ rồi dùng thanh công cụ để in đậm, đặt tiêu đề hoặc gắn liên kết. Ảnh chèn trong bài sẽ tự tải lên thư viện.',
+        body: 'Bôi đen chữ rồi dùng thanh công cụ để in đậm, đặt tiêu đề mục (H2), căn lề, chèn bảng, video YouTube hay khung nổi bật. Nút Liên kết có ô tìm bài viết, sản phẩm trong website để gắn link nội bộ. Bấm vào ảnh trong bài để điền mô tả, chú thích, chọn cỡ và vị trí.',
+        placement: 'top',
+      },
+      {
+        target: '[data-tour="field-seo-check"]',
+        title: 'Kiểm tra SEO',
+        body: 'Xem trước bài/sản phẩm hiện trên Google ra sao và điểm SEO, tính lại ngay khi bạn gõ. Làm theo các dòng ✕ và ! để tăng điểm — nhập Từ khoá chính trước để được chấm kỹ hơn. Chỉ là gợi ý, không chặn việc lưu.',
         placement: 'top',
       },
       {
@@ -152,12 +158,30 @@ export const TOURS = {
 
   home: {
     label: 'Trang chủ',
-    description: 'Slide, quy trình và phần giới thiệu.',
+    description: 'Slide, thẻ dịch vụ, bước quy trình và phần giới thiệu.',
     steps: [
       {
         target: '[data-tour="home-cards"]',
-        title: 'Slide và quy trình',
-        body: 'Hai khối này có danh sách riêng. Bấm nút trong thẻ để sang màn hình quản lý slide banner đầu trang, hoặc các bước quy trình làm việc.',
+        title: 'Mỗi thẻ là một khối trên trang chủ',
+        body: 'Slide, thẻ dịch vụ và bước quy trình mỗi thứ có danh sách riêng. Bấm nút trong thẻ để sang màn hình quản lý của khối đó.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="home-services"]',
+        title: 'Thẻ dịch vụ',
+        body: 'Ba thẻ trong khối "Khoáng sản & dịch vụ địa chất". Mỗi thẻ sửa được tiêu đề, mô tả, các dòng có dấu ✓, chữ và link của nút cuối thẻ. Xoá hết thẻ thì website quay về ba thẻ mặc định.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="home-workflow"]',
+        title: 'Bước quy trình',
+        body: 'Các ô đánh số 01, 02… trong khối "Quy trình thu thập & kiểm định mẫu". Ô "Số bước" là số trong vòng tròn, ô "Thứ tự" quyết định ô nào đứng trước.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="home-headings"]',
+        title: 'Tiêu đề các khối',
+        body: 'Nhãn nhỏ màu vàng, tiêu đề lớn và câu mô tả phía trên mỗi khối không nằm ở đây mà ở Nội dung trang → thẻ Trang chủ.',
         placement: 'bottom',
       },
       {
