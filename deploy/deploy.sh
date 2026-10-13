@@ -120,6 +120,18 @@ else
     echo "⚠️  Strapi chưa trả lời sau 60 giây — bỏ qua prerender lượt 2, HTML giữ dữ liệu từ lượt 1."
 fi
 
+# Lịch ghi lại HTML tĩnh mỗi giờ (xem deploy/dha-prerender.cron). Cài lại mỗi lần
+# deploy để lịch luôn khớp bản trong repo; cron không có PATH đầy đủ nên điền sẵn
+# đường dẫn tuyệt đối của node.
+echo "▸ Cài lịch ghi lại HTML tĩnh mỗi giờ..."
+NODE_BIN="$(command -v node || true)"
+if [ -n "$NODE_BIN" ]; then
+    sed "s#__NODE__#$NODE_BIN#" /var/www/web-ha-can/deploy/dha-prerender.cron > /etc/cron.d/dha-prerender
+    chmod 644 /etc/cron.d/dha-prerender
+else
+    echo "⚠️  Không tìm thấy node — bỏ qua cài lịch, HTML chỉ được ghi lại khi lưu hoặc deploy."
+fi
+
 # Cảnh báo nếu nginx config thay đổi (không tự ghi đè vì Certbot quản lý SSL)
 cd /var/www/web-ha-can
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^deploy/nginx.conf'; then

@@ -1,0 +1,12 @@
+# Ghi lại HTML tĩnh từ CMS mỗi giờ (phút thứ 5).
+#
+# HTML phục vụ cho khách chỉ được ghi lại khi quản trị bấm Lưu hoặc khi deploy.
+# Những thứ đổi theo thời gian — năm trong dòng bản quyền — cần một lượt ghi
+# định kỳ, không thì sang năm mới HTML vẫn mang năm cũ cho tới lần lưu kế tiếp.
+# Chạy mỗi giờ thay vì mỗi ngày để không phụ thuộc múi giờ của máy chủ. Mỗi lượt
+# chỉ đọc CMS qua localhost và chỉ ghi file nào thực sự thay đổi.
+#
+# deploy/deploy.sh cài file này vào /etc/cron.d/dha-prerender và thay __NODE__
+# bằng đường dẫn tuyệt đối của node (cron không có PATH đầy đủ như phiên SSH).
+SHELL=/bin/sh
+5 * * * * root __NODE__ /var/www/web-ha-can/scripts/prerender-site-settings.js /var/www/dhakimloaimau.vn /var/www/web-ha-can 2>&1 | logger -t dha-prerender

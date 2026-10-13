@@ -44,3 +44,30 @@ test('cả hai lượt prerender đều ghi từ bản mẫu trong repo sang th�
     assert.match(call, /\/var\/www\/dhakimloaimau\.vn \/var\/www\/web-ha-can/, 'truyền đích rồi nguồn');
   }
 });
+
+// HTML tĩnh chỉ được ghi lại khi quản trị bấm Lưu hoặc khi deploy. Những thứ
+// đổi theo thời gian (năm trong dòng bản quyền) cần một lượt ghi định kỳ.
+const CRON_FILE = path.join(root, 'deploy/dha-prerender.cron');
+
+test('có lịch ghi lại HTML tĩnh mỗi giờ, đọc bản mẫu ghi sang thư mục phục vụ', () => {
+  const cron = fs.readFileSync(CRON_FILE, 'utf8');
+  assert.ok(cron.endsWith('\n'), 'file trong /etc/cron.d phải kết thúc bằng xuống dòng, không thì cron bỏ qua dòng cuối');
+  const jobs = cron.split('\n').filter((line) => line.trim() && !line.trim().startsWith('#') && !/^[A-Z_]+=/.test(line));
+  assert.equal(jobs.length, 1, 'đúng một lịch');
+  const [minute, hour, dom, month, dow, user, ...command] = jobs[0].trim().split(/\s+/);
+  assert.match(minute, /^\d+$/, 'chạy vào một phút cố định');
+  assert.deepEqual([hour, dom, month, dow], ['*', '*', '*', '*'], 'mỗi giờ');
+  assert.equal(user, 'root', 'file trong /etc/cron.d cần cột người dùng');
+  assert.equal(command[0], '__NODE__', 'đường dẫn node do deploy.sh điền — cron không có PATH đầy đủ');
+  assert.match(command.join(' '), /\/var\/www\/web-ha-can\/scripts\/prerender-site-settings\.js \/var\/www\/dhakimloaimau\.vn \/var\/www\/web-ha-can/);
+});
+
+test('deploy.sh cài lịch vào /etc/cron.d với đường dẫn node tuyệt đối', () => {
+  const start = source.indexOf('# Lịch ghi lại HTML tĩnh mỗi giờ');
+  assert.ok(start > 0, 'deploy.sh có bước cài lịch');
+  const install = source.slice(start, source.indexOf('\nfi\n', start));
+  assert.match(install, /NODE_BIN="?\$\(command -v node[^)]*\)"?/);
+  assert.match(install, /sed "s#__NODE__#\$NODE_BIN#" \/var\/www\/web-ha-can\/deploy\/dha-prerender\.cron > \/etc\/cron\.d\/dha-prerender/);
+  // Tên file đích không có dấu chấm: cron trên Debian/Ubuntu bỏ qua file như vậy.
+  assert.match(install, /chmod 644 \/etc\/cron\.d\/dha-prerender/);
+});
