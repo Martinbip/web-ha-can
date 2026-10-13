@@ -2056,3 +2056,10 @@ button:hover {
   padding: 7px 14px;
   font-size: 13px;
 }
+
+/* Dòng giải thích dưới tiêu đề màn danh sách: mục này ứng với khối nào trên website. */
+.page-hint {
+  margin: -8px 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}

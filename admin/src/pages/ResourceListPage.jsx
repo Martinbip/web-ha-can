@@ -151,6 +151,7 @@ export default function ResourceListPage() {
         </div>
       </div>
 
+      {config.listHint ? <p className="page-hint">{config.listHint}</p> : null}
       {error ? <p className="form-error">{error}</p> : null}
 
       {loading ? (
