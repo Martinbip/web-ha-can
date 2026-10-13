@@ -161,7 +161,7 @@ function renderInput({ id, field, value, onChange, setField, values }) {
       );
 
     case 'seo-check':
-      return <SeoPanel id={id} values={values || {}} previewBase={field.previewBase} />;
+      return <SeoPanel id={id} values={values || {}} previewBase={field.previewBase} kind={field.seoKind} />;
 
     case 'text-counter':
       return (

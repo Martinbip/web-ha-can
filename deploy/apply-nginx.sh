@@ -53,6 +53,38 @@ print("▸ Đã chèn route /tin-tuc/ và chuyển hướng từ địa chỉ c�
 PY
 fi
 
+# Trang chi tiết sản phẩm /san-pham/<mã> và chuyển hướng từ /product-detail?id=.
+if grep -q "location /san-pham/" "$CONF"; then
+    echo "▸ Cấu hình đã có sẵn /san-pham/ — không cần chèn lại."
+else
+    python3 - "$CONF" <<'PY'
+import sys
+
+path = sys.argv[1]
+src = open(path).read()
+
+anchor = "    # ── Trang chi tiết tin tức"
+assert anchor in src, "Không tìm thấy mốc chèn /san-pham/ trong file nginx"
+
+block = """    # ── Trang chi tiết sản phẩm: /san-pham/<ma> ─────────
+    location /san-pham/ {
+        try_files $uri $uri/index.html /product-detail.html;
+    }
+
+    location = /product-detail {
+        if ($arg_id) {
+            return 301 /san-pham/$arg_id;
+        }
+        try_files /product-detail.html =404;
+    }
+
+"""
+
+open(path, "w").write(src.replace(anchor, block + anchor, 1))
+print("▸ Đã chèn route /san-pham/ và chuyển hướng từ /product-detail?id=")
+PY
+fi
+
 # Bản cấu hình chèn từ trước chưa biết tới trang tĩnh của từng bài viết.
 if grep -q 'try_files $uri /news-detail.html;' "$CONF"; then
     sed -i 's#try_files $uri /news-detail.html;#try_files $uri $uri/index.html /news-detail.html;#' "$CONF"

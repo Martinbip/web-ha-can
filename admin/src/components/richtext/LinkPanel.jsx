@@ -48,7 +48,7 @@ export default function LinkPanel({ initial, hasSelection, onApply, onRemove, on
         setResults([
           ...pages,
           ...articles.filter((item) => item.slug).map((item) => ({ kind: 'Bài viết', label: item.title, href: `/tin-tuc/${item.slug}` })),
-          ...items.filter((item) => item.uid).map((item) => ({ kind: 'Sản phẩm', label: item.name, href: `/product-detail?id=${encodeURIComponent(item.uid)}` })),
+          ...items.filter((item) => item.uid).map((item) => ({ kind: 'Sản phẩm', label: item.name, href: `/san-pham/${encodeURIComponent(item.uid)}` })),
         ]);
       });
     }, 250);

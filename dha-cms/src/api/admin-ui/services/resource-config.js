@@ -48,7 +48,7 @@ const RESOURCE_CONFIG = {
     titleField: 'name',
     defaultSort: { sort_order: 'asc' },
     searchableFields: ['name', 'uid', 'grade', 'origin'],
-    editableFields: ['uid', 'name', 'group', 'categories', 'grade', 'origin', 'price_on_request', 'price', 'price_unit', 'price_label', 'description', 'specs', 'image', 'featured', 'in_stock', 'sort_order'],
+    editableFields: ['uid', 'name', 'group', 'categories', 'grade', 'origin', 'price_on_request', 'price', 'price_unit', 'price_label', 'description', 'specs', 'image', 'featured', 'in_stock', 'sort_order', 'seo_title', 'seo_description', 'focus_keyword'],
     listFields: ['name', 'group', 'price', 'featured', 'in_stock'],
     fields: {
       uid: { label: 'Mã/đường dẫn', type: 'slug', required: true, from: 'name' },
@@ -78,6 +78,9 @@ const RESOURCE_CONFIG = {
       featured: { label: 'Nổi bật', type: 'boolean' },
       in_stock: { label: 'Còn hàng', type: 'boolean' },
       sort_order: { label: 'Thứ tự', type: 'number', default: 0 },
+      seo_title: { label: 'Tiêu đề SEO', type: 'text', maxLength: 200 },
+      seo_description: { label: 'Mô tả SEO', type: 'textarea', maxLength: 500 },
+      focus_keyword: { label: 'Từ khoá chính', type: 'text', maxLength: 100 },
     },
   },
   'product-categories': {

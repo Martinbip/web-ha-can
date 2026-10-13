@@ -186,8 +186,8 @@ test('mã lọc lạ trên URL (?filter=dong) quay về "Tất Cả" thay vì hi
   const window = await openProductsPage('https://dhakimloaimau.vn/products?filter=dong', { products, categories });
 
   const uids = new Set(
-    [...window.document.querySelectorAll('#products-container a[href*="product-detail"]')]
-      .map((a) => new URL(a.getAttribute('href'), 'https://dhakimloaimau.vn').searchParams.get('id'))
+    [...window.document.querySelectorAll('#products-container a[href^="/san-pham/"]')]
+      .map((a) => decodeURIComponent(a.getAttribute('href').slice('/san-pham/'.length)))
   );
   assert.equal(uids.size, products.length, 'lưới sản phẩm phải hiện đủ sản phẩm khi mã lọc không khớp tab nào');
   assert.equal(window.document.getElementById('products-empty').style.display, 'none', 'không được hiện thông báo trống');
@@ -204,8 +204,8 @@ test('mã lọc hợp lệ (?filter=black-metal) vẫn lọc đúng và tô sán
 
   const expectedUids = new Set(products.filter((p) => (p.categories || []).includes('black-metal')).map((p) => p.uid));
   const uids = new Set(
-    [...window.document.querySelectorAll('#products-container a[href*="product-detail"]')]
-      .map((a) => new URL(a.getAttribute('href'), 'https://dhakimloaimau.vn').searchParams.get('id'))
+    [...window.document.querySelectorAll('#products-container a[href^="/san-pham/"]')]
+      .map((a) => decodeURIComponent(a.getAttribute('href').slice('/san-pham/'.length)))
   );
   assert.deepEqual(uids, expectedUids, 'lưới sản phẩm phải đúng danh mục black-metal');
 
