@@ -50,7 +50,6 @@ test('homepage CMS-managed content is seeded and publicly readable', () => {
     ['api::hero-slide.hero-slide', 'hero_slides.json'],
     ['api::service.service', 'services.json'],
     ['api::workflow-step.workflow-step', 'workflow_steps.json'],
-    ['api::ore.ore', 'products.json'],
   ];
 
   for (const [uid, filename] of expectedSeeds) {
@@ -251,4 +250,13 @@ test('services and workflow fall back to seed content only while the CMS is empt
   assert.match(helper, /items\.length > 0/, 'CMS content wins whenever it exists');
   assert.match(appJs, /fetchWithSeedContent\('services/, 'services use seed content');
   assert.match(appJs, /fetchWithSeedContent\('workflow-steps/, 'workflow steps use seed content');
+});
+
+// Từ đợt 4, quặng của Dự toán là sản phẩm có giá theo kg; collection "Quặng Mẫu"
+// (ores) không còn nơi nào dùng và đã bị xoá hẳn khỏi CMS.
+test('collection Quặng Mẫu (ores) đã bị xoá khỏi CMS', () => {
+  assert.equal(fs.existsSync(path.join(root, 'dha-cms/src/api/ore')), false, 'thư mục api/ore phải bị xoá');
+  for (const file of ['dha-cms/src/index.js', 'app.js', 'scripts/prerender-site-settings.js', 'dha-cms/types/generated/contentTypes.d.ts']) {
+    assert.doesNotMatch(read(file), /api::ore\.ore|ApiOreOre/, `${file} còn nhắc tới collection ores`);
+  }
 });
