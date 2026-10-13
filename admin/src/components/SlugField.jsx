@@ -9,12 +9,27 @@ import { slugify } from '../lib/slug.js';
 //
 // Đánh đổi có chủ đích: sửa tiêu đề của một bài đã đăng cũng đổi luôn địa chỉ
 // của nó, nên link đã chia sẻ trước đó sẽ không còn mở được.
-export default function SlugField({ id, value, onChange, sourceValue, previewBase }) {
+//
+// Ngoại lệ `locked` (field.lockAfterCreate, vd mã danh mục sản phẩm): mã nằm
+// trong link lọc và trong mọi sản phẩm đã gán, nên chỉ tự sinh lúc tạo mới. Bản
+// ghi đã có thì giữ nguyên mã — trước đây chỉ cần mở trang sửa rồi bấm Lưu là mã
+// "black-metal" bị đổi thành "kim-loai-den" theo tên.
+export default function SlugField({ id, value, onChange, sourceValue, previewBase, locked = false }) {
   useEffect(() => {
+    if (locked && value) return;
     const next = slugify(sourceValue);
     if (next !== value) onChange(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sourceValue, value]);
+  }, [sourceValue, value, locked]);
+
+  if (locked && value) {
+    return (
+      <div className="slug-field">
+        <p className="slug-field-preview" id={id}>{`${previewBase || ''}${value}`}</p>
+        <p className="slug-field-hint">Mã được tạo một lần lúc thêm mới và giữ nguyên khi sửa tên, để các link đã dùng không bị đổi.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="slug-field">

@@ -293,3 +293,40 @@ test('ô đường dẫn trong website: gõ sửa thì cảnh báo hiện/tắt 
   assert.equal(state.value, '/pricing');
   view.unmount();
 });
+
+const CATEGORY_SLUG_FIELD = { label: 'Mã danh mục', type: 'slug', sourceField: 'name', lockAfterCreate: true };
+
+// Mã danh mục nằm trong link lọc (/products?filter=...) và trong mọi sản phẩm đã
+// gán. Danh mục đã có thì sửa tên — hay chỉ mở ra rồi bấm Lưu — không được đổi mã.
+test('mã danh mục: danh mục đã có thì giữ nguyên mã dù tên khác', options, async () => {
+  const { view, state } = await renderField({
+    name: 'slug',
+    field: CATEGORY_SLUG_FIELD,
+    value: 'black-metal',
+    values: { documentId: 'cat-1', name: 'Kim Loại Đen', slug: 'black-metal' },
+  });
+  assert.equal(state.value, 'black-metal', 'không tự đổi thành kim-loai-den khi mở trang sửa');
+  assert.match(view.text(), /black-metal/);
+  assert.match(view.text(), /giữ nguyên/);
+  view.unmount();
+});
+
+test('mã danh mục: tạo danh mục mới thì vẫn tự sinh mã từ tên', options, async () => {
+  const { state } = await renderField({
+    name: 'slug',
+    field: CATEGORY_SLUG_FIELD,
+    value: '',
+    values: { name: 'Kim Loại Quý' },
+  });
+  assert.equal(state.value, 'kim-loai-quy');
+});
+
+test('đường dẫn bài viết (không khoá) vẫn bám theo tiêu đề như trước', options, async () => {
+  const { state } = await renderField({
+    name: 'slug',
+    field: { label: 'Đường dẫn', type: 'slug', sourceField: 'title' },
+    value: 'tieu-de-cu',
+    values: { documentId: 'news-1', title: 'Tiêu đề mới' },
+  });
+  assert.equal(state.value, 'tieu-de-moi');
+});
