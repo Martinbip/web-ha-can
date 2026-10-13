@@ -277,10 +277,15 @@ function applySettingsToHtml(html, settings, { year = new Date().getFullYear() }
       },
     },
     {
+      // Ô bản quyền bỏ trống thì giữ chữ mặc định nhưng vẫn đổi năm — HTML viết
+      // sẵn "© 2026 …", không đổi thì sang năm mới website hiện năm cũ. Cùng quy
+      // tắc với applySiteChrome() trong app.js.
       match: (tagName, attrs) => 'data-copyright' in attrs,
-      apply: () => {
+      apply: ({ inner }) => {
         const value = text(settings, 'copyright_text');
-        return value ? { inner: escapeText(`© ${year} ${value}`) } : null;
+        if (value) return { inner: escapeText(`© ${year} ${value}`) };
+        const next = inner.replace(/^(\s*(?:&copy;|©)\s*)\d{4}/, `$1${year}`);
+        return next !== inner ? { inner: next } : null;
       },
     },
     {
