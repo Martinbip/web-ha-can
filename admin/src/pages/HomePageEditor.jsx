@@ -91,6 +91,13 @@ export default function HomePageEditor() {
             Quản lý workflow-steps
           </Link>
         </article>
+        <article className="card">
+          <h2>Hai nút ở đầu trang</h2>
+          <p>Chữ và link của nút "Xem Danh Mục Quặng" và "Tính Giá Nhanh" nằm ở mục Nội dung trang, thẻ Trang chủ.</p>
+          <Link className="btn-primary" to="/page-content">
+            Mở Nội dung trang
+          </Link>
+        </article>
       </section>
 
       <div className="page-heading">
