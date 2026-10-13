@@ -143,6 +143,7 @@ function renderInput({ id, field, value, onChange, setField, values }) {
           onChange={onChange}
           sourceValue={values?.[field.sourceField] || ''}
           previewBase={field.previewBase}
+          locked={Boolean(field.lockAfterCreate && values?.documentId)}
         />
       );
 

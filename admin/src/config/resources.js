@@ -54,7 +54,7 @@ export const RESOURCE_CONFIG = {
     listFields: ['name', 'slug', 'visible', 'sort_order'],
     fields: {
       name: { label: 'Tên danh mục', type: 'text', required: true },
-      slug: { label: 'Mã danh mục', type: 'slug', sourceField: 'name', required: true, hint: 'Mã dùng trong đường dẫn lọc, ví dụ /products?filter=kim-loai-mau. Đổi mã thì các sản phẩm đã gán được cập nhật theo.' },
+      slug: { label: 'Mã danh mục', type: 'slug', sourceField: 'name', lockAfterCreate: true, required: true, hint: 'Mã dùng trong đường dẫn lọc, ví dụ /products?filter=kim-loai-mau. Tự tạo từ tên lúc thêm danh mục; sau đó đổi tên cũng không đổi mã.' },
       visible: { label: 'Hiện trên website', type: 'boolean' },
       sort_order: { label: 'Thứ tự', type: 'number' },
     },

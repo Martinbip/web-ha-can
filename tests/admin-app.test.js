@@ -217,3 +217,8 @@ test('link nút đầu trang dùng ô có cảnh báo đường dẫn sai quy t�
   assert.match(config, /header_cta_url: \{ label: '[^']*', type: 'site-link'/);
   assert.match(config, /header_cta_url: \{[^\n]*invalidNote: '[^']*\/contact/);
 });
+
+test('mã danh mục sản phẩm khoá sau khi tạo', () => {
+  const config = read('admin/src/config/resources.js');
+  assert.match(config, /slug: \{ label: 'Mã danh mục', type: 'slug', sourceField: 'name', lockAfterCreate: true/);
+});
