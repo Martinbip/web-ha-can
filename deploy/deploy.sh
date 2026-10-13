@@ -45,6 +45,7 @@ rsync -a --delete \
     --exclude="admin/" \
     --exclude=".git/" \
     --exclude="tin-tuc/" \
+    --exclude="san-pham/" \
     /var/www/web-ha-can/ \
     /var/www/dhakimloaimau.vn/
 

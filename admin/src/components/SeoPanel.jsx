@@ -3,9 +3,9 @@ import { analyzeSeo, DESCRIPTION_LIMIT, TITLE_LIMIT } from '../lib/seo.js';
 
 // Xem trước kết quả Google và danh sách kiểm SEO, tính lại theo từng chữ đang
 // gõ trong form. Chỉ để gợi ý: không chặn lưu.
-export default function SeoPanel({ id, values, previewBase = '' }) {
-  const { title, description, checks, score } = analyzeSeo(values);
-  const url = `${previewBase}${values.slug || ''}`;
+export default function SeoPanel({ id, values, previewBase = '', kind = 'article' }) {
+  const { title, description, checks, score } = analyzeSeo(values, { kind });
+  const url = `${previewBase}${(kind === 'product' ? values.uid : values.slug) || ''}`;
   const level = score >= 80 ? 'good' : score >= 50 ? 'warn' : 'bad';
 
   return (

@@ -59,7 +59,12 @@ export const RESOURCE_CONFIG = {
     titleField: 'name',
     listFields: ['name', 'group', 'price', 'featured', 'in_stock'],
     fields: {
-      uid: { label: 'Mã/đường dẫn', type: 'text', required: true },
+      uid: {
+        label: 'Mã/đường dẫn',
+        type: 'text',
+        required: true,
+        hint: 'Sản phẩm nằm ở địa chỉ dhakimloaimau.vn/san-pham/<mã>. Chỉ dùng chữ thường không dấu, số và gạch ngang. Đổi mã của sản phẩm đã có sẽ làm link cũ không mở được.',
+      },
       name: { label: 'Tên sản phẩm', type: 'text', required: true },
       group: { label: 'Nhóm', type: 'select', options: ['dong', 'nhom', 'chi', 'thiec', 'quang'], hint: 'Quyết định nhãn màu góc ảnh sản phẩm. Việc lọc trên website do Danh mục hiển thị bên dưới đảm nhiệm.' },
       categories: {
@@ -80,6 +85,34 @@ export const RESOURCE_CONFIG = {
       featured: { label: 'Nổi bật', type: 'boolean' },
       in_stock: { label: 'Còn hàng', type: 'boolean' },
       sort_order: { label: 'Thứ tự', type: 'number' },
+      focus_keyword: {
+        section: 'SEO & chia sẻ mạng xã hội',
+        label: 'Từ khoá chính',
+        type: 'text',
+        placeholder: 'Vd: đồng cathode',
+        hint: 'Cụm từ khách hay gõ trên Google để tìm sản phẩm này. Dùng để chấm điểm SEO bên dưới, không hiện trên website.',
+      },
+      seo_title: {
+        label: 'Tiêu đề SEO',
+        type: 'text-counter',
+        limit: 60,
+        placeholderFrom: (values) => (values.name ? `${values.name} - DHA Minerals` : 'Bỏ trống thì dùng tên sản phẩm + " - DHA Minerals"'),
+        hint: 'Dòng chữ xanh trên kết quả Google và tiêu đề khi chia sẻ Facebook/Zalo. Bỏ trống thì dùng tên sản phẩm.',
+      },
+      seo_description: {
+        label: 'Mô tả SEO',
+        type: 'text-counter',
+        multiline: true,
+        limit: 160,
+        placeholderFrom: (values) => values.description || 'Bỏ trống thì dùng 160 ký tự đầu của phần Mô tả.',
+        hint: 'Đoạn chữ dưới tiêu đề trên Google và khi chia sẻ. Bỏ trống thì dùng 160 ký tự đầu của phần Mô tả.',
+      },
+      seo_check: {
+        label: 'Kiểm tra SEO',
+        type: 'seo-check',
+        seoKind: 'product',
+        previewBase: 'https://dhakimloaimau.vn/san-pham/',
+      },
     },
   },
   'product-categories': {

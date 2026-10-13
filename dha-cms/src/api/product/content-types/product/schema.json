@@ -24,7 +24,13 @@
     },
     "group": {
       "type": "enumeration",
-      "enum": ["dong", "nhom", "chi", "thiec", "quang"],
+      "enum": [
+        "dong",
+        "nhom",
+        "chi",
+        "thiec",
+        "quang"
+      ],
       "required": true
     },
     "grade": {
@@ -77,6 +83,18 @@
     "sort_order": {
       "type": "integer",
       "default": 0
+    },
+    "seo_title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "seo_description": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "focus_keyword": {
+      "type": "string",
+      "maxLength": 100
     }
   }
 }

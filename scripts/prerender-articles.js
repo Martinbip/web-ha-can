@@ -151,17 +151,19 @@ function buildArticlePages(templateHtml, articles) {
   return pages;
 }
 
-function writeArticlePages(target, pages) {
-  const root = path.join(target, ARTICLE_DIR);
+// Ghi mỗi trang vào <dir>/<slug>/index.html và dọn thư mục con không còn trong
+// danh sách. Dùng chung cho tin tức (tin-tuc/) và sản phẩm (san-pham/).
+function writeArticlePages(target, pages, dir = ARTICLE_DIR) {
+  const root = path.join(target, dir);
   fs.mkdirSync(root, { recursive: true });
   let changed = 0;
 
   for (const [slug, html] of Object.entries(pages)) {
-    const dir = path.join(root, slug);
-    const file = path.join(dir, 'index.html');
+    const pageDir = path.join(root, slug);
+    const file = path.join(pageDir, 'index.html');
     const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
     if (current === html) continue;
-    fs.mkdirSync(dir, { recursive: true });
+    fs.mkdirSync(pageDir, { recursive: true });
     fs.writeFileSync(file, html, 'utf8');
     changed += 1;
   }
@@ -176,7 +178,12 @@ function writeArticlePages(target, pages) {
 }
 
 module.exports = {
+  SITE,
   ARTICLE_DIR,
+  escapeAttr,
+  escapeText,
+  absoluteUrl,
+  replaceTagById,
   isSafeSlug,
   articleMeta,
   applyArticleToHtml,

@@ -47,12 +47,29 @@ async function fetchArticles() {
   return (json.data || []).map((item) => item.attributes || item).filter((item) => item.slug);
 }
 
+async function fetchProducts() {
+  const res = await fetch(`${CMS}/api/products?pagination[pageSize]=500&sort=sort_order:asc`, {
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) throw new Error(`CMS trả về ${res.status} khi đọc sản phẩm`);
+  const json = await res.json();
+  return (json.data || []).map((item) => item.attributes || item).filter((item) => item.uid);
+}
+
 // Dựng nội dung sitemap từ danh sách bài đã xuất bản. Dùng chung với prerender
 // (scripts/prerender-site-settings.js), vốn chạy lại mỗi khi lưu, đăng hay xoá
 // bài — nên sitemap theo kịp đường dẫn mới mà không phải đợi lần deploy sau.
-function buildSitemapXml(articles) {
+function buildSitemapXml(articles, products = []) {
   const entries = [
     ...STATIC_PAGES.map(toUrlEntry),
+    ...(products || []).filter((product) => product && product.uid).map((product) =>
+      toUrlEntry({
+        loc: `/san-pham/${encodeURIComponent(product.uid)}`,
+        changefreq: 'weekly',
+        priority: '0.8',
+        lastmod: product.updatedAt,
+      }),
+    ),
     ...(articles || []).filter((article) => article && article.slug).map((article) =>
       toUrlEntry({
         loc: `/tin-tuc/${encodeURIComponent(article.slug)}`,
@@ -74,9 +91,9 @@ module.exports = { buildSitemapXml, STATIC_PAGES };
 
 if (require.main === module) {
   (async () => {
-    const articles = await fetchArticles();
-    fs.writeFileSync(OUTPUT, buildSitemapXml(articles), 'utf8');
-    console.log(`✓ sitemap: ${STATIC_PAGES.length} trang tĩnh + ${articles.length} bài viết → ${OUTPUT}`);
+    const [articles, products] = await Promise.all([fetchArticles(), fetchProducts()]);
+    fs.writeFileSync(OUTPUT, buildSitemapXml(articles, products), 'utf8');
+    console.log(`✓ sitemap: ${STATIC_PAGES.length} trang tĩnh + ${products.length} sản phẩm + ${articles.length} bài viết → ${OUTPUT}`);
   })().catch((err) => {
     console.error(`✗ Không sinh được sitemap: ${err.message}`);
     process.exit(1);

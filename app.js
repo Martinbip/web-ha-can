@@ -1648,7 +1648,7 @@ function buildProductCard(product) {
     const priceLabel  = getProductPriceLabel(product);
 
     return `
-        <a href="/product-detail?id=${encodeURIComponent(product.uid)}" class="product-card card"
+        <a href="${escapeHtml(getProductUrl(product.uid))}" class="product-card card"
              data-group="${escapeHtml(product.group)}"
              data-featured="${product.featured ? 'true' : 'false'}"
              data-stock="${inStock ? 'in' : 'out'}"
@@ -1765,12 +1765,58 @@ async function initProductsPage() {
 // ======================================================
 // PRODUCT DETAIL PAGE
 // ======================================================
+// Địa chỉ chính thức của sản phẩm là /san-pham/<mã>. Dạng cũ
+// /product-detail?id=... vẫn đọc được (nginx cũng chuyển hướng 301).
+function getProductIdFromLocation() {
+    const match = window.location.pathname.match(/^\/san-pham\/(.+?)\/?$/);
+    if (match) return decodeURIComponent(match[1]);
+    return new URLSearchParams(window.location.search).get('id');
+}
+
+function getProductUrl(uid) {
+    return `/san-pham/${encodeURIComponent(uid)}`;
+}
+
+// Admin lưu thông số bằng bảng khoá–giá trị (object), dữ liệu cũ là mảng
+// chuỗi. Khoá dạng số ("0", "1"...) là thứ tự dòng, giá trị đã gồm cả nhãn.
+function normalizeProductSpecs(specs) {
+    if (Array.isArray(specs)) return specs.map(spec => String(spec ?? '').trim()).filter(Boolean);
+    if (!specs || typeof specs !== 'object') return [];
+    return Object.entries(specs)
+        .map(([key, value]) => {
+            const text = String(value ?? '').trim();
+            if (!text) return '';
+            return /^\d+$/.test(key) ? text : `${key}: ${text}`;
+        })
+        .filter(Boolean);
+}
+
+// Mô tả cho Google cắt quanh 160 ký tự, ngắt ở ranh giới từ.
+function truncateMetaText(text, limit = 160) {
+    const value = String(text || '').replace(/\s+/g, ' ').trim();
+    if (value.length <= limit) return value;
+    const cut = value.slice(0, limit - 1);
+    const space = cut.lastIndexOf(' ');
+    return `${(space > limit * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:–-]+$/, '')}…`;
+}
+
+// Phải khớp với productMeta() trong scripts/prerender-products.js.
+function productMeta(product) {
+    const text = value => (typeof value === 'string' ? value.trim() : '');
+    const image = toSiteAssetUrl(text(product.image));
+    return {
+        title: text(product.seo_title) || `${text(product.name)} - DHA Minerals`,
+        description: text(product.seo_description) || truncateMetaText(product.description),
+        image: !image ? '' : /^https?:\/\//i.test(image) ? image : image.startsWith('//') ? `https:${image}` : `${window.location.origin}${image}`,
+        url: `${window.location.origin}${getProductUrl(product.uid)}`,
+    };
+}
+
 async function initProductDetailPage() {
     const contentEl = document.getElementById('product-detail-content');
     if (!contentEl) return;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('id');
+    const productId = getProductIdFromLocation();
 
     if (!productId) {
         contentEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;"><p>Không tìm thấy sản phẩm. <a href="/products">Quay lại danh mục</a>.</p></div>';
@@ -1786,7 +1832,15 @@ async function initProductDetailPage() {
             return;
         }
 
-        document.title = `${escapeHtml(product.name)} - DHA Minerals`;
+        const meta = productMeta(product);
+        document.title = meta.title;
+        setMetaContent('page-desc', meta.description);
+        setMetaContent('og-title', meta.title);
+        setMetaContent('og-desc', meta.description);
+        setMetaContent('og-image', meta.image);
+        setMetaContent('og-url', meta.url);
+        const canonical = document.getElementById('canonical-url');
+        if (canonical) canonical.href = meta.url;
         const breadcrumb = document.getElementById('detail-breadcrumb');
         if (breadcrumb) breadcrumb.textContent = product.name;
 
@@ -1803,8 +1857,9 @@ async function initProductDetailPage() {
             : (document.querySelector('a[href^="tel:"]')?.getAttribute('href') || '/contact');
 
         let specsHtml = '';
-        if (Array.isArray(product.specs)) {
-            specsHtml = product.specs.map(spec => {
+        const specs = normalizeProductSpecs(product.specs);
+        if (specs.length) {
+            specsHtml = specs.map(spec => {
                 const safe = escapeHtml(spec);
                 const colonIdx = safe.indexOf(':');
                 if (colonIdx > -1) {

@@ -18,6 +18,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildArticlePages, writeArticlePages } = require('./prerender-articles');
 const { buildSitemapXml } = require('./generate-sitemap');
+const { buildProductPages, writeProductPages } = require('./prerender-products');
 
 const CMS = process.env.CMS_URL || 'http://127.0.0.1:1337';
 
@@ -798,6 +799,7 @@ async function prerenderDirectory(
   const files = fs.readdirSync(sourceDir).filter((file) => file.endsWith('.html'));
   let changed = 0;
   let articleTemplate = null;
+  let productTemplate = null;
   for (const file of files) {
     const html = fs.readFileSync(path.join(sourceDir, file), 'utf8');
     let out = html;
@@ -814,6 +816,7 @@ async function prerenderDirectory(
     });
 
     if (file === 'news-detail.html') articleTemplate = out;
+    if (file === 'product-detail.html') productTemplate = out;
 
     const destFile = path.join(target, file);
     const current = fs.existsSync(destFile) ? fs.readFileSync(destFile, 'utf8') : null;
@@ -828,13 +831,20 @@ async function prerenderDirectory(
   if (articles && articleTemplate) {
     articlePages = writeArticlePages(target, buildArticlePages(articleTemplate, articles));
   }
-  // Sitemap cũng theo danh sách bài: đăng bài mới hay đổi đường dẫn là Google
-  // thấy địa chỉ mới ngay, không đợi lần deploy sau. Cùng điều kiện như trên —
-  // đọc tin tức lỗi thì giữ sitemap cũ.
+  // Sản phẩm: cùng cách với tin tức. Đọc sản phẩm lỗi thì giữ thư mục cũ.
+  let productPages = 0;
+  if (products && productTemplate) {
+    productPages = writeProductPages(target, buildProductPages(productTemplate, products));
+  }
+
+  // Sitemap cũng theo danh sách bài và sản phẩm: đăng bài mới, thêm sản phẩm
+  // hay đổi đường dẫn là Google thấy địa chỉ mới ngay, không đợi lần deploy
+  // sau. Thiếu một trong hai nguồn thì giữ sitemap cũ — ghi nửa vời sẽ làm rơi
+  // mất địa chỉ của nguồn kia.
   let sitemapChanged = false;
-  if (articles) {
+  if (articles && products) {
     const sitemapFile = path.join(target, 'sitemap.xml');
-    const xml = buildSitemapXml(articles);
+    const xml = buildSitemapXml(articles, products);
     const current = fs.existsSync(sitemapFile) ? fs.readFileSync(sitemapFile, 'utf8') : null;
     if (xml !== current) {
       fs.writeFileSync(sitemapFile, xml, 'utf8');
@@ -847,6 +857,7 @@ async function prerenderDirectory(
     total: files.length,
     articles: articles ? articles.length : null,
     articlePages,
+    productPages,
     sitemapChanged,
     settings: Boolean(settings),
     categories: Boolean(categories),
@@ -866,7 +877,8 @@ async function main() {
     result.navigation && 'menu',
     result.pageContent && 'nội dung trang',
     result.forms && 'form Dự toán & Liên hệ',
-    result.articles != null && `${result.articles} bài tin tức (${result.articlePages} trang đổi${result.sitemapChanged ? ', sitemap ghi lại' : ''})`,
+    result.articles != null && `${result.articles} bài tin tức (${result.articlePages} trang đổi)`,
+    `${result.productPages} trang sản phẩm đổi${result.sitemapChanged ? ', sitemap ghi lại' : ''}`,
   ]
     .filter(Boolean)
     .join(' + ');
