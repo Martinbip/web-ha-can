@@ -173,3 +173,13 @@ test('chấm SEO sản phẩm theo tiêu chí riêng của trang sản phẩm', 
   assert.equal(byId['body-length'], 'warn');
   assert.equal(bare.title, 'X - DHA Minerals');
 });
+
+test('mọi trang chính khai báo canonical trùng og:url', () => {
+  for (const file of ['index.html', 'products.html', 'pricing.html', 'estimator.html', 'projects.html', 'news.html', 'contact.html']) {
+    const doc = new JSDOM(fs.readFileSync(path.join(root, file), 'utf8')).window.document;
+    const canonical = doc.querySelector('link[rel="canonical"]')?.getAttribute('href');
+    const ogUrl = doc.querySelector('meta[property="og:url"]')?.getAttribute('content');
+    assert.ok(canonical, `${file} có canonical`);
+    assert.equal(canonical, ogUrl, `${file}: canonical trùng og:url`);
+  }
+});
