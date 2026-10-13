@@ -157,6 +157,10 @@ test('prerender ghi trang tĩnh cho từng bài, chuyển hướng đường d�
   assert.match(redirect, /rel="canonical" href="https:\/\/dhakimloaimau\.vn\/tin-tuc\/nha-may-luyen-dong"/);
 
   assert.ok(!fs.existsSync(path.join(target, 'thoat-ra')), 'slug có ".." không thoát ra ngoài thư mục');
+  const sitemap = fs.readFileSync(path.join(target, 'sitemap.xml'), 'utf8');
+  assert.match(sitemap, /<loc>https:\/\/dhakimloaimau\.vn\/tin-tuc\/nha-may-luyen-dong<\/loc>/, 'sitemap có đường dẫn mới của bài');
+  assert.doesNotMatch(sitemap, /tin-tuc\/dhakimloaimau\.vn</, 'sitemap không còn đường dẫn cũ');
+  assert.equal(result.sitemapChanged, true);
   assert.ok(!fs.existsSync(path.join(target, 'tin-tuc', 'bai-da-xoa')), 'bài không còn đăng bị dọn');
 });
 
@@ -164,6 +168,7 @@ test('đọc tin tức lỗi thì giữ nguyên trang tĩnh của lượt trư�
   const target = fs.mkdtempSync(path.join(os.tmpdir(), 'dha-articles-'));
   fs.mkdirSync(path.join(target, 'tin-tuc', 'bai-cu'), { recursive: true });
   fs.writeFileSync(path.join(target, 'tin-tuc', 'bai-cu', 'index.html'), 'cũ');
+  fs.writeFileSync(path.join(target, 'sitemap.xml'), 'sitemap cũ');
 
   const empty = async () => ({});
   await prerenderDirectory(target, {
@@ -182,6 +187,7 @@ test('đọc tin tức lỗi thì giữ nguyên trang tĩnh của lượt trư�
   });
 
   assert.ok(fs.existsSync(path.join(target, 'tin-tuc', 'bai-cu', 'index.html')));
+  assert.equal(fs.readFileSync(path.join(target, 'sitemap.xml'), 'utf8'), 'sitemap cũ', 'sitemap cũ cũng được giữ');
 });
 
 test('trang chi tiết tự chuyển khi gặp đường dẫn cũ của bài', () => {

@@ -47,12 +47,13 @@ async function fetchArticles() {
   return (json.data || []).map((item) => item.attributes || item).filter((item) => item.slug);
 }
 
-(async () => {
-  const articles = await fetchArticles();
-
+// Dựng nội dung sitemap từ danh sách bài đã xuất bản. Dùng chung với prerender
+// (scripts/prerender-site-settings.js), vốn chạy lại mỗi khi lưu, đăng hay xoá
+// bài — nên sitemap theo kịp đường dẫn mới mà không phải đợi lần deploy sau.
+function buildSitemapXml(articles) {
   const entries = [
     ...STATIC_PAGES.map(toUrlEntry),
-    ...articles.map((article) =>
+    ...(articles || []).filter((article) => article && article.slug).map((article) =>
       toUrlEntry({
         loc: `/tin-tuc/${encodeURIComponent(article.slug)}`,
         changefreq: 'monthly',
@@ -62,15 +63,22 @@ async function fetchArticles() {
     ),
   ];
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${entries.join('\n')}
 </urlset>
 `;
+}
 
-  fs.writeFileSync(OUTPUT, xml, 'utf8');
-  console.log(`✓ sitemap: ${STATIC_PAGES.length} trang tĩnh + ${articles.length} bài viết → ${OUTPUT}`);
-})().catch((err) => {
-  console.error(`✗ Không sinh được sitemap: ${err.message}`);
-  process.exit(1);
-});
+module.exports = { buildSitemapXml, STATIC_PAGES };
+
+if (require.main === module) {
+  (async () => {
+    const articles = await fetchArticles();
+    fs.writeFileSync(OUTPUT, buildSitemapXml(articles), 'utf8');
+    console.log(`✓ sitemap: ${STATIC_PAGES.length} trang tĩnh + ${articles.length} bài viết → ${OUTPUT}`);
+  })().catch((err) => {
+    console.error(`✗ Không sinh được sitemap: ${err.message}`);
+    process.exit(1);
+  });
+}
