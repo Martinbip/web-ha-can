@@ -73,8 +73,18 @@ else
     echo "▸ Admin không đổi → bỏ qua build admin (deploy nhanh)."
 fi
 
-# Chỉ đụng tới Strapi khi thư mục dha-cms/ thật sự có thay đổi
+# Chỉ đụng tới Strapi khi mã CMS thật sự thay đổi: lần pull này có đổi dha-cms/,
+# hoặc mã nguồn trên máy chủ đang lệch với repo (vd thư mục API đã xoá trong repo
+# nhưng còn sót lại từ những lần đồng bộ cũ không xoá).
+CMS_CHANGED=0
 if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^dha-cms/'; then
+    CMS_CHANGED=1
+fi
+if ! diff -rq /var/www/web-ha-can/dha-cms/src /var/www/dha-cms/src > /dev/null 2>&1; then
+    CMS_CHANGED=1
+fi
+
+if [ "$CMS_CHANGED" = 1 ]; then
     echo "▸ Phát hiện thay đổi CMS → sync + build Strapi..."
     rsync -a \
         --exclude=".env" \
@@ -82,6 +92,10 @@ if git diff --name-only "$BEFORE" "$AFTER" | grep -q '^dha-cms/'; then
         --exclude="node_modules/" \
         /var/www/web-ha-can/dha-cms/ \
         /var/www/dha-cms/
+    # Mã nguồn (src/) thuần lấy từ repo nên đồng bộ có xoá: file đã bỏ khỏi repo
+    # (collection, route...) phải biến mất khỏi máy chủ. Phần còn lại (.env, CSDL,
+    # ảnh tải lên, bản build) chỉ chép thêm ở lệnh trên, không bao giờ bị xoá.
+    rsync -a --delete /var/www/web-ha-can/dha-cms/src/ /var/www/dha-cms/src/
 
     cd /var/www/dha-cms
     npm ci --omit=dev

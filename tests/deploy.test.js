@@ -71,3 +71,22 @@ test('deploy.sh cài lịch vào /etc/cron.d với đường dẫn node tuyệt 
   // Tên file đích không có dấu chấm: cron trên Debian/Ubuntu bỏ qua file như vậy.
   assert.match(install, /chmod 644 \/etc\/cron\.d\/dha-prerender/);
 });
+
+// rsync không --delete nên file đã xoá trong repo vẫn nằm lại trên máy chủ —
+// collection ores bị xoá khỏi repo mà /api/ores trên production vẫn chạy. Mã
+// nguồn Strapi (src/) phải được đồng bộ có xoá; phần còn lại (.env, CSDL, ảnh tải
+// lên, bản build) vẫn chỉ chép thêm.
+test('deploy.sh đồng bộ mã nguồn Strapi có xoá file thừa, chỉ riêng src/', () => {
+  assert.match(source, /rsync -a --delete \/var\/www\/web-ha-can\/dha-cms\/src\/ \/var\/www\/dha-cms\/src\//);
+  const deleteSyncs = source.match(/rsync[^\n]*--delete[^\n]*/g) || [];
+  for (const line of deleteSyncs) {
+    assert.doesNotMatch(line, /web-ha-can\/dha-cms\/ /, 'không xoá thừa trên cả thư mục dha-cms — sẽ mất .env, CSDL, ảnh tải lên');
+  }
+});
+
+test('src/ trên máy chủ lệch với repo thì cũng build lại Strapi, kể cả khi lần pull không đổi dha-cms/', () => {
+  const block = source.slice(source.indexOf('CMS_CHANGED=0'), source.indexOf('CMS không đổi'));
+  assert.match(block, /git diff --name-only "\$BEFORE" "\$AFTER" \| grep -q '\^dha-cms\/'/);
+  assert.match(block, /diff -rq \/var\/www\/web-ha-can\/dha-cms\/src \/var\/www\/dha-cms\/src/);
+  assert.match(block, /if \[ "\$CMS_CHANGED" = 1 \]; then/);
+});
