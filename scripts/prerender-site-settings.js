@@ -17,6 +17,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { buildArticlePages, writeArticlePages } = require('./prerender-articles');
+const { buildSitemapXml } = require('./generate-sitemap');
 
 const CMS = process.env.CMS_URL || 'http://127.0.0.1:1337';
 
@@ -827,12 +828,26 @@ async function prerenderDirectory(
   if (articles && articleTemplate) {
     articlePages = writeArticlePages(target, buildArticlePages(articleTemplate, articles));
   }
+  // Sitemap cũng theo danh sách bài: đăng bài mới hay đổi đường dẫn là Google
+  // thấy địa chỉ mới ngay, không đợi lần deploy sau. Cùng điều kiện như trên —
+  // đọc tin tức lỗi thì giữ sitemap cũ.
+  let sitemapChanged = false;
+  if (articles) {
+    const sitemapFile = path.join(target, 'sitemap.xml');
+    const xml = buildSitemapXml(articles);
+    const current = fs.existsSync(sitemapFile) ? fs.readFileSync(sitemapFile, 'utf8') : null;
+    if (xml !== current) {
+      fs.writeFileSync(sitemapFile, xml, 'utf8');
+      sitemapChanged = true;
+    }
+  }
 
   return {
     changed,
     total: files.length,
     articles: articles ? articles.length : null,
     articlePages,
+    sitemapChanged,
     settings: Boolean(settings),
     categories: Boolean(categories),
     navigation: Boolean(navigation),
@@ -851,7 +866,7 @@ async function main() {
     result.navigation && 'menu',
     result.pageContent && 'nội dung trang',
     result.forms && 'form Dự toán & Liên hệ',
-    result.articles != null && `${result.articles} bài tin tức (${result.articlePages} trang đổi)`,
+    result.articles != null && `${result.articles} bài tin tức (${result.articlePages} trang đổi${result.sitemapChanged ? ', sitemap ghi lại' : ''})`,
   ]
     .filter(Boolean)
     .join(' + ');
