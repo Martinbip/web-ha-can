@@ -183,3 +183,45 @@ test('mọi trang chính khai báo canonical trùng og:url', () => {
     assert.equal(canonical, ogUrl, `${file}: canonical trùng og:url`);
   }
 });
+
+test('trang chủ có dữ liệu tổ chức lấy từ Cài đặt website', async () => {
+  const { buildOrganization, toInternationalPhone } = require('../scripts/prerender-organization');
+  assert.equal(toInternationalPhone('086.725.9078'), '+84867259078');
+  assert.equal(toInternationalPhone('+84 867 259 078'), '+84867259078');
+
+  const graph = buildOrganization({
+    hotline: '0867259078',
+    email: 'lienhe@dha.vn',
+    address: 'Số 42+44, ngõ 178, Phố Thái Hà, Hà Nội',
+    tax_code: '0109637580',
+    facebook_url: 'https://facebook.com/dha',
+    zalo_url: '',
+  })['@graph'];
+  const org = graph.find((item) => item['@type'] === 'Organization');
+  assert.equal(org.telephone, '+84867259078');
+  assert.equal(org.taxID, '0109637580');
+  assert.equal(org.address.streetAddress, 'Số 42+44, ngõ 178, Phố Thái Hà, Hà Nội');
+  assert.deepEqual(org.sameAs, ['https://facebook.com/dha'], 'link mạng xã hội trống bị bỏ');
+  assert.equal(org.logo, undefined, 'chưa có ảnh logo thì không khai báo logo');
+
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), 'dha-home-'));
+  const empty = async () => ({});
+  await prerenderDirectory(target, {
+    sourceDir: root,
+    loadSettings: async () => ({ hotline: '0867259078', address: 'Hà Nội </script>' }),
+    loadCategories: async () => [],
+    loadNavigation: empty,
+    loadPageContent: empty,
+    loadProducts: async () => [],
+    loadAnalyses: async () => [],
+    loadFormConfig: empty,
+    loadArticles: async () => [],
+    log: { warn() {} },
+  });
+  const home = fs.readFileSync(path.join(target, 'index.html'), 'utf8');
+  const doc = new JSDOM(home).window.document;
+  const ld = JSON.parse(doc.getElementById('organization-jsonld').textContent);
+  assert.equal(ld['@graph'][0].address.streetAddress, 'Hà Nội </script>');
+  assert.equal((home.match(/organization-jsonld/g) || []).length, 1, 'chỉ một khối');
+  assert.ok(!fs.readFileSync(path.join(target, 'products.html'), 'utf8').includes('organization-jsonld'), 'chỉ trang chủ');
+});
